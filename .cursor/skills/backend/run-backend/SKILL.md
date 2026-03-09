@@ -1,17 +1,17 @@
 ---
 name: run-backend
-description: Run the Humanaity Spring Boot backend from humanaity-be, source the backend .env file, confirm it is reachable at http://localhost:8080, and avoid duplicate launches by checking existing terminals first. Use when the user asks to start, run, launch, debug, serve, or verify the backend, API, Spring Boot server, or local server.
+description: Run the Humanaity Spring Boot backend from apps/backend in the monorepo, source the backend .env file, confirm it is reachable at http://localhost:8080, and avoid duplicate launches by checking existing terminals first. Use when the user asks to start, run, launch, debug, serve, or verify the backend, API, Spring Boot server, or local server.
 ---
 
 # Run Backend
 
 ## Goal
 
-Launch or verify the Humanaity backend from `humanaity-be`.
+Launch or verify the Humanaity backend from `apps/backend`.
 
 ## Project Location
 
-- Backend repo: `/Users/julien/dev/humanaity/humanaity-be`
+- Backend repo: `<monorepo>/apps/backend`
 - Default URL: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
@@ -20,8 +20,8 @@ Launch or verify the Humanaity backend from `humanaity-be`.
 
 1. Check existing terminals first to avoid duplicates.
 2. If the backend is already running and healthy, tell the user instead of starting another one.
-3. If it is not running, source `/Users/julien/dev/humanaity/humanaity-be/.env` before launch.
-4. Start the app from `/Users/julien/dev/humanaity/humanaity-be`.
+3. If it is not running, source `<monorepo>/apps/backend/.env` before launch.
+4. Start the app from `<monorepo>/apps/backend`.
 5. Verify startup from terminal logs or with a request to Swagger/OpenAPI.
 
 ## Commands

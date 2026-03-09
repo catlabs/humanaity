@@ -1,17 +1,17 @@
 ---
 name: run-frontend
-description: Run the Humanaity Angular frontend dev server from humanaity-ui, confirm it is reachable at http://localhost:4200, and avoid duplicate launches by checking existing terminals first. Use when the user asks to start, run, launch, serve, or verify the frontend, UI, Angular app, or local web app.
+description: Run the Humanaity Angular frontend dev server from apps/ui in the monorepo, confirm it is reachable at http://localhost:4200, and avoid duplicate launches by checking existing terminals first. Use when the user asks to start, run, launch, serve, or verify the frontend, UI, Angular app, or local web app.
 ---
 
 # Run Frontend
 
 ## Goal
 
-Launch or verify the Humanaity frontend from `humanaity-ui`.
+Launch or verify the Humanaity frontend from `apps/ui`.
 
 ## Project Location
 
-- Frontend repo: `/Users/julien/dev/humanaity/humanaity-ui`
+- Frontend repo: `<monorepo>/apps/ui`
 - Default URL: `http://localhost:4200`
 - Backend dependency: `http://localhost:8080`
 
@@ -19,7 +19,7 @@ Launch or verify the Humanaity frontend from `humanaity-ui`.
 
 1. Check existing terminals first to avoid duplicates.
 2. If a frontend dev server is already running and healthy, tell the user instead of starting another one.
-3. If it is not running, start it from `/Users/julien/dev/humanaity/humanaity-ui`.
+3. If it is not running, start it from `<monorepo>/apps/ui`.
 4. Verify startup from terminal output or by checking `http://localhost:4200`.
 
 ## Commands

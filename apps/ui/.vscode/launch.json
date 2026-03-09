@@ -7,7 +7,7 @@
       "request": "launch",
       "preLaunchTask": "npm: start",
       "url": "http://localhost:4200",
-      "webRoot": "${workspaceFolder}/humanaity-ui/src",
+      "webRoot": "${workspaceFolder}/apps/ui/src",
       "sourceMaps": true,
       "sourceMapPathOverrides": {
         "webpack:/*": "${webRoot}/*",
@@ -29,7 +29,7 @@
       "request": "attach",
       "port": 9222,
       "url": "http://localhost:4200",
-      "webRoot": "${workspaceFolder}/humanaity-ui/src",
+      "webRoot": "${workspaceFolder}/apps/ui/src",
       "sourceMaps": true,
       "sourceMapPathOverrides": {
         "webpack:/*": "${webRoot}/*",
@@ -45,7 +45,7 @@
       "type": "chrome",
       "request": "launch",
       "url": "http://localhost:4200",
-      "webRoot": "${workspaceFolder}/humanaity-ui/src",
+      "webRoot": "${workspaceFolder}/apps/ui/src",
       "sourceMaps": true,
       "sourceMapPathOverrides": {
         "webpack:/*": "${webRoot}/*",
@@ -71,7 +71,7 @@
       "type": "chrome",
       "request": "launch",
       "url": "http://localhost:9876",
-      "webRoot": "${workspaceFolder}/humanaity-ui/src",
+      "webRoot": "${workspaceFolder}/apps/ui/src",
       "sourceMaps": true,
       "sourceMapPathOverrides": {
         "webpack:/*": "${webRoot}/*",

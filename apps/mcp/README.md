@@ -61,9 +61,9 @@ Recommended migration path if/when this becomes necessary:
 
 Use this when backend DTOs, endpoint signatures, or OpenAPI annotations change:
 
-1. Update backend contracts in `humanaity-be` (DTOs/controllers/OpenAPI annotations).
+1. Update backend contracts in `apps/backend` (DTOs/controllers/OpenAPI annotations).
 2. Ensure the backend is running locally and exposing `http://localhost:8080/v3/api-docs`.
-3. In `humanaity-mcp`, regenerate generated schema types:
+3. In `apps/mcp`, regenerate generated schema types:
 
    ```bash
    npm run api:generate
@@ -126,12 +126,12 @@ npm run start
 
 Keep Cursor connected to this server in development mode first, then switch to built mode only after the end-to-end MCP connection is stable.
 
-Recommended initial command in `humanaity-be/.cursor/mcp.json`:
+Recommended initial command in `apps/backend/.cursor/mcp.json`:
 
 ```json
 "args": [
   "-lc",
-  "set -a; source /Users/julien/dev/humanaity/humanaity-be/.env; set +a; npm run dev"
+  "MONOREPO_ROOT=\"$(git rev-parse --show-toplevel)\" && set -a && source \"$MONOREPO_ROOT/apps/backend/.env\" && set +a && npm run dev"
 ]
 ```
 
@@ -140,7 +140,7 @@ Optional switch after stability is confirmed (same file, same env loading):
 ```json
 "args": [
   "-lc",
-  "set -a; source /Users/julien/dev/humanaity/humanaity-be/.env; set +a; npm run start"
+  "MONOREPO_ROOT=\"$(git rev-parse --show-toplevel)\" && set -a && source \"$MONOREPO_ROOT/apps/backend/.env\" && set +a && npm run start"
 ]
 ```
 
