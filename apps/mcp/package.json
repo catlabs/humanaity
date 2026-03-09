@@ -1,0 +1,24 @@
+{
+  "name": "humanaity-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP bridge server for Humanaity backend APIs",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/index.js",
+    "api:generate": "mkdir -p src/generated && openapi-typescript http://localhost:8080/v3/api-docs -o src/generated/api-types.ts",
+    "api:generate:check": "npm run api:generate && git diff --exit-code -- src/generated/api-types.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "openapi-typescript": "^7.13.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,11 @@
+---
+description: Make skill usage explicit in user-facing updates.
+alwaysApply: true
+---
+
+# Skill Transparency
+
+- When using a project or personal skill, explicitly name it in a user-facing update before or while applying it.
+- Prefer short phrasing such as: `Using the local commit-message skill for humanaity-mcp, I reviewed the repo changes and suggest:`
+- If no skill is being used, do not claim one is active.
+- Keep the note concise and only mention skills that materially affect the work.
