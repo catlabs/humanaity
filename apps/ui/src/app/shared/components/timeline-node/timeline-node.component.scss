@@ -1,0 +1,36 @@
+@use "sass:map";
+@use "tokens" as *;
+@use "typography" as *;
+@use "app-shell" as *;
+
+.node {
+  @include hai-row(3);
+  width: 100%;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-radius: $radius-xl;
+  border: 1px solid var(--mat-sys-outline-variant);
+  background-color: var(--mat-sys-surface-container-lowest);
+  padding: map.get($spacing-scale, 3);
+  box-shadow: $shadow-sm;
+}
+
+.content { min-width: 0; flex: 1 1 0%; }
+
+.title {
+  @include hai-body-small;
+  font-weight: 600;
+  line-height: 1.375;
+  margin: 0;
+}
+
+.period {
+  @include hai-meta;
+  margin: map.get($spacing-scale, 1) 0 0 0;
+}
+
+.info-btn {
+  height: 2rem;
+  width: 2rem;
+  flex-shrink: 0;
+}

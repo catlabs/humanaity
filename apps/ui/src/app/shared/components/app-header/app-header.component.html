@@ -1,0 +1,50 @@
+<header class="header app-surface-bg">
+  <mat-toolbar>
+    <div class="toolbar">
+        <div class="left">
+          <div class="brand">
+            <img src="/assets/images/humanaity-logo.png" alt="HumanAIty" class="logo-img" />
+            <span class="brand-wordmark"><span class="brand-human">Human</span><span class="brand-aity">AIty</span></span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button
+            mat-icon-button
+            type="button"
+            class="icon-btn"
+            (click)="toggleTheme()"
+            [attr.aria-label]="theme.isDark() ? 'Switch to light theme' : 'Switch to dark theme'"
+          >
+            <mat-icon>{{ theme.isDark() ? "light_mode" : "dark_mode" }}</mat-icon>
+          </button>
+
+          @if (showUserMenu()) {
+          <button mat-icon-button class="icon-btn"><mat-icon>notifications</mat-icon></button>
+          <button mat-icon-button [matMenuTriggerFor]="userMenu" class="avatar-btn">
+            @if (userAvatar()) {
+            <img class="avatar-img" [src]="userAvatar()" [alt]="userName() || 'User'" />
+            } @else {
+            <mat-icon class="avatar-icon">account_circle</mat-icon>
+            }
+          </button>
+          <mat-menu #userMenu="matMenu">
+            <button mat-menu-item routerLink="/cities" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }">
+              <mat-icon>location_city</mat-icon>
+              <span>Simulations</span>
+            </button>
+            <button mat-menu-item routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+              <mat-icon>admin_panel_settings</mat-icon>
+              <span>Admin Tools</span>
+            </button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="logout()">
+              <mat-icon>logout</mat-icon>
+              <span>Logout</span>
+            </button>
+          </mat-menu>
+          }
+        </div>
+      </div>
+  </mat-toolbar>
+</header>

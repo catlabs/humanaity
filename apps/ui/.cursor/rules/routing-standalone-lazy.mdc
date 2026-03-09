@@ -1,0 +1,17 @@
+---
+description: Enforce lazy standalone route definitions.
+globs: src/app/**/*.routes.ts
+alwaysApply: false
+---
+
+# Routing: Standalone + Lazy
+
+- Use lazy route components with `loadComponent`.
+- Prefer default export route arrays with `satisfies Routes`.
+- Avoid eager `component:` route declarations in feature route files.
+- Keep route files focused on routing only (no page logic).
+
+## Example
+
+- ✅ `export default [{ path: '', loadComponent: ... }] satisfies Routes;`
+- ❌ `export const routes: Routes = [{ path: '', component: ListPage }];`

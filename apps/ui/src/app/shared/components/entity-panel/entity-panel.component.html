@@ -1,0 +1,86 @@
+<mat-card class="entity-panel">
+  <div class="panel-header">
+    <h3 class="panel-title">Selected Entity</h3>
+  </div>
+  
+  <div class="panel-content">
+    <div class="entity-header">
+      <div class="entity-icon" [style.background-color]="entity().iconColor">
+        <mat-icon>{{ entity().icon }}</mat-icon>
+      </div>
+      <div class="entity-info">
+        <h4 class="entity-name">{{ entity().name }}</h4>
+        <p class="entity-type">{{ entity().type }}</p>
+        <div class="entity-badges">
+          <span class="status-badge">{{ entity().status }}</span>
+          @if (entity().level) {
+            <span class="level-badge">Level {{ entity().level }}</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    @if (entity().capacity || entity().efficiency) {
+      <div class="stats-section">
+        @if (entity().capacity; as capacity) {
+          <div class="stat-item">
+            <div class="stat-header">
+              <span class="stat-label">Capacity</span>
+              <span class="stat-value">{{ capacity.current }}/{{ capacity.max }}</span>
+            </div>
+            <mat-progress-bar 
+              mode="determinate" 
+              [value]="getCapacityPercentage()"
+              class="capacity-progress">
+            </mat-progress-bar>
+          </div>
+        }
+        
+        @if (entity().efficiency !== undefined) {
+          <div class="stat-item">
+            <div class="stat-header">
+              <span class="stat-label">Efficiency</span>
+              <span class="stat-value">{{ entity().efficiency }}%</span>
+            </div>
+            <mat-progress-bar 
+              mode="determinate" 
+              [value]="entity().efficiency"
+              class="efficiency-progress">
+            </mat-progress-bar>
+          </div>
+        }
+      </div>
+    }
+
+    @if (entity().workers || entity().maintenanceCost || entity().builtAt) {
+      <div class="details-section">
+        @if (entity().workers !== undefined) {
+          <div class="detail-row">
+            <span class="detail-label">Workers</span>
+            <span class="detail-value">{{ entity().workers }}</span>
+          </div>
+        }
+        @if (entity().maintenanceCost) {
+          <div class="detail-row">
+            <span class="detail-label">Maintenance Cost</span>
+            <span class="detail-value">{{ entity().maintenanceCost }}</span>
+          </div>
+        }
+        @if (entity().builtAt) {
+          <div class="detail-row">
+            <span class="detail-label">Built</span>
+            <span class="detail-value">{{ entity().builtAt }}</span>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="action-section">
+      <button mat-raised-button color="primary" (click)="viewDetails.emit()">
+        View Details
+      </button>
+    </div>
+  </div>
+</mat-card>
+
+

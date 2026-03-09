@@ -1,0 +1,138 @@
+@use "typography" as *;
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--mat-sys-surface);
+  padding: 2rem 1rem;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 28rem;
+}
+
+.login-card {
+  padding: 1.5rem;
+}
+
+.logo-section {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.logo-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  background-color: var(--mat-sys-primary);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  mat-icon {
+    color: var(--mat-sys-on-primary);
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.logo-text {
+  @include hai-headline-small;
+  margin: 0;
+}
+
+.subtitle {
+  @include hai-body-small-muted;
+  margin: 0;
+}
+
+.login-form {
+  .form-title {
+    @include hai-headline-small;
+    margin: 0 0 1.5rem 0;
+    text-align: center;
+  }
+
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
+  .error-message {
+    @include hai-body-small;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--mat-sys-on-error-container);
+    padding: 0.75rem;
+    background-color: var(--mat-sys-error-container);
+    border-radius: 8px;
+    border: 1px solid var(--mat-sys-outline-variant);
+    
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  .submit-button {
+    @include hai-body;
+    width: 100%;
+    padding: 0.75rem;
+    font-weight: 500;
+  }
+}
+
+.additional-options {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.forgot-password-link {
+  @include hai-body-small;
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+  transition: color 0.2s;
+  
+  &:hover {
+    color: var(--mat-sys-primary);
+  }
+}
+
+.signup-link {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+.signup-text {
+  @include hai-body-small-muted;
+  margin: 0;
+}
+
+.signup-link-text {
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+  
+  &:hover {
+    color: var(--mat-sys-primary);
+  }
+}

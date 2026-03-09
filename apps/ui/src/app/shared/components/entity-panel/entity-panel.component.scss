@@ -1,0 +1,114 @@
+@use "sass:map";
+@use "tokens" as *;
+@use "typography" as *;
+@use "app-shell" as *;
+
+.entity-panel {
+  .panel-header {
+    @include hai-panel-header;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  .panel-title {
+    @include hai-section-title;
+    margin: 0;
+  }
+
+  .panel-content { padding: map.get($spacing-scale, 5); }
+}
+
+.entity-header {
+  @include hai-row(4);
+  align-items: flex-start;
+  margin-bottom: map.get($spacing-scale, 5);
+}
+
+.entity-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: $radius-lg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  mat-icon { color: white; font-size: 32px; width: 32px; height: 32px; }
+}
+
+.entity-info { flex: 1; min-width: 0; }
+
+.entity-name {
+  @include hai-section-title;
+  margin: 0 0 map.get($spacing-scale, 1) 0;
+}
+
+.entity-type {
+  @include hai-body-small-muted;
+  margin: map.get($spacing-scale, 1) 0 map.get($spacing-scale, 2) 0;
+}
+
+.entity-badges {
+  @include hai-row(2);
+  margin-top: map.get($spacing-scale, 2);
+}
+
+.status-badge {
+  @include hai-label-small;
+  display: inline-flex;
+  align-items: center;
+  padding: map.get($spacing-scale, 0.5) map.get($spacing-scale, 2);
+  border-radius: 9999px;
+  font-weight: 500;
+  background-color: #d1fae5;
+  color: #166534;
+}
+
+.level-badge { @include hai-meta; }
+
+.stats-section {
+  @include hai-col(3);
+  margin-bottom: map.get($spacing-scale, 5);
+}
+
+.stat-item {
+  .stat-header {
+    @include hai-label-small;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: map.get($spacing-scale, 1);
+  }
+  .stat-label { color: var(--mat-sys-on-surface-variant); }
+  .stat-value { font-weight: 500; color: var(--mat-sys-on-surface); }
+}
+
+.capacity-progress, .efficiency-progress {
+  height: 8px;
+  border-radius: 9999px;
+  ::ng-deep .mdc-linear-progress__buffer { background-color: var(--mat-sys-surface-container-highest); }
+}
+
+.capacity-progress ::ng-deep .mdc-linear-progress__bar-inner { background-color: var(--mat-sys-primary); }
+.efficiency-progress ::ng-deep .mdc-linear-progress__bar-inner { background-color: #10b981; }
+
+.details-section {
+  padding-top: map.get($spacing-scale, 5);
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  @include hai-col(3);
+  margin-bottom: map.get($spacing-scale, 5);
+}
+
+.detail-row {
+  @include hai-body-small;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-label { color: var(--mat-sys-on-surface-variant); }
+.detail-value { font-weight: 500; color: var(--mat-sys-on-surface); }
+
+.action-section {
+  padding-top: map.get($spacing-scale, 5);
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  button { width: 100%; }
+}

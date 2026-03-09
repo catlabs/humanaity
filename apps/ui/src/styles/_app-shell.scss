@@ -1,0 +1,222 @@
+// App Shell Layout Patterns
+// Reusable mixins for full-height pages, headers, panels, and dense lists.
+// Based on prototype spacing: 4px base (0.25rem), with px-6 (24px), px-8 (32px), py-4 (16px), py-3 (12px).
+@use "sass:map";
+@use "./tokens" as *;
+@use "./typography" as *;
+
+// -----------------------------------------------------------------------------
+// 1. Page Shell - Full-height layout with header + scrollable content
+// -----------------------------------------------------------------------------
+
+// Full-height page container — fills remaining space inside .main
+@mixin hai-page-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 0;
+}
+
+// Page header bar with border-bottom
+@mixin hai-page-header {
+  flex: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  padding: map.get($spacing-scale, 4) 20px;
+}
+
+// Scrollable content area
+@mixin hai-page-content {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: auto;
+  padding: map.get($spacing-scale, 6) 20px;
+}
+
+// -----------------------------------------------------------------------------
+// 2. Panel - Bordered container with header/body/footer sections
+// -----------------------------------------------------------------------------
+
+// Bordered panel container
+@mixin hai-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-lg;
+  background: var(--mat-sys-surface);
+  overflow: hidden;
+}
+
+// Panel header — fixed height so every header stripe is identical
+@mixin hai-panel-header {
+  flex: none;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  padding: 0 map.get($spacing-scale, 6);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+// Panel body - scrollable area
+@mixin hai-panel-body {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: auto;
+}
+
+// Panel body with padding (prototype: px-6 py-4)
+@mixin hai-panel-body-padded {
+  @include hai-panel-body;
+  padding: map.get($spacing-scale, 4) map.get($spacing-scale, 6);
+}
+
+// Panel footer (prototype: px-6 py-3 border-t)
+@mixin hai-panel-footer {
+  flex: none;
+  padding: map.get($spacing-scale, 3) map.get($spacing-scale, 6);
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+// Panel section title
+@mixin hai-panel-section-title {
+  @include hai-label-muted;
+  letter-spacing: 0.04em;
+  margin-bottom: map.get($spacing-scale, 2);
+}
+
+// -----------------------------------------------------------------------------
+// 3. Dense List - Compact list items (prototype: p-3, space-y-2)
+// -----------------------------------------------------------------------------
+
+// Dense list container
+@mixin hai-dense-list {
+  display: flex;
+  flex-direction: column;
+  gap: map.get($spacing-scale, 2);
+}
+
+// Dense list item (prototype: p-3 border hover)
+@mixin hai-dense-list-item {
+  padding: map.get($spacing-scale, 3);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  cursor: pointer;
+
+  &:hover {
+    // Proto intent: subtle primary-tinted hover (no hardcoded colors).
+    background-color: color-mix(in srgb, var(--mat-sys-primary) 6%, var(--mat-sys-surface));
+  }
+}
+
+// Dense list item title
+@mixin hai-dense-list-title {
+  @include hai-body-small;
+  font-weight: 500;
+}
+
+// Dense list item meta
+@mixin hai-dense-list-meta {
+  @include hai-meta;
+  margin-top: map.get($spacing-scale, 1);
+}
+
+// -----------------------------------------------------------------------------
+// 4. Table - Styled table (prototype: px-6 py-3/4, border-b rows)
+// -----------------------------------------------------------------------------
+
+// Table wrapper with border
+@mixin hai-table-wrapper {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-md;
+  overflow: hidden;
+}
+
+// Table base
+@mixin hai-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+// Table header row
+@mixin hai-table-header {
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  background-color: var(--mat-sys-surface-container-lowest);
+}
+
+// Table header cell (prototype: px-6 py-3 uppercase)
+@mixin hai-table-header-cell {
+  @include hai-label-muted;
+  padding: map.get($spacing-scale, 3) map.get($spacing-scale, 6);
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+// Table body row (prototype: border-b hover)
+@mixin hai-table-row {
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  &:hover {
+    // Proto intent: subtle primary-tinted hover (no hardcoded colors).
+    background-color: color-mix(in srgb, var(--mat-sys-primary) 6%, var(--mat-sys-surface));
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+// Table body cell (prototype: px-6 py-4)
+@mixin hai-table-cell {
+  @include hai-body-small;
+  padding: map.get($spacing-scale, 4) map.get($spacing-scale, 6);
+  text-align: left;
+}
+
+// Stats table (for side panel statistics, prototype: py-2 compact)
+@mixin hai-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  td {
+    @include hai-body-small;
+    padding: map.get($spacing-scale, 1.5) 0;
+    color: var(--mat-sys-on-surface-variant);
+
+    &:last-child {
+      text-align: right;
+      color: var(--mat-sys-on-surface);
+      font-weight: 600;
+    }
+  }
+
+  tr:not(:last-child) td {
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 5. Utility mixins
+// -----------------------------------------------------------------------------
+
+// Flex row with gap and center alignment
+@mixin hai-row($gap: 2) {
+  display: flex;
+  align-items: center;
+  gap: map.get($spacing-scale, $gap);
+}
+
+// Flex column with gap
+@mixin hai-col($gap: 2) {
+  display: flex;
+  flex-direction: column;
+  gap: map.get($spacing-scale, $gap);
+}
+
+// Status indicator dot
+@mixin hai-status-dot($size: 8px) {
+  width: $size;
+  height: $size;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

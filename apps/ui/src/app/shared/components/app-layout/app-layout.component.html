@@ -1,0 +1,8 @@
+<div class="layout app-surface-bg">
+  <div class="header-container">
+    <app-header [showUserMenu]="showUserMenu()" [userAvatar]="userAvatar()" [userName]="userName()"></app-header>
+  </div>
+  <main class="main app-surface-bg">
+    <router-outlet />
+  </main>
+</div>

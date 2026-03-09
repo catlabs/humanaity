@@ -1,0 +1,109 @@
+@use "typography" as *;
+
+.register-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--mat-sys-surface);
+  padding: 3rem 1.5rem;
+}
+
+.register-container {
+  width: 100%;
+  max-width: 28rem;
+}
+
+.register-card {
+  padding: 2rem;
+}
+
+.register-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.logo-icon-large {
+  width: 48px;
+  height: 48px;
+  background-color: var(--mat-sys-primary);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  
+  mat-icon {
+    color: var(--mat-sys-on-primary);
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.register-title {
+  @include hai-headline-small;
+  margin: 0 0 0.5rem 0;
+}
+
+.register-subtitle {
+  @include hai-body-small-muted;
+  margin: 0;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  
+  .full-width {
+    width: 100%;
+  }
+
+  .error-message {
+    @include hai-body-small;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--mat-sys-on-error-container);
+    padding: 0.75rem;
+    background-color: var(--mat-sys-error-container);
+    border-radius: 8px;
+    border: 1px solid var(--mat-sys-outline-variant);
+    
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  .register-button {
+    @include hai-body;
+    width: 100%;
+    padding: 0.75rem;
+    font-weight: 500;
+    margin-top: 0.5rem;
+  }
+}
+
+.signin-link {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.signin-text {
+  @include hai-body-small-muted;
+  margin: 0;
+}
+
+.signin-link-text {
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+  
+  &:hover {
+    color: var(--mat-sys-primary);
+  }
+}

@@ -1,0 +1,22 @@
+// Breakpoint mixins (matching Tailwind defaults)
+// Usage:
+//   .my-class {
+//     display: block;
+//     @include md { display: flex; }
+//     @include lg { display: grid; }
+//   }
+
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+
+@mixin md {
+  @media (min-width: $breakpoint-md) {
+    @content;
+  }
+}
+
+@mixin lg {
+  @media (min-width: $breakpoint-lg) {
+    @content;
+  }
+}

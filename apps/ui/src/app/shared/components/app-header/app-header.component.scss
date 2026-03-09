@@ -1,0 +1,74 @@
+@use "sass:map";
+@use "tokens" as *;
+@use "typography" as *;
+@use "app-shell" as *;
+
+.header {
+  width: 100%;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+:host-context(html.dark) .header { border-bottom-color: var(--mat-sys-outline-variant); }
+
+:host ::ng-deep .mat-toolbar {
+  background: transparent !important;
+  padding: 0 20px;
+  height: 4rem;
+}
+
+.toolbar {
+  @include hai-row(4);
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
+}
+
+.left { @include hai-row(8); }
+.brand { @include hai-row(3); }
+
+.logo-img {
+  height: 2rem;
+  width: auto;
+  object-fit: contain;
+}
+
+.brand-wordmark {
+  @include hai-page-title;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.brand-human { color: var(--hai-brand-human); }
+.brand-aity { color: var(--mat-sys-primary); }
+
+.actions { @include hai-row(4); }
+
+.icon-btn {
+  color: var(--mat-sys-on-surface-variant);
+  transition: color 0.2s;
+  &:hover { color: var(--mat-sys-on-surface); }
+}
+
+.avatar-btn {
+  height: 2rem;
+  width: 2rem;
+  border-radius: 50%;
+  overflow: hidden;
+  padding: 0;
+  transition: opacity 0.2s;
+  &:hover { opacity: 0.8; }
+}
+
+.avatar-img { height: 100%; width: 100%; object-fit: cover; }
+
+.avatar-icon {
+  font-size: 1.25rem;
+  color: var(--mat-sys-on-surface-variant);
+  background-color: var(--mat-sys-surface-container-high);
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}

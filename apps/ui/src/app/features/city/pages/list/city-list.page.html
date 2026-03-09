@@ -1,0 +1,83 @@
+<div class="page">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <div>
+        <h1 class="title">Simulations</h1>
+        <p class="subtitle">Manage and monitor active simulation instances</p>
+      </div>
+      <button mat-raised-button color="primary" (click)="onCreateNew()" class="new-button">
+        <mat-icon>add</mat-icon>
+        <span>New Simulation</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <div class="content">
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr class="table-header">
+            <th class="th">Name</th>
+            <th class="th">Status</th>
+            <th class="th th--right">Population</th>
+            <th class="th th--right">Year</th>
+            <th class="th">Era</th>
+            <th class="th th--right">Inventions</th>
+            <th class="th">Last Updated</th>
+            <th class="th th--right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (sim of simulations(); track sim.id) {
+            <tr class="row" (click)="onRowClick(sim)">
+              <td class="cell">
+                <div class="sim-name">{{ sim.name }}</div>
+                <div class="sim-id">{{ sim.id }}</div>
+              </td>
+              <td class="cell">
+                <div class="status">
+                  <div class="status-dot" [style.backgroundColor]="getStatusColor(sim.status)"></div>
+                  <span class="status-text">{{ sim.status }}</span>
+                </div>
+              </td>
+              <td class="cell cell--right">{{ sim.population }}</td>
+              <td class="cell cell--right">{{ sim.year }}</td>
+              <td class="cell">{{ sim.era }}</td>
+              <td class="cell cell--right">{{ sim.inventions }}</td>
+              <td class="cell cell--muted">{{ sim.lastUpdated }}</td>
+              <td class="cell">
+                <div class="actions" (click)="$event.stopPropagation()">
+                  <button
+                    mat-icon-button
+                    class="action-btn"
+                    (click)="onToggleStatus(sim, $event)"
+                    [attr.aria-label]="sim.status === 'running' ? 'Pause' : 'Play'"
+                  >
+                    <mat-icon>{{ sim.status === 'running' ? 'pause' : 'play_arrow' }}</mat-icon>
+                  </button>
+                  <button
+                    mat-icon-button
+                    class="action-btn action-btn--delete"
+                    (click)="onDelete(sim, $event)"
+                    aria-label="Delete"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="empty">
+                <mat-icon>inbox</mat-icon>
+                <p>No simulations found</p>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

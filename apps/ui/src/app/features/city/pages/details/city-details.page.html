@@ -1,0 +1,106 @@
+<div class="page">
+  <mat-drawer-container class="drawer-container app-drawer-content-transparent" autosize>
+    <mat-drawer
+      position="end"
+      [mode]="drawerMode()"
+      [opened]="drawerOpen()"
+      (openedChange)="drawerOpen.set($event)"
+      class="drawer app-surface-bg app-drawer-flat"
+    >
+      <div class="drawer-content">
+        <mat-card class="drawer-card">
+          <div class="drawer-header">
+            <h3 class="drawer-title">Recent Events</h3>
+            <button mat-icon-button type="button" class="close-btn" (click)="closeDrawer()" aria-label="Collapse sidebar">
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+
+          <div class="drawer-body">
+            @for (event of recentEvents(); track event.id) {
+            <app-event-item
+              [title]="event.title"
+              [description]="event.description"
+              [timestamp]="event.timestamp"
+              [type]="event.type"
+            ></app-event-item>
+            } @empty {
+            <div class="drawer-empty">No recent events</div>
+            }
+          </div>
+        </mat-card>
+      </div>
+    </mat-drawer>
+
+    <mat-drawer-content class="content">
+      <div class="main">
+        <!-- City Context Header -->
+        <header class="header">
+          <div class="title-section">
+            <h2 class="title">{{ city.name }}</h2>
+            <span class="cycle">Cycle {{ cycle() }}</span>
+          </div>
+
+          <div class="actions">
+            <button mat-raised-button color="primary" class="action-btn" (click)="onStart()" [disabled]="isRunning()">
+              <mat-icon>play_arrow</mat-icon>
+              <span>Start</span>
+            </button>
+            <button mat-raised-button class="action-btn surface-btn" (click)="onPause()" [disabled]="!isRunning()">
+              <mat-icon>pause</mat-icon>
+              <span>Pause</span>
+            </button>
+            <button mat-raised-button color="primary" class="action-btn" (click)="onStep(1)">
+              <mat-icon>skip_next</mat-icon>
+              <span>+1</span>
+            </button>
+            <button mat-raised-button color="primary" class="action-btn" (click)="onStep(10)">
+              <mat-icon>fast_forward</mat-icon>
+              <span>+10</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Map Container -->
+        <div class="map-container">
+          <div class="map-wrapper">
+            <div #container class="map"></div>
+
+            <!-- Map Stats Overlay -->
+            <div class="map-overlay">
+              <div class="map-stat">
+                <div class="map-stat-label">Population</div>
+                <div class="map-stat-value">{{ population() }}</div>
+              </div>
+              <div class="map-divider"></div>
+              <div class="map-stat">
+                <div class="map-stat-label">Happiness</div>
+                <div class="map-stat-value" style="color: #a7f3d0">{{ happiness() }}%</div>
+              </div>
+              <div class="map-divider"></div>
+              <div class="map-stat">
+                <div class="map-stat-label">Resources</div>
+                <div class="map-stat-value" style="color: #fde68a">{{ resources() }}</div>
+              </div>
+            </div>
+
+            <!-- Map Controls -->
+            <div class="map-controls">
+              @if (!drawerOpen()) {
+              <button mat-icon-button type="button" class="map-control-btn" (click)="openDrawer()" aria-label="Open sidebar">
+                <mat-icon>chevron_left</mat-icon>
+              </button>
+              }
+              <button mat-icon-button class="map-control-btn"><mat-icon>add</mat-icon></button>
+              <button mat-icon-button class="map-control-btn"><mat-icon>remove</mat-icon></button>
+              <button mat-icon-button class="map-control-btn"><mat-icon>fullscreen</mat-icon></button>
+            </div>
+
+            <!-- Grid Info -->
+            <div class="map-info">Grid: 100x100</div>
+          </div>
+        </div>
+      </div>
+    </mat-drawer-content>
+  </mat-drawer-container>
+</div>

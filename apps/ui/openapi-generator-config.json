@@ -1,0 +1,14 @@
+{
+  "generatorName": "typescript-angular",
+  "inputSpec": "http://localhost:8080/v3/api-docs",
+  "outputDir": "src/app/api",
+  "additionalProperties": {
+    "ngVersion": "20.0.0",
+    "providedInRoot": true,
+    "serviceSuffix": "Service",
+    "modelSuffix": "",
+    "fileNaming": "kebab-case"
+  }
+}
+
+

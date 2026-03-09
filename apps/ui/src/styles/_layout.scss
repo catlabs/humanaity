@@ -1,0 +1,89 @@
+// Layout patterns - semantic, reusable layout classes
+// These replace verbose Tailwind utility combinations
+@use "sass:map";
+@use "./tokens" as *;
+
+// Stack: vertical layout with gap
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.stack-gap-1 { gap: map.get($spacing-scale, 1); }
+.stack-gap-2 { gap: map.get($spacing-scale, 2); }
+.stack-gap-3 { gap: map.get($spacing-scale, 3); }
+.stack-gap-4 { gap: map.get($spacing-scale, 4); }
+.stack-gap-6 { gap: map.get($spacing-scale, 6); }
+
+// Cluster: horizontal layout with gap (flex row)
+.cluster {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.cluster-gap-1 { gap: map.get($spacing-scale, 1); }
+.cluster-gap-2 { gap: map.get($spacing-scale, 2); }
+.cluster-gap-3 { gap: map.get($spacing-scale, 3); }
+.cluster-gap-4 { gap: map.get($spacing-scale, 4); }
+.cluster-gap-6 { gap: map.get($spacing-scale, 6); }
+.cluster-gap-8 { gap: map.get($spacing-scale, 8); }
+
+.cluster-justify-between {
+  justify-content: space-between;
+}
+
+.cluster-items-center {
+  align-items: center;
+}
+
+.cluster-items-start {
+  align-items: flex-start;
+}
+
+// Grid helpers
+.grid {
+  display: grid;
+}
+
+.grid-gap-3 { gap: map.get($spacing-scale, 3); }
+.grid-gap-4 { gap: map.get($spacing-scale, 4); }
+.grid-gap-6 { gap: map.get($spacing-scale, 6); }
+
+// Full width/height utilities
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.min-h-screen { min-height: 100vh; }
+.min-h-0 { min-height: 0; }
+
+// Flex utilities
+.flex-1 { flex: 1 1 0%; }
+.flex-none { flex: none; }
+.shrink-0 { flex-shrink: 0; }
+.min-w-0 { min-width: 0; }
+
+// Position utilities
+.sticky { position: sticky; }
+.absolute { position: absolute; }
+.relative { position: relative; }
+.fixed { position: fixed; }
+
+// Z-index
+.z-50 { z-index: 50; }
+
+// Top/right/bottom/left (for absolute positioning)
+.top-0 { top: 0; }
+.right-0 { right: 0; }
+.bottom-0 { bottom: 0; }
+.left-0 { left: 0; }
+.inset-0 {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.inset-x-0 {
+  left: 0;
+  right: 0;
+}

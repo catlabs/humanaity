@@ -1,0 +1,17 @@
+---
+description: Keep imports stable with aliases and barrel exports.
+globs: src/app/**/*.ts
+alwaysApply: false
+---
+
+# Imports and Barrels
+
+- Prefer path aliases for cross-feature/core/shared/api imports.
+- Prefer public entry points (`index.ts`) over deep internal paths.
+- Avoid long relative traversals like `../../../../`.
+- Export feature public API from `src/app/features/<feature>/index.ts`.
+- Keep barrel exports explicit to avoid leaking private internals.
+
+## Intent
+
+Use aliases and barrels to keep refactors local and imports readable.

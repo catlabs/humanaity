@@ -1,0 +1,19 @@
+---
+description: Keep files small and enforce split patterns.
+globs: src/app/**/*
+alwaysApply: false
+---
+
+# File Size and Splitting
+
+- Keep files under 300 lines whenever possible.
+- If a file grows too large, split by responsibility before adding more logic.
+- Extract reusable UI into components and non-UI logic into services/utilities.
+- Break large templates into smaller components.
+- Prefer small focused units over large multi-purpose files.
+
+## Split Triggers
+
+- Multiple independent sections in one component.
+- Large computed/state blocks with unrelated concerns.
+- Repeated markup/styling patterns.

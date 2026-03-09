@@ -1,0 +1,78 @@
+<section class="login-page">
+  <div class="login-container">
+    <mat-card class="login-card">
+      <!-- Logo Section -->
+      <div class="logo-section">
+        <div class="logo-container">
+          <div class="logo-icon">
+            <mat-icon>science</mat-icon>
+          </div>
+          <h1 class="logo-text">HumanAIty</h1>
+        </div>
+        <p class="subtitle">Sign in to your account</p>
+      </div>
+
+      <!-- Login Form -->
+      <div class="login-form">
+        <h2 class="form-title">Login</h2>
+        
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="form">
+          <!-- Email Field -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" >
+            <mat-label>Email</mat-label>
+            <mat-icon matPrefix>email</mat-icon>
+            <input matInput type="email" formControlName="email" placeholder="Enter your email" required>
+            @if (loginForm.get('email')?.hasError('required') && loginForm.get('email')?.touched) {
+              <mat-error>Email is required</mat-error>
+            }
+            @if (loginForm.get('email')?.hasError('email') && loginForm.get('email')?.touched) {
+              <mat-error>Invalid email format</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Password Field -->
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+            <mat-label>Password</mat-label>
+            <mat-icon matPrefix>lock</mat-icon>
+            <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" placeholder="Enter your password" required>
+            <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button">
+              <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            @if (loginForm.get('password')?.hasError('required') && loginForm.get('password')?.touched) {
+              <mat-error>Password is required</mat-error>
+            }
+            @if (loginForm.get('password')?.hasError('minlength') && loginForm.get('password')?.touched) {
+              <mat-error>Password must be at least 6 characters</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Error Message -->
+          @if (errorMessage) {
+            <div class="error-message">
+              <mat-icon>error</mat-icon>
+              <span>{{ errorMessage }}</span>
+            </div>
+          }
+
+          <!-- Sign In Button -->
+          <button mat-raised-button color="primary" type="submit" class="submit-button" [disabled]="loginForm.invalid">
+            Sign In
+          </button>
+        </form>
+
+        <!-- Additional Options -->
+        <div class="additional-options">
+          <a href="#" class="forgot-password-link">Forgot your password?</a>
+        </div>
+      </div>
+    </mat-card>
+
+    <!-- Create Account Link -->
+    <div class="signup-link">
+      <p class="signup-text">
+        Don't have an account? 
+        <a routerLink="/signup" class="signup-link-text">Create an account</a>
+      </p>
+    </div>
+  </div>
+</section>

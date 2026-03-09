@@ -1,0 +1,18 @@
+---
+description: Enforce modern Angular TypeScript patterns for this project.
+globs: src/app/**/*.ts
+alwaysApply: false
+---
+
+# Angular Modern Syntax
+
+- Use standalone components for feature code.
+- Use `inject()` for dependency injection, not constructor injection.
+- Use signals for component/UI state; do not use `BehaviorSubject` for local state.
+- Use modern input/output APIs: `input()` and `output()`.
+- Keep strict typing; avoid `any` in app feature code.
+
+## Examples
+
+- ✅ `items = signal<ItemOutput[]>([])`
+- ❌ `items$ = new BehaviorSubject<ItemOutput[]>([])`

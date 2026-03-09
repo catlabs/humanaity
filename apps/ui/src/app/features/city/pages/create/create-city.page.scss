@@ -1,0 +1,35 @@
+@use "sass:map";
+@use "tokens" as *;
+@use "typography" as *;
+
+.page { display: flex; justify-content: center; padding: 20px; }
+
+.card {
+  width: 100%;
+  max-width: 28rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: $shadow-sm;
+}
+
+.title {
+  @include hai-section-title;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: map.get($spacing-scale, 4);
+}
+
+.error {
+  @include hai-body-small;
+  border-radius: $radius-md;
+  background-color: var(--mat-sys-error-container);
+  padding: map.get($spacing-scale, 2) map.get($spacing-scale, 3);
+  color: var(--mat-sys-on-error-container);
+}
+
+.submit-btn {
+  width: 100%;
+  padding: map.get($spacing-scale, 3) 0;
+}

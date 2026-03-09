@@ -1,0 +1,19 @@
+---
+description: Enforce generated OpenAPI client usage and typed wrappers.
+globs: src/app/**/*.ts
+alwaysApply: false
+---
+
+# API Generated Client Rules
+
+- Use generated services from `src/app/api/api/` for API calls.
+- Use generated types from `src/app/api/model/models`.
+- Do not edit generated files under `src/app/api/`; regenerate instead.
+- Wrap generated services inside feature services for feature-specific behavior.
+- Avoid direct `HttpClient` endpoint calls unless explicitly required as a temporary workaround.
+- If fetch-mode Blob responses apply, handle Blob-to-JSON conversion in wrapper services.
+
+## Example
+
+- ✅ `private itemsService = inject(ItemsService);`
+- ❌ `return this.http.get('/api/items')`

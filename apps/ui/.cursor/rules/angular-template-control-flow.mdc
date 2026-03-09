@@ -1,0 +1,17 @@
+---
+description: Require Angular v17 template control flow syntax.
+globs: src/app/**/*.html
+alwaysApply: false
+---
+
+# Angular Template Control Flow
+
+- Use `@if`, `@for`, and `@switch` in templates.
+- Do not introduce `*ngIf`, `*ngFor`, or `*ngSwitch` in new or edited code.
+- Include `track` expressions for `@for` whenever a stable identifier exists.
+- Keep conditional rendering in template syntax, not by generating HTML strings.
+
+## Examples
+
+- ✅ `@for (item of items(); track item.id) { ... }`
+- ❌ `<div *ngFor="let item of items">...</div>`

@@ -1,0 +1,92 @@
+@use "sass:map";
+@use "tokens" as *;
+@use "typography" as *;
+@use "app-shell" as *;
+
+.page { @include hai-page-shell; }
+
+.header { @include hai-page-header; }
+
+.header-content {
+  @include hai-row(4);
+  justify-content: space-between;
+}
+
+.title {
+  @include hai-page-title;
+  margin: 0 0 map.get($spacing-scale, 1) 0;
+}
+
+.subtitle {
+  @include hai-body-small-muted;
+  margin: 0;
+}
+
+.new-button { @include hai-row(2); }
+
+.content { @include hai-page-content; }
+
+.table-wrapper { @include hai-table-wrapper; }
+.table { @include hai-table; }
+.table-header { @include hai-table-header; }
+
+.th {
+  @include hai-table-header-cell;
+  &--right { text-align: right; }
+}
+
+.row {
+  @include hai-table-row;
+  cursor: pointer;
+}
+
+.cell {
+  @include hai-table-cell;
+  &--right { text-align: right; }
+  &--muted { color: var(--mat-sys-on-surface-variant); }
+}
+
+.sim-name {
+  @include hai-body-small;
+  font-weight: 500;
+  margin-bottom: map.get($spacing-scale, 0.5);
+}
+
+.sim-id { @include hai-meta; }
+
+.status { @include hai-row(2); }
+.status-dot { @include hai-status-dot; }
+
+.status-text {
+  @include hai-body-small;
+  text-transform: capitalize;
+}
+
+.actions {
+  @include hai-row(2);
+  justify-content: flex-end;
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  &--delete { color: var(--mat-sys-error); }
+}
+
+.empty {
+  padding: map.get($spacing-scale, 10);
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    margin-bottom: map.get($spacing-scale, 3);
+    font-size: 3rem;
+    opacity: 0.5;
+  }
+
+  p {
+    @include hai-body-small;
+    font-weight: 500;
+    margin: 0;
+  }
+}

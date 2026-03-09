@@ -1,0 +1,25 @@
+<div class="page">
+  <header class="header">
+    <h1 class="title">My Cities</h1>
+    <button mat-raised-button color="primary" routerLink="/cities/create" class="new-btn">
+      Create New City
+    </button>
+  </header>
+
+  @if (cities().length === 0) {
+    <mat-card class="empty-card">
+      <mat-card-content class="empty-content">
+        <p class="empty-text">You haven't created any cities yet.</p>
+        <button mat-raised-button color="primary" routerLink="/cities/create">
+          Create Your First City
+        </button>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <div class="grid">
+      @for (city of cities(); track city.id) {
+        <app-city-card [city]="city" [routerLink]="['/cities', city.id]"></app-city-card>
+      }
+    </div>
+  }
+</div>

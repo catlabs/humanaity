@@ -1,0 +1,10 @@
+<div class="item">
+  <div class="icon" [style.background-color]="getBackgroundColor()">
+    <mat-icon [style.color]="getIconColor()">{{ getIcon() }}</mat-icon>
+  </div>
+  <div class="content">
+    <p class="title">{{ title() }}</p>
+    <p class="desc">{{ description() }}</p>
+    <p class="time">{{ timestamp() }}</p>
+  </div>
+</div>

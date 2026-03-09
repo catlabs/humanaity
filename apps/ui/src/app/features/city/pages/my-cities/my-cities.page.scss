@@ -1,0 +1,46 @@
+@use "sass:map";
+@use "tokens" as *;
+@use "breakpoints" as *;
+@use "typography" as *;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: map.get($spacing-scale, 6);
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  @include hai-page-title;
+  margin: 0;
+}
+
+.new-btn { padding: map.get($spacing-scale, 3) map.get($spacing-scale, 6); }
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: map.get($spacing-scale, 4);
+  @include md { grid-template-columns: repeat(2, 1fr); }
+  @include lg { grid-template-columns: repeat(3, 1fr); }
+}
+
+.empty-card {
+  border: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: $shadow-sm;
+}
+
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: map.get($spacing-scale, 3);
+}
+
+.empty-text { color: var(--mat-sys-on-surface-variant); }

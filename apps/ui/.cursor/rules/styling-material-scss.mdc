@@ -1,0 +1,18 @@
+---
+description: Enforce Material token theming and SCSS typography/style conventions.
+globs: src/**/*.{scss,html,ts}
+alwaysApply: false
+---
+
+# Styling: Material Tokens + SCSS
+
+- Use Angular Material v3 token override APIs for theming.
+- Do not style Material internals with ad-hoc `.mat-*` / `.mdc-*` overrides.
+- Use SCSS mixins/utilities for component styling and typography conventions.
+- Use project typography mixins; avoid hardcoded `font-size`, `line-height`, and `font-weight`.
+- Do not use Tailwind classes or propose Tailwind-first solutions in this project.
+
+## Practical Guidance
+
+- Prefer token-level changes in `theme.scss`.
+- If token APIs are insufficient, use minimal scoped overrides and document why.

@@ -1,0 +1,104 @@
+// HAI Typography Mixins
+// All typography should use these mixins or Material token variables directly.
+// Do not define custom font-size/font-weight in component styles.
+//
+// HumanAIty Typography Scale (mapped to Material M3 tokens):
+// - Page H1 (largest)    -> title-medium (18px/700)
+// - Section title        -> title-small (16px/600)
+// - Subtitle/secondary   -> body-small (14px/400)
+// - Body text            -> body-medium (16px/400)
+// - Meta/labels          -> label-small (11px/500)
+
+// Private generic mixin for typography
+// @param $font-token - Material typography token (e.g., var(--mat-sys-body-medium))
+// @param $color - Optional color override
+@mixin _hai-typography($font-token, $color: null) {
+  font: $font-token;
+  
+  @if $color {
+    color: $color;
+  }
+}
+
+// =============================================================================
+// PUBLIC PRESET MIXINS - Use these in component SCSS
+// =============================================================================
+
+// Page-level title (H1) - largest title in the app (18px/700)
+// Use for main page headings only
+@mixin hai-page-title {
+  @include _hai-typography(var(--mat-sys-title-medium), var(--mat-sys-on-surface));
+}
+
+// Section title (16px/600)
+// Use for card headers, panel titles, major sections
+@mixin hai-section-title {
+  @include _hai-typography(var(--mat-sys-title-small), var(--mat-sys-on-surface));
+}
+
+// Subtitle / secondary header text (14px/400)
+// Use for page subtitles, descriptions under titles
+@mixin hai-subtitle {
+  @include _hai-typography(var(--mat-sys-body-small), var(--hai-text-secondary));
+}
+
+// Default body text (16px/400)
+@mixin hai-body {
+  @include _hai-typography(var(--mat-sys-body-medium), var(--mat-sys-on-surface));
+}
+
+// Small body text (14px/400)
+@mixin hai-body-small {
+  @include _hai-typography(var(--mat-sys-body-small), var(--mat-sys-on-surface));
+}
+
+// Small body text with muted/secondary color (14px/400)
+@mixin hai-body-small-muted {
+  @include _hai-typography(var(--mat-sys-body-small), var(--hai-text-secondary));
+}
+
+// Meta text / labels (11px/500) - smallest text
+// Use for timestamps, counts, auxiliary info
+@mixin hai-meta {
+  @include _hai-typography(var(--mat-sys-label-small), var(--hai-text-secondary));
+}
+
+// Medium labels (12px/500, uppercase)
+// Use for panel titles, section labels, UI headings
+@mixin hai-label {
+  @include _hai-typography(var(--mat-sys-label-medium), var(--hai-label-color));
+  text-transform: uppercase;
+}
+
+// Medium labels with muted/secondary color (12px/500, uppercase)
+// Use for table headers, small UI headings, secondary labels
+@mixin hai-label-muted {
+  @include _hai-typography(var(--mat-sys-label-medium), var(--hai-text-secondary));
+  text-transform: uppercase;
+}
+
+// Item title (typically 14px/500)
+// Use for list item titles and compact card titles when you want “strong 14”
+@mixin hai-item-title {
+  @include _hai-typography(var(--mat-sys-label-large), var(--mat-sys-on-surface));
+}
+
+// Small labels - same size as meta but primary color
+@mixin hai-label-small {
+  @include _hai-typography(var(--mat-sys-label-small), var(--mat-sys-on-surface));
+}
+
+// =============================================================================
+// LEGACY ALIASES - Deprecated, use new names above
+// These remain for backward compatibility during migration
+// =============================================================================
+
+// @deprecated Use hai-section-title instead
+@mixin hai-subsection-title {
+  @include hai-section-title;
+}
+
+// @deprecated Use hai-page-title instead
+@mixin hai-headline-small {
+  @include hai-page-title;
+}

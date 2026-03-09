@@ -1,0 +1,113 @@
+// SCSS foundation
+@use "./styles/tokens";
+@use "./styles/breakpoints";
+@use "./styles/layout";
+@use "./styles/utilities";
+@use "./styles/typography";
+@use "./styles/app-shell";
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+/* Box-sizing for consistent layout */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+// Global styles
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+
+body {
+  font-family: "Inter", Roboto, "Helvetica Neue", sans-serif;
+  font: var(--mat-sys-body-medium);
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+}
+
+// Material Symbols defaults — tweak these variables to change icon style globally.
+// No Angular Material tokens exist for these; font-variation-settings is the standard way.
+:root {
+  --hai-icon-fill: 0;   // 0 = outlined, 1 = filled
+  --hai-icon-wght: 300;  // 100–700 (300 = light)
+  --hai-icon-grad: 0;    // -50–200
+  --hai-icon-opsz: 24;   // 20–48
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' var(--hai-icon-fill),
+    'wght' var(--hai-icon-wght),
+    'GRAD' var(--hai-icon-grad),
+    'opsz' var(--hai-icon-opsz);
+}
+
+// Light theme: body already provides white via var(--mat-sys-surface).
+// Dark theme: marked elements get a slightly elevated surface tone.
+html.dark .app-surface-bg {
+  background-color: var(--mat-sys-surface-container-lowest);
+  background-image: none;
+}
+
+// Utility: ensure Material drawers are visually "flat" (no rounding),
+// including the internal container element.
+.app-drawer-flat {
+  border-radius: 0 !important;
+}
+
+.app-drawer-flat .mat-drawer-inner-container {
+  border-radius: 0 !important;
+}
+
+// Utility: make Angular Material drawer containers/content transparent.
+// Material may apply a surface background on the container/content; this keeps
+// the page background visible behind drawer-content.
+.app-drawer-content-transparent {
+  background-color: transparent !important;
+}
+
+.app-drawer-content-transparent .mat-drawer-content {
+  background-color: transparent !important;
+}
+
+// Utility: grey background for drawers using Material design tokens (no hardcoded colors).
+// Uses surface container tokens which are intended for elevated/panel surfaces.
+.app-drawer-grey-bg {
+  background-color: var(--mat-sys-surface-container) !important;
+}
+
+// Hide scrollbar (matching design)
+::-webkit-scrollbar {
+  display: none;
+}
+
+// Form field styles
+.mat-mdc-form-field {
+  width: 100%;
+}
+
+// Chrome autofill adds an internal grey background (:-internal-autofill-selected).
+// We can't override that internal selector directly, but we *can* override the
+// painted result via :-webkit-autofill on Material inputs.
+.mat-mdc-input-element:-webkit-autofill,
+.mat-mdc-input-element:-webkit-autofill:hover,
+.mat-mdc-input-element:-webkit-autofill:focus,
+.mat-mdc-input-element:-webkit-autofill:active {
+  // Paint over the UA background with the intended surface color.
+  -webkit-box-shadow: 0 0 0 1000px var(--mat-sys-surface) inset !important;
+  box-shadow: 0 0 0 1000px var(--mat-sys-surface) inset !important;
+  // Chrome may force `color: fieldtext !important` (UA) during autofill.
+  // Set both `color` and `-webkit-text-fill-color` explicitly so text remains visible.
+  color: var(--mat-sys-on-surface) !important;
+  -webkit-text-fill-color: var(--mat-sys-on-surface) !important;
+  caret-color: var(--mat-sys-on-surface) !important;
+}
+

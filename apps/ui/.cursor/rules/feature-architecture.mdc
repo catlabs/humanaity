@@ -1,0 +1,18 @@
+---
+description: Enforce feature-based boundaries and folder layout.
+globs: src/app/features/**/*
+alwaysApply: false
+---
+
+# Feature Architecture
+
+- Keep feature code self-contained under `src/app/features/<feature>/`.
+- Standard layout: `pages/`, `components/`, `services/`, `<feature>.routes.ts`, `index.ts`.
+- Feature components/services must not depend directly on other feature internals.
+- Cross-feature reuse goes through shared APIs (`index.ts`) or `src/app/shared/`.
+- Put truly global concerns in `src/app/core/`, not in feature folders.
+
+## Placement Rules
+
+- Shared reusable UI belongs in `src/app/shared/ui/`.
+- Feature-specific logic belongs in the feature `services/` folder.

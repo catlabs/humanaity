@@ -1,0 +1,166 @@
+@use "@angular/material" as mat;
+
+// We are fully on Material v3 token-based theming.
+// (Project rule: no Material M2 theming; this file defines v3 tokens only.)
+
+// Brand palettes (Material v3 tonal palettes).
+// If you want a different hue, swap these palettes (e.g. mat.$azure-palette).
+$primary: mat.$blue-palette;
+$tertiary: mat.$cyan-palette;
+
+@function create-theme($type) {
+  @return mat.define-theme(
+    (
+      color: (
+        theme-type: $type,
+        primary: $primary,
+        tertiary: $tertiary,
+        use-system-variables: true,
+      ),
+      typography: (
+        use-system-variables: true,
+        // Use Inter across Material's typography tokens.
+        // (Inter is loaded globally in src/styles.scss)
+        plain-family: (
+            Inter,
+            Roboto,
+            "Helvetica Neue",
+            sans-serif,
+          ),
+        brand-family: (
+          Inter,
+          Roboto,
+          "Helvetica Neue",
+          sans-serif,
+        ),
+      ),
+      density: (
+        scale: 0,
+      ),
+    )
+  );
+}
+
+$light-theme: create-theme(light);
+$dark-theme: create-theme(dark);
+
+// Default: light theme tokens + component theming.
+:root {
+  color-scheme: light;
+  @include mat.all-component-themes($light-theme);
+  @include mat.system-level-colors($light-theme);
+  @include mat.system-level-typography($light-theme);
+
+  // HumanAIty brand: wordmark "Human" color (light theme)
+  --hai-brand-human: #1f2937;
+  // Secondary/subtitle text color (light theme uses Material token)
+  --hai-text-secondary: var(--mat-sys-on-surface-variant);
+  // Label color for uppercase UI labels (panel titles, table headers, etc.)
+  --hai-label-color: #737373;
+
+  // HumanAIty Typography Token Overrides
+  // We use a compact typography scale for this app:
+  // - title-medium (18px/700) = Page H1 (largest title)
+  // - title-small (16px/600) = Section titles
+  // - body-small (14px/400) = Subtitles, secondary text
+  // - label-small = Meta text
+  @include mat.theme-overrides(
+    (
+      // Page H1 - largest title in the app
+      title-medium: 700 18px/24px var(--mat-sys-title-medium-font),
+      title-medium-size: 18px,
+      title-medium-line-height: 24px,
+      title-medium-weight: 700,
+      // Section titles
+      title-small: 600 16px/22px var(--mat-sys-title-small-font),
+      title-small-size: 16px,
+      title-small-line-height: 22px,
+      title-small-weight: 600,
+      // Subtitles / secondary header text
+      body-small: 400 14px/20px var(--mat-sys-body-small-font),
+      body-small-size: 14px,
+      body-small-line-height: 20px,
+      body-small-weight: 400,
+      // Medium labels (12px/400)
+      label-medium: 400 12px/16px var(--mat-sys-label-medium-font),
+      label-medium-size: 12px,
+      label-medium-line-height: 16px,
+      label-medium-weight: 400
+    )
+  );
+
+  // Brand override: keep historical Humanaity primary (#2563eb).
+  // These tokens are consumed by Angular Material components.
+  --mat-sys-primary: #2563eb;
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: #dbeafe;
+  --mat-sys-on-primary-container: #1e3a8a;
+  --mat-sys-inverse-primary: #93c5fd;
+  // Force pure white surfaces in light theme (Material may generate a tinted off-white).
+  --mat-sys-surface: #ffffff;
+  // Custom divider / border color (light theme)
+  --mat-sys-outline-variant: #eaeaea;
+  // Used for elevation overlays / tinted surfaces in M3.
+  --mat-sys-surface-tint: #2563eb;
+  // "Fixed" roles are used by some M3 component variants and states.
+  --mat-sys-primary-fixed: #dbeafe;
+  --mat-sys-on-primary-fixed: #1e3a8a;
+  --mat-sys-primary-fixed-dim: #93c5fd;
+  --mat-sys-on-primary-fixed-variant: #1e40af;
+
+  // Use the softer outline-variant for all <mat-divider> separators
+  --mat-divider-color: var(--mat-sys-outline-variant);
+
+  @include mat.sidenav-overrides(
+    (
+      container-background-color: var(--mat-sys-surface-container-low),
+      container-divider-color: var(--mat-sys-outline-variant),
+    )
+  );
+
+  // Checkbox behavior: compact target and no state-layer visual.
+  @include mat.checkbox-overrides(
+    (
+      touch-target-display: none,
+      state-layer-size: 30px,
+    )
+  );
+}
+
+// Dark theme overrides are activated by toggling `html.dark`.
+html.dark {
+  color-scheme: dark;
+  @include mat.all-component-colors($dark-theme);
+  @include mat.system-level-colors($dark-theme);
+
+  // HumanAIty brand: wordmark "Human" color (dark theme)
+  --hai-brand-human: #9ca3af;
+  // Secondary/subtitle text color (dark theme) - reusable for subtitles, secondary headers, etc.
+  --hai-text-secondary: #9ca3af;
+  // Label color (dark theme)
+  --hai-label-color: #6b7280;
+
+  // Custom divider / border color (dark theme)
+  --mat-sys-outline-variant: #1f2937;
+
+  // Dark-mode brand override. Keep primary the same brand color, but use a deeper container.
+  --mat-sys-primary: #2563eb;
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: #1e40af;
+  --mat-sys-on-primary-container: #dbeafe;
+  --mat-sys-inverse-primary: #93c5fd;
+  --mat-sys-surface-tint: #2563eb;
+  --mat-sys-primary-fixed: #dbeafe;
+  --mat-sys-on-primary-fixed: #1e3a8a;
+  --mat-sys-primary-fixed-dim: #93c5fd;
+  --mat-sys-on-primary-fixed-variant: #1e40af;
+
+  @include mat.sidenav-overrides(
+    (
+      container-background-color: var(--mat-sys-surface),
+      container-divider-color: var(--mat-sys-outline-variant),
+    )
+  );
+}
+
+@include mat.typography-hierarchy($light-theme);

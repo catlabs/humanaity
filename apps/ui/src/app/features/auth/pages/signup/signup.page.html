@@ -1,0 +1,84 @@
+<section class="register-page">
+  <div class="register-container">
+    <mat-card class="register-card">
+      <div class="register-header">
+        <div class="logo-icon-large">
+          <mat-icon>science</mat-icon>
+        </div>
+        <h1 class="register-title">Create Account</h1>
+        <p class="register-subtitle">Join HumanAIty today</p>
+      </div>
+      
+      <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="register-form">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Username</mat-label>
+          <mat-icon matPrefix>person</mat-icon>
+          <input matInput type="text" formControlName="username" placeholder="Enter your username">
+          @if (signupForm.get('username')?.hasError('required') && signupForm.get('username')?.touched) {
+            <mat-error>Username is required</mat-error>
+          }
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Email Address</mat-label>
+          <mat-icon matPrefix>email</mat-icon>
+          <input matInput type="email" formControlName="email" placeholder="Enter your email">
+          @if (signupForm.get('email')?.hasError('required') && signupForm.get('email')?.touched) {
+            <mat-error>Email is required</mat-error>
+          }
+          @if (signupForm.get('email')?.hasError('email') && signupForm.get('email')?.touched) {
+            <mat-error>Invalid email format</mat-error>
+          }
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Password</mat-label>
+          <mat-icon matPrefix>lock</mat-icon>
+          <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" placeholder="Create a password">
+          <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button">
+            <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          @if (signupForm.get('password')?.hasError('required') && signupForm.get('password')?.touched) {
+            <mat-error>Password is required</mat-error>
+          }
+          @if (signupForm.get('password')?.hasError('minlength') && signupForm.get('password')?.touched) {
+            <mat-error>Password must be at least 6 characters</mat-error>
+          }
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+          <mat-label>Confirm Password</mat-label>
+          <mat-icon matPrefix>lock</mat-icon>
+          <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" formControlName="confirmPassword" placeholder="Confirm your password">
+          <button mat-icon-button matSuffix (click)="hideConfirmPassword = !hideConfirmPassword" type="button">
+            <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          @if (signupForm.get('confirmPassword')?.hasError('required') && signupForm.get('confirmPassword')?.touched) {
+            <mat-error>Please confirm your password</mat-error>
+          }
+          @if (signupForm.hasError('passwordMismatch') && signupForm.get('confirmPassword')?.touched) {
+            <mat-error>Passwords do not match</mat-error>
+          }
+        </mat-form-field>
+
+        @if (errorMessage) {
+          <div class="error-message">
+            <mat-icon>error</mat-icon>
+            <span>{{ errorMessage }}</span>
+          </div>
+        }
+        
+        <button mat-raised-button color="primary" type="submit" class="register-button" [disabled]="signupForm.invalid">
+          Register
+        </button>
+      </form>
+      
+      <div class="signin-link">
+        <p class="signin-text">
+          Already have an account? 
+          <a routerLink="/login" class="signin-link-text">Sign In</a>
+        </p>
+      </div>
+    </mat-card>
+  </div>
+</section>

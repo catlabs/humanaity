@@ -1,0 +1,49 @@
+@use "sass:map";
+@use "tokens" as *;
+@use "breakpoints" as *;
+@use "typography" as *;
+@use "app-shell" as *;
+
+.footer {
+  margin-top: auto;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  background-color: var(--mat-sys-surface);
+  padding: map.get($spacing-scale, 8) 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: map.get($spacing-scale, 4);
+  @include md { flex-direction: row; align-items: center; }
+}
+
+.left { @include hai-row(3); }
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.75rem;
+  width: 1.75rem;
+  border-radius: $radius-md;
+  background-color: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+  mat-icon { font-size: 0.875rem; line-height: 1; }
+}
+
+.copyright { @include hai-body-small-muted; }
+
+.links {
+  @include hai-body-small-muted;
+  @include hai-row(6);
+
+  a {
+    color: var(--mat-sys-on-surface-variant);
+    text-decoration: none;
+    transition: color 0.2s;
+    &:hover { color: var(--mat-sys-on-surface); }
+  }
+}

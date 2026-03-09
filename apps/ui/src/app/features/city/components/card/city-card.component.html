@@ -1,0 +1,22 @@
+<mat-card appearance="outlined" class="example-card">
+  <mat-card-header>
+    <div class="example-header-image" mat-card-avatar></div>
+    <mat-card-title>{{ city().name }}</mat-card-title>
+    <mat-card-subtitle>Ville</mat-card-subtitle>
+  </mat-card-header>
+
+  <div class="city-image" mat-card-image style="background: linear-gradient(45deg, #8b5cf6, #ec4899);">
+    <div class="human-dots" id="city-dots"></div>
+  </div>
+
+  <mat-card-content>
+    <p>
+      Découvrez {{ city().name }}.
+    </p>
+  </mat-card-content>
+
+  <mat-card-actions>
+    <button mat-button type="button">Aimer</button>
+    <button mat-button type="button">Partager</button>
+  </mat-card-actions>
+</mat-card>

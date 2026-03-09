@@ -1,0 +1,226 @@
+@use "sass:map";
+@use "tokens" as *;
+@use "typography" as *;
+@use "app-shell" as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 0;
+}
+
+.page {
+  @include hai-page-shell;
+}
+
+.info-bar {
+  flex: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  padding: 0 20px;
+}
+
+.title-block {
+  @include hai-col(0.5);
+  margin-left: map.get($spacing-scale, 2);
+  min-width: 0;
+}
+
+.title-main {
+  @include hai-item-title;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.title-sub {
+  @include hai-meta;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+.action-btn {
+  @include hai-row(1);
+}
+
+.drawer-container {
+  // Proto intent: no extra gap between bar and content.
+  margin-top: 0;
+  flex: 1 1 0%;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.drawer {
+  // Proto intent: drawers are the panels (no extra “padding wrapper”).
+  padding: 0;
+  background: var(--mat-sys-surface-container-lowest);
+}
+
+.drawer--left {
+  width: 17.5rem; // 280px (proto)
+  max-width: 90vw;
+}
+
+.drawer--right {
+  width: 25rem; // 400px (proto)
+  max-width: 90vw;
+}
+
+.content {
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+}
+
+.panel {
+  // Proto intent: avoid nested “panel inside panel” borders.
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  height: 100%;
+}
+
+.panel-header {
+  @include hai-panel-header;
+  @include hai-row(2);
+  justify-content: space-between;
+}
+
+.panel-title {
+  @include hai-row(1);
+  @include hai-label;
+}
+
+.panel-section {
+  padding: map.get($spacing-scale, 4) map.get($spacing-scale, 6);
+}
+.panel-footer {
+  @include hai-panel-footer;
+}
+
+.section-title {
+  @include hai-panel-section-title;
+}
+
+.stats {
+  @include hai-stats-table;
+}
+
+.stats-value {
+  text-align: right;
+  color: var(--mat-sys-on-surface);
+  font-weight: 600;
+}
+
+.list-title {
+  text-transform: capitalize;
+}
+.list-subtitle {
+  color: var(--mat-sys-on-surface-variant);
+}
+.empty {
+  padding: map.get($spacing-scale, 4) map.get($spacing-scale, 6);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.filters {
+  // Stack checkboxes vertically and align them flush-left.
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: map.get($spacing-scale, 3);
+  padding: map.get($spacing-scale, 4) map.get($spacing-scale, 6);
+}
+
+.filters mat-checkbox {
+  width: 100%;
+}
+
+.scroll-area {
+  @include hai-panel-body;
+  padding: 0;
+}
+
+.invention-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: map.get($spacing-scale, 3);
+}
+
+.stat-label {
+  @include hai-meta;
+}
+
+.stat-value {
+  @include hai-body;
+  font-weight: 700;
+  margin-top: map.get($spacing-scale, 0.5);
+}
+
+.world {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  height: 100%;
+}
+
+.world-header {
+  @include hai-panel-header;
+  @include hai-row(2);
+  justify-content: space-between;
+}
+
+.world-title {
+  @include hai-label;
+}
+
+.world-body {
+  flex: 1 1 0%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  // Proto intent: canvas reads slightly “deeper” than side panels.
+  background: var(--mat-sys-surface);
+}
+
+.placeholder {
+  @include hai-col(2);
+  align-items: center;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.placeholder-icon {
+  font-size: 2rem;
+  height: 2rem;
+  width: 2rem;
+}
+
+.placeholder-text {
+  @include hai-body-small;
+}
+
+.world-footer {
+  @include hai-panel-footer;
+  @include hai-row(2);
+}
+
+.pill {
+  @include hai-row(1);
+  @include hai-body-small;
+  padding: map.get($spacing-scale, 1) map.get($spacing-scale, 2);
+  border-radius: $radius-sm;
+  border: 1px solid var(--mat-sys-outline-variant);
+  color: var(--mat-sys-on-surface-variant);
+  strong {
+    color: var(--mat-sys-on-surface);
+  }
+}

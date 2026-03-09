@@ -1,0 +1,36 @@
+<mat-card class="simulation-card" (click)="onCardClick()">
+  <div class="card-header">
+    <div class="card-title-section">
+      <div class="icon-container" [style.background-color]="simulation().iconColor + '20'">
+        <mat-icon [style.color]="simulation().iconColor">{{ simulation().icon }}</mat-icon>
+      </div>
+      <div class="title-group">
+        <h3 class="card-title">{{ simulation().name }}</h3>
+        <span class="status-badge" [ngClass]="getStatusClass(simulation().status)">
+          {{ getStatusLabel(simulation().status) }}
+        </span>
+      </div>
+    </div>
+    <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+  </div>
+  
+  <p class="card-description">{{ simulation().description }}</p>
+  
+  <div class="card-footer">
+    @if (simulation().status === 'running') {
+      <span>Started: {{ simulation().startedAt }}</span>
+      <span>Progress: {{ simulation().progress }}%</span>
+    } @else if (simulation().status === 'completed') {
+      <span>Last run: {{ simulation().lastRun }}</span>
+      <span>Runtime: {{ simulation().runtime }}</span>
+    } @else if (simulation().status === 'queued') {
+      <span>Scheduled: {{ simulation().scheduledFor }}</span>
+      <span>Est. runtime: {{ simulation().estimatedRuntime }}</span>
+    } @else {
+      <span>Created: {{ simulation().createdAt }}</span>
+      <span>Not started</span>
+    }
+  </div>
+</mat-card>
+
+

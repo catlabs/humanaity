@@ -1,0 +1,253 @@
+<div class="page">
+  <mat-toolbar class="info-bar app-surface-bg">
+    <div class="title-block">
+      <div class="title-main">{{ city.name || "Simulation" }}</div>
+      <div class="title-sub">
+        Era: {{ currentEra() }} · Year: {{ currentYear() }} · Phase:
+        {{ worldPhase() }}
+      </div>
+    </div>
+
+    <span class="spacer"></span>
+
+    <button mat-button type="button" class="action-btn">
+      <mat-icon>groups</mat-icon>
+      Population
+    </button>
+    <button mat-button type="button" class="action-btn">
+      <mat-icon>schedule</mat-icon>
+      Timeline
+    </button>
+  </mat-toolbar>
+
+  <mat-drawer-container
+    class="drawer-container app-drawer-content-transparent"
+    autosize
+  >
+    <!-- Left: Controls Panel -->
+    <mat-drawer
+      position="start"
+      mode="side"
+      opened
+      class="drawer drawer--left app-surface-bg app-drawer-flat"
+    >
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <mat-icon>filter_alt</mat-icon>
+            Filters
+          </div>
+        </div>
+
+        <div class="filters">
+          @for (state of humanStates; track state) {
+            <mat-checkbox
+              [checked]="filters()[state]"
+              (change)="toggleFilter(state)"
+            >
+              <span class="list-title">{{ state }}</span>
+            </mat-checkbox>
+          }
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <div class="panel-section">
+          <div class="section-title">Statistics</div>
+          <table class="stats">
+            <tbody>
+              <tr>
+                <td>Total</td>
+                <td class="stats-value">{{ populationTotal() }}</td>
+              </tr>
+              <tr>
+                <td>Active</td>
+                <td class="stats-value">{{ populationActive() }}</td>
+              </tr>
+              <tr>
+                <td>Inventions</td>
+                <td class="stats-value">{{ inventionCounts().total }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <div class="panel-section">
+          <div class="section-title">
+            Humans ({{ filteredHumans().length }})
+          </div>
+          <mat-nav-list>
+            @for (human of filteredHumans(); track human.id) {
+              <button mat-list-item type="button" (click)="selectHuman(human)">
+                <mat-icon matListItemIcon>person</mat-icon>
+                <div matListItemTitle class="list-title">{{ human.name }}</div>
+                <div matListItemLine class="list-subtitle">
+                  {{ human.primaryTrait }} · {{ human.state }}
+                </div>
+              </button>
+            } @empty {
+              <div class="empty">No humans match filters</div>
+            }
+          </mat-nav-list>
+        </div>
+      </div>
+    </mat-drawer>
+
+    <!-- Right: Inspector Panel -->
+    <mat-drawer
+      position="end"
+      mode="side"
+      opened
+      class="drawer drawer--right app-surface-bg app-drawer-flat"
+    >
+      <div class="panel">
+        @if (selectedHuman()) {
+          <div class="panel-header">
+            <div class="panel-title">
+              <mat-icon>person_search</mat-icon>
+              Human Inspector
+            </div>
+            <button
+              mat-icon-button
+              type="button"
+              (click)="clearSelection()"
+              aria-label="Clear selection"
+            >
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <div class="panel-section">
+            <div class="section-title">{{ selectedHuman()!.name }}</div>
+            <table class="stats">
+              <tbody>
+                <tr>
+                  <td>ID</td>
+                  <td class="stats-value">{{ selectedHuman()!.id }}</td>
+                </tr>
+                <tr>
+                  <td>State</td>
+                  <td class="stats-value">{{ selectedHuman()!.state }}</td>
+                </tr>
+                <tr>
+                  <td>Trait</td>
+                  <td class="stats-value">
+                    {{ selectedHuman()!.primaryTrait }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="panel-header">
+            <div class="panel-title">
+              <mat-icon>inventory_2</mat-icon>
+              Invention Registry
+            </div>
+          </div>
+
+          <div class="panel-section invention-stats">
+            <div class="stat-block">
+              <div class="stat-label">Scientific</div>
+              <div class="stat-value">{{ inventionCounts().scientific }}</div>
+            </div>
+            <div class="stat-block">
+              <div class="stat-label">Philosophical</div>
+              <div class="stat-value">
+                {{ inventionCounts().philosophical }}
+              </div>
+            </div>
+            <div class="stat-block">
+              <div class="stat-label">Cultural</div>
+              <div class="stat-value">{{ inventionCounts().cultural }}</div>
+            </div>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <div class="panel-section scroll-area">
+            <mat-nav-list>
+              @for (inv of inventions(); track inv.id) {
+                <button
+                  mat-list-item
+                  type="button"
+                  (click)="selectInvention(inv)"
+                >
+                  <mat-icon matListItemIcon>lightbulb</mat-icon>
+                  <div matListItemTitle class="list-title">{{ inv.name }}</div>
+                  <div matListItemLine class="list-subtitle">
+                    {{ inv.category }} · Year {{ inv.year }} · Impact
+                    {{ inv.impact }}%
+                  </div>
+                </button>
+              } @empty {
+                <div class="empty">No inventions recorded</div>
+              }
+            </mat-nav-list>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <div class="panel-footer">
+            <button
+              mat-raised-button
+              color="primary"
+              [matMenuTriggerFor]="generateMenu"
+              type="button"
+            >
+              <mat-icon>add</mat-icon>
+              Generate invention
+            </button>
+            <mat-menu #generateMenu="matMenu">
+              <button mat-menu-item (click)="generateInvention('scientific')">
+                <mat-icon>science</mat-icon>
+                <span>Scientific</span>
+              </button>
+              <button
+                mat-menu-item
+                (click)="generateInvention('philosophical')"
+              >
+                <mat-icon>psychology</mat-icon>
+                <span>Philosophical</span>
+              </button>
+              <button mat-menu-item (click)="generateInvention('cultural')">
+                <mat-icon>diversity_3</mat-icon>
+                <span>Cultural</span>
+              </button>
+            </mat-menu>
+          </div>
+        }
+      </div>
+    </mat-drawer>
+
+    <!-- Center: World View -->
+    <mat-drawer-content class="content">
+      <div class="world">
+        <div class="world-header">
+          <div class="world-title">World View</div>
+          <button mat-icon-button type="button" aria-label="Next">
+            <mat-icon>navigate_next</mat-icon>
+          </button>
+        </div>
+
+        <div class="world-body">
+          <div class="placeholder">
+            <mat-icon class="placeholder-icon">public</mat-icon>
+            <div class="placeholder-text">World canvas</div>
+          </div>
+        </div>
+
+        <div class="world-footer">
+          <div class="pill">
+            <span>Population</span><strong>{{ populationTotal() }}</strong>
+          </div>
+          <div class="pill">
+            <span>Active</span><strong>{{ populationActive() }}</strong>
+          </div>
+        </div>
+      </div>
+    </mat-drawer-content>
+  </mat-drawer-container>
+</div>
