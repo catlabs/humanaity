@@ -42,4 +42,3 @@ zsh -lc 'set -a; [ -f ../backend/.env ] && source ../backend/.env; set +a; npm r
 ## Shared Workspace Assets
 
 - Shared skills live in `.cursor/skills/`
-- Shared migration docs and roadmap notes live in `docs/roadmap/`
