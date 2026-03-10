@@ -10,6 +10,13 @@ description: Generate Conventional Commit messages for the Humanaity monorepo by
 Generate high-quality Conventional Commit messages for the Humanaity monorepo.
 Prefer staged changes because they reflect what will actually be committed.
 When the user asks to commit changes, group the diff into coherent work subjects and create the commits in the command line instead of only proposing messages.
+When the user says `use commit skill` (or equivalent), treat it as explicit authorization to:
+
+1. stage focused commits,
+2. create the commit(s), and
+3. push them to the tracked remote branch.
+
+Only skip push when the user explicitly asks not to push.
 
 ## Source Of Truth
 
@@ -161,6 +168,13 @@ Mention relevant untracked files in your reasoning when needed.
 - Create each commit from the command line
 - Re-check `git status` after each commit
 - If the user only asked for a message, do not create a commit
+
+### 6b. Push by default for commit-skill requests
+
+- After creating commit(s), verify branch tracking status
+- If upstream is missing, push with `-u origin HEAD`
+- If upstream exists, push with `git push`
+- Report pushed commit hash(es) and destination branch
 
 ### 7. Present the result
 
