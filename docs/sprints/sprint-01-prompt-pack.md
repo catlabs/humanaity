@@ -27,6 +27,7 @@ Re-integrate Codex output before opening the next chunk:
 
 - Cursor reviews scope fit, package/layer alignment, and side effects
 - Cursor runs chunk-level tests for the touched area
+- If backend API endpoints changed, Cursor regenerates `apps/mcp` API types, updates MCP tools, and validates smoke flow through MCP
 - Cursor compares result to sprint acceptance criteria/DoD
 - Cursor updates sprint/spec docs if implementation changed sprint-shaping decisions
 
@@ -35,6 +36,13 @@ Re-integrate Codex output before opening the next chunk:
 Use `.cursor/rules/docs-chunk-review-loop.mdc` as the standard checklist and go/no-go gate after every chunk implementation.
 
 For Sprint 1, also verify deterministic guarantees and scheduler-vs-step separation during integration review.
+
+When a chunk adds or changes backend endpoints, include MCP alignment in the handoff gate:
+
+- run `npm run api:generate` in `apps/mcp`
+- add/update tool wrappers in `apps/mcp/src/tools/`
+- run `npm run build` in `apps/mcp`
+- run at least one MCP smoke sequence covering the new endpoint path
 
 ---
 

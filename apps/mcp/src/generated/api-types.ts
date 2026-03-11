@@ -106,6 +106,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/simulations/{cityId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Load simulation run metadata for a city */
+        get: operations["loadRun"];
+        put?: never;
+        /** Create a simulation run for a city */
+        post: operations["createRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/simulations/{cityId}/stop": {
         parameters: {
             query?: never;
@@ -134,6 +152,40 @@ export interface paths {
         put?: never;
         /** Start simulation for a city */
         post: operations["startSimulation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/simulations/{cityId}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume simulation run for a city */
+        post: operations["resumeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/simulations/{cityId}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause simulation run for a city */
+        post: operations["pauseRun"];
         delete?: never;
         options?: never;
         head?: never;
@@ -319,6 +371,27 @@ export interface components {
         AuthRequest: {
             email?: string;
             password?: string;
+        };
+        SimulationRunInput: {
+            /** Format: int64 */
+            seed?: number;
+        };
+        SimulationRunOutput: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            cityId: number;
+            /** Format: int64 */
+            seed: number;
+            /** Format: int64 */
+            tick: number;
+            /** @enum {string} */
+            status: "CREATED" | "RUNNING" | "PAUSED" | "COMPLETED";
+            running: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
         };
     };
     responses: never;
@@ -561,6 +634,54 @@ export interface operations {
             };
         };
     };
+    loadRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cityId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SimulationRunOutput"];
+                };
+            };
+        };
+    };
+    createRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cityId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SimulationRunInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SimulationRunOutput"];
+                };
+            };
+        };
+    };
     stopSimulation: {
         parameters: {
             query?: never;
@@ -605,6 +726,50 @@ export interface operations {
                     "*/*": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    resumeRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cityId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SimulationRunOutput"];
+                };
+            };
+        };
+    };
+    pauseRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cityId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SimulationRunOutput"];
                 };
             };
         };

@@ -32,6 +32,10 @@ export type HumanInput = BackendSchemas["HumanInput"];
 
 export type HumanOutput = BackendSchemas["HumanOutput"];
 
+export type SimulationRunInput = BackendSchemas["SimulationRunInput"];
+
+export type SimulationRunOutput = BackendSchemas["SimulationRunOutput"];
+
 export type BackendMessageResponse =
   BackendOperationSuccessPayload<"startSimulation">;
 

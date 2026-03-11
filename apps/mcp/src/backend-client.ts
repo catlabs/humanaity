@@ -10,6 +10,8 @@ import type {
   HumanInput,
   HumanOutput,
   MessageResponse,
+  SimulationRunInput,
+  SimulationRunOutput,
   RefreshTokenRequest,
   SimulationSnapshot,
   SimulationStatus,
@@ -229,6 +231,63 @@ export class BackendClient {
     );
 
     return this.normalizeMessageResponse(response);
+  }
+
+  async simulationCreate(
+    cityId: string,
+    seed?: number,
+    accessToken?: string,
+  ): Promise<SimulationRunOutput> {
+    const body: SimulationRunInput | undefined =
+      seed === undefined ? undefined : { seed };
+
+    return this.request<SimulationRunOutput>(
+      "POST",
+      `/api/simulations/${encodeURIComponent(cityId)}`,
+      {
+        accessToken: await this.resolveAccessToken(accessToken),
+        body,
+      },
+    );
+  }
+
+  async simulationLoad(
+    cityId: string,
+    accessToken?: string,
+  ): Promise<SimulationRunOutput> {
+    return this.request<SimulationRunOutput>(
+      "GET",
+      `/api/simulations/${encodeURIComponent(cityId)}`,
+      {
+        accessToken: await this.resolveAccessToken(accessToken),
+      },
+    );
+  }
+
+  async simulationPause(
+    cityId: string,
+    accessToken?: string,
+  ): Promise<SimulationRunOutput> {
+    return this.request<SimulationRunOutput>(
+      "POST",
+      `/api/simulations/${encodeURIComponent(cityId)}/pause`,
+      {
+        accessToken: await this.resolveAccessToken(accessToken),
+      },
+    );
+  }
+
+  async simulationResume(
+    cityId: string,
+    accessToken?: string,
+  ): Promise<SimulationRunOutput> {
+    return this.request<SimulationRunOutput>(
+      "POST",
+      `/api/simulations/${encodeURIComponent(cityId)}/resume`,
+      {
+        accessToken: await this.resolveAccessToken(accessToken),
+      },
+    );
   }
 
   async simulationStop(

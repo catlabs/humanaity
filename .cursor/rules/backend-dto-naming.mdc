@@ -1,0 +1,31 @@
+---
+description: Naming convention for backend API DTOs.
+globs: apps/backend/src/main/java/**/api/dto/*.java
+alwaysApply: false
+---
+
+# Backend DTO Naming
+
+Use one primary naming style for backend API DTOs to keep generated contracts and feature code easy to scan.
+
+## Primary convention
+
+- In `*/api/dto/`, prefer resource-scoped names:
+  - inbound payloads: `<Resource>Input`
+  - outbound payloads: `<Resource>Output`
+- Keep class names noun-based (resource-oriented), not action-based.
+- If a DTO is only for one action, scope by resource first, then action details only when needed.
+  - Prefer `SimulationRunInput` over `CreateSimulationRunInput`.
+
+## Legacy compatibility
+
+- Existing auth DTOs currently use `*Request/*Response`.
+- Do not mass-rename legacy DTOs only for style.
+- When touching legacy modules, choose either:
+  1. keep existing naming for that module if the change is small, or
+  2. migrate the module in one coherent refactor (not partial churn).
+
+## Intent
+
+- Keep naming predictable across city/human/simulation features.
+- Reduce naming drift and avoid mixed DTO styles in new feature work.

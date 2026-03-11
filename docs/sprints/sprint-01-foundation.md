@@ -2,18 +2,18 @@
 
 ## Execution status
 
-- Current phase: Feature 2 lifecycle wiring after domain scaffolding landed
-- Active chunk: `Task 2b` - add persistence and lifecycle service methods
-- Next chunk: `Task 2c` - add/refine API/controller lifecycle surface
-- Last completed chunk: `Task 2a` - add `SimulationRun` aggregate and status enum
+- Current phase: Feature 3 deterministic step extraction kickoff after lifecycle API alignment
+- Active chunk: `Task 3a` - extract pure deterministic `step()` path
+- Next chunk: `Task 3b` - enforce deterministic ordering and seeded randomness
+- Last completed chunk: `Task 2c` - add/refine API/controller lifecycle surface
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | `docs/specs/simulation-deterministic-spec.md` is locked for Sprint 1. |
 | Task 2a | done | Domain-only scaffolding (`SimulationRun` + status enum) completed; API/read-model work deferred. |
-| Task 2b | in_progress | Repository and lifecycle service wiring for the city-scoped run model. |
-| Task 2c | planned | API/controller lifecycle surface after service wiring, aligned to city-first UX. |
-| Task 3a | blocked | Wait for `SimulationRun` lifecycle scaffolding. |
+| Task 2b | done | Repository and lifecycle service wiring for the city-scoped run model is complete. |
+| Task 2c | done | City-scoped lifecycle API surface added (`create/load/pause/resume`) with DTOs and controller-level `404` translation while preserving existing `start/stop/status` compatibility. |
+| Task 3a | in_progress | Pure deterministic `step()` extraction starts now that lifecycle API surface is aligned. |
 | Task 3b | blocked | Depends on deterministic `step()` extraction. |
 | Task 3c | blocked | Depends on deterministic `step()` extraction. |
 | Task 3d | blocked | Depends on Tasks 3a-3c. |
@@ -100,6 +100,16 @@ Relevant existing areas:
 
 Wall-clock execution may still exist later, but the source of truth must be a pure deterministic `step()` path.
 
+### Decision 5: backend API changes must be smoke-testable through MCP
+
+When a sprint chunk introduces or changes backend API endpoints, update `apps/mcp` in the same execution loop so the new contract is testable without frontend dependency.
+
+Minimum MCP sync for endpoint changes:
+
+- regenerate MCP OpenAPI types (`npm run api:generate` in `apps/mcp`)
+- add/update MCP tool wrappers for new endpoints under `apps/mcp/src/tools/`
+- rebuild MCP (`npm run build`) and run one smoke flow that exercises the new endpoint path
+
 ## Deliverables
 
 By the end of Sprint 1, the repo should contain:
@@ -109,6 +119,7 @@ By the end of Sprint 1, the repo should contain:
 - a deterministic step execution flow
 - a separation between runtime scheduler and core simulation logic
 - automated tests proving reproducibility
+- MCP tooling aligned with any new backend API endpoints introduced during sprint execution
 
 ## Definition of done
 
@@ -120,6 +131,7 @@ Sprint 1 is done only if all of the following are true:
 - state progression is based on deterministic logic, not uncontrolled randomness
 - at least one automated test proves same seed + same initial state + same steps => same result
 - the old simulation loop is either removed or clearly relegated to a thin runtime wrapper
+- if new backend endpoints were added in a chunk, MCP tool generation/wrapping was updated so smoke tests can run through MCP
 
 ## Suggested file targets
 

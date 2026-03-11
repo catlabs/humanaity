@@ -1,9 +1,131 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { BackendClient } from "../backend-client.js";
+import type { SimulationRunOutput } from "../contracts.js";
 import { toToolError } from "../errors.js";
 
+function summarizeSimulationRun(run: SimulationRunOutput): string {
+  return `run #${run.id} city=${run.cityId} status=${run.status} running=${run.running} tick=${run.tick}`;
+}
+
 export function registerSimulationTools(server: McpServer, backendClient: BackendClient): void {
+  server.tool(
+    "simulation_create",
+    "Create a simulation run for a city or return the existing one.",
+    {
+      cityId: z.string().min(1),
+      seed: z.number().int().optional(),
+      accessToken: z.string().min(1).optional(),
+    },
+    async ({ cityId, seed, accessToken }) => {
+      try {
+        const run = await backendClient.simulationCreate(cityId, seed, accessToken);
+        return {
+          content: [{ type: "text", text: `Simulation run created/loaded: ${summarizeSimulationRun(run)}.` }],
+          structuredContent: { ok: true, run },
+        };
+      } catch (error: unknown) {
+        const normalized = toToolError(error);
+        return {
+          isError: true,
+          content: [{ type: "text", text: normalized.message }],
+          structuredContent: {
+            ok: false,
+            error: normalized.message,
+            details: normalized.details,
+          },
+        };
+      }
+    },
+  );
+
+  server.tool(
+    "simulation_load",
+    "Load persisted simulation run metadata for a city.",
+    {
+      cityId: z.string().min(1),
+      accessToken: z.string().min(1).optional(),
+    },
+    async ({ cityId, accessToken }) => {
+      try {
+        const run = await backendClient.simulationLoad(cityId, accessToken);
+        return {
+          content: [{ type: "text", text: `Simulation run loaded: ${summarizeSimulationRun(run)}.` }],
+          structuredContent: { ok: true, run },
+        };
+      } catch (error: unknown) {
+        const normalized = toToolError(error);
+        return {
+          isError: true,
+          content: [{ type: "text", text: normalized.message }],
+          structuredContent: {
+            ok: false,
+            error: normalized.message,
+            details: normalized.details,
+          },
+        };
+      }
+    },
+  );
+
+  server.tool(
+    "simulation_pause",
+    "Pause a simulation run for a city.",
+    {
+      cityId: z.string().min(1),
+      accessToken: z.string().min(1).optional(),
+    },
+    async ({ cityId, accessToken }) => {
+      try {
+        const run = await backendClient.simulationPause(cityId, accessToken);
+        return {
+          content: [{ type: "text", text: `Simulation paused: ${summarizeSimulationRun(run)}.` }],
+          structuredContent: { ok: true, run },
+        };
+      } catch (error: unknown) {
+        const normalized = toToolError(error);
+        return {
+          isError: true,
+          content: [{ type: "text", text: normalized.message }],
+          structuredContent: {
+            ok: false,
+            error: normalized.message,
+            details: normalized.details,
+          },
+        };
+      }
+    },
+  );
+
+  server.tool(
+    "simulation_resume",
+    "Resume a simulation run for a city.",
+    {
+      cityId: z.string().min(1),
+      accessToken: z.string().min(1).optional(),
+    },
+    async ({ cityId, accessToken }) => {
+      try {
+        const run = await backendClient.simulationResume(cityId, accessToken);
+        return {
+          content: [{ type: "text", text: `Simulation resumed: ${summarizeSimulationRun(run)}.` }],
+          structuredContent: { ok: true, run },
+        };
+      } catch (error: unknown) {
+        const normalized = toToolError(error);
+        return {
+          isError: true,
+          content: [{ type: "text", text: normalized.message }],
+          structuredContent: {
+            ok: false,
+            error: normalized.message,
+            details: normalized.details,
+          },
+        };
+      }
+    },
+  );
+
   server.tool(
     "simulation_start",
     "Start simulation for a city.",

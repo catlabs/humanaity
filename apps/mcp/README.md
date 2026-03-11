@@ -182,6 +182,10 @@ Behavior/caveats:
 
 ### Simulations
 
+- `simulation_create` (optional `seed`)
+- `simulation_load`
+- `simulation_pause`
+- `simulation_resume`
 - `simulation_start`
 - `simulation_stop`
 - `simulation_status`
@@ -201,14 +205,16 @@ Use this quick sequence against a local backend:
 1. Run `health_check` to verify server startup and config.
 2. Run `auth_login` (or rely on configured email/password fallback).
 3. Run `cities_mine` to validate authenticated backend access.
-4. Pick a city id and run `simulation_status`.
-5. Run `human_create` with minimal input:
+4. Pick a city id and run `simulation_create` then `simulation_load`.
+5. Run `simulation_resume` and verify `simulation_status`.
+6. Run `simulation_pause` and verify `simulation_status` again.
+7. Run `simulation_start` and optionally `simulation_snapshot`, then `simulation_stop`.
+8. Run `human_create` with minimal input:
    - `{ "cityId": <validCityId> }`
-6. Run `human_create` with advanced input:
+9. Run `human_create` with advanced input:
    - `{ "cityId": <validCityId>, "name": "Ari", "busy": false, "x": 0.3, "y": 0.7, "creativity": 0.9, "intellect": 0.8, "sociability": 0.6, "practicality": 0.5, "personality": "VISIONARY" }`
-7. Validate error handling with an invalid request:
+10. Validate error handling with an invalid request:
    - invalid city: `{ "cityId": -1 }`
    - invalid range: `{ "cityId": <validCityId>, "creativity": 2 }`
-8. Optionally run `simulation_start`, then `simulation_snapshot`, then `simulation_stop`.
 
 If any tool fails, inspect returned `structuredContent.error` and `structuredContent.details` for normalized backend error information.
