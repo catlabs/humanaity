@@ -1,6 +1,6 @@
 ---
 name: run-backend
-description: Run the Humanaity Spring Boot backend from apps/backend in the monorepo, source the backend .env file, confirm it is reachable at http://localhost:8080, and avoid duplicate launches by checking existing terminals first. Use when the user asks to start, run, launch, debug, serve, or verify the backend, API, Spring Boot server, or local server.
+description: Run the Humanaity Spring Boot backend from apps/backend in the monorepo, source the monorepo root .env file, confirm it is reachable at http://localhost:8080, and avoid duplicate launches by checking existing terminals first. Use when the user asks to start, run, launch, debug, serve, or verify the backend, API, Spring Boot server, or local server.
 ---
 
 # Run Backend
@@ -20,7 +20,7 @@ Launch or verify the Humanaity backend from `apps/backend`.
 
 1. Check existing terminals first to avoid duplicates.
 2. If the backend is already running and healthy, tell the user instead of starting another one.
-3. If it is not running, source `<monorepo>/apps/backend/.env` before launch.
+3. If it is not running, source `<monorepo>/.env` before launch.
 4. Start the app from `<monorepo>/apps/backend`.
 5. Verify startup from terminal logs or with a request to Swagger/OpenAPI.
 
@@ -35,7 +35,7 @@ sh ./mvnw -q -DskipTests compile
 Start the backend:
 
 ```bash
-zsh -lc 'set -a; [ -f .env ] && source .env; set +a; sh ./mvnw spring-boot:run'
+zsh -lc 'MONOREPO_ROOT="$(git rev-parse --show-toplevel)"; set -a; [ -f "$MONOREPO_ROOT/.env" ] && source "$MONOREPO_ROOT/.env"; set +a; sh ./mvnw spring-boot:run'
 ```
 
 Debug option in Cursor:
@@ -45,7 +45,7 @@ Debug option in Cursor:
 
 ## Notes
 
-- `.env` is optional for basic startup but should be loaded so OpenAI-related config is available.
+- `<monorepo>/.env` is optional for basic startup but should be loaded so OpenAI-related config is available.
 - The app also exposes H2 console support and starts an H2 TCP server on `9092`.
 - If the user asks for the frontend too, ask for it to be started separately from the UI project.
 
