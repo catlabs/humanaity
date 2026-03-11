@@ -1,19 +1,21 @@
 package eu.catlabs.humanaity.human.domain;
 
-import eu.catlabs.humanaity.human.domain.Personality;
 import eu.catlabs.humanaity.city.domain.City;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Human {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     private boolean busy;
