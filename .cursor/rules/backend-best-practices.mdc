@@ -1,0 +1,24 @@
+---
+description: Apply backend best-practices guidance when working in apps/backend.
+globs: apps/backend/**/*
+alwaysApply: false
+---
+
+# Humanaity Backend Best Practices
+
+When working on this project, use repository-visible guidance and existing backend code structure as the source of truth.
+
+## Mandatory: Read Before Suggesting
+
+- Before suggesting code changes, refactors, architecture decisions, styling guidance, or commit messages, read relevant documentation that exists in this checkout and inspect nearby backend modules for established conventions.
+
+## When To Read What
+
+- For commit messages, review the repo diff first and follow conventional commit conventions already used in the repository history.
+- For code changes, new features, and architecture questions, inspect the current backend package structure and use sprint/docs artifacts for implementation constraints.
+
+## General Workflow
+
+1. Check available docs in `docs/`.
+2. Inspect related backend modules for existing patterns.
+3. Apply those conventions contextually.

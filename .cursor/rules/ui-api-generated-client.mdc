@@ -1,6 +1,6 @@
 ---
-description: Enforce generated OpenAPI client usage and typed wrappers.
-globs: src/app/**/*.ts
+description: Enforce generated OpenAPI client usage and typed wrappers in the UI app.
+globs: apps/ui/src/app/**/*.ts
 alwaysApply: false
 ---
 

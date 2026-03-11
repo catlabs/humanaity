@@ -1,6 +1,6 @@
 ---
-description: Enforce feature-based boundaries and folder layout.
-globs: src/app/features/**/*
+description: Enforce feature-based boundaries and folder layout in the UI app.
+globs: apps/ui/src/app/features/**/*
 alwaysApply: false
 ---
 

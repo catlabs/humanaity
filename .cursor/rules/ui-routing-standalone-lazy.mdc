@@ -1,6 +1,6 @@
 ---
-description: Enforce lazy standalone route definitions.
-globs: src/app/**/*.routes.ts
+description: Enforce lazy standalone route definitions in the UI app.
+globs: apps/ui/src/app/**/*.routes.ts
 alwaysApply: false
 ---
 

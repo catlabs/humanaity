@@ -1,0 +1,35 @@
+---
+description: Require sprint execution status sync before marking chunk done
+alwaysApply: true
+---
+
+# Sprint Chunk Completion Gate
+
+When executing a sprint chunk, do not report "done" until this gate passes.
+
+## Mandatory pre-completion checklist
+
+Before marking the active chunk complete, the agent must:
+
+1. confirm the active chunk ID and target sprint file in `docs/sprints/`
+2. verify implementation stayed within chunk scope
+3. run relevant chunk-level validation (or explicitly state why not run)
+4. sync the sprint doc `## Execution status` block:
+   - update `Active chunk`
+   - update `Next chunk`
+   - update `Last completed chunk`
+   - update the chunk status table row(s)
+5. list intentionally deferred items for the next chunk(s)
+
+## No status-sync, no completion
+
+- If code changes are finished but sprint execution status is stale, the chunk is still `in_progress`.
+- The agent must update the sprint status block in the same turn before declaring completion.
+
+## Response contract for chunk completion
+
+Any completion response must include:
+
+- sprint file updated
+- execution status synced
+- deferred follow-on work called out

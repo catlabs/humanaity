@@ -1,0 +1,13 @@
+---
+description: Separate durable repo rules from workflow skills and surface the right context to external agents.
+alwaysApply: true
+---
+
+# Agent Context Layers
+
+- Treat `.cursor/rules/` as durable repository policy that external agents like Codex may need.
+- Treat `.cursor/skills/` as Cursor and human workflow playbooks; do not assume external agents can discover them.
+- Put task and domain semantics in repo-visible docs under `docs/`.
+- If a skill contains durable constraints about architecture, file placement, scope, or required validation, promote those constraints into a rule or doc.
+- Do not create 1:1 rule and skill duplicates by default. Mirror only the durable policy layer in rules.
+- When delegating work to Codex or another external agent, explicitly reference the relevant rule and doc files instead of relying on hidden skills.

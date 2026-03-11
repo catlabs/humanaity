@@ -1,6 +1,6 @@
 ---
-description: Enforce modern Angular TypeScript patterns for this project.
-globs: src/app/**/*.ts
+description: Enforce modern Angular TypeScript patterns for the UI app.
+globs: apps/ui/src/app/**/*.ts
 alwaysApply: false
 ---
 

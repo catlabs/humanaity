@@ -1,6 +1,6 @@
 ---
-description: Keep files small and enforce split patterns.
-globs: src/app/**/*
+description: Keep UI files small and enforce split patterns.
+globs: apps/ui/src/app/**/*
 alwaysApply: false
 ---
 

@@ -9,6 +9,10 @@ description: Build reusable shared UI components with strict typing and project 
 
 Create reusable UI components in `src/app/shared/ui/` with stable APIs.
 
+## Related durable rule
+
+- Pair this skill with `.cursor/rules/ui-shared-ui-boundaries.mdc` for the reusable-component placement and boundary rules that external agents may also need.
+
 ## Workflow
 
 1. Confirm the component is cross-feature reusable.

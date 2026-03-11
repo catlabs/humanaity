@@ -1,6 +1,6 @@
 ---
-description: Require Angular v17 template control flow syntax.
-globs: src/app/**/*.html
+description: Require Angular v17 template control flow syntax for the UI app.
+globs: apps/ui/src/app/**/*.html
 alwaysApply: false
 ---
 

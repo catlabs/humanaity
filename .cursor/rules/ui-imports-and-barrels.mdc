@@ -1,6 +1,6 @@
 ---
-description: Keep imports stable with aliases and barrel exports.
-globs: src/app/**/*.ts
+description: Keep UI imports stable with aliases and barrel exports.
+globs: apps/ui/src/app/**/*.ts
 alwaysApply: false
 ---
 

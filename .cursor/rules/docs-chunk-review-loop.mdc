@@ -1,0 +1,25 @@
+---
+description: Enforce review, test, and handoff gates for sprint chunks.
+globs: docs/sprints/**/*.md
+alwaysApply: false
+---
+
+# Sprint Chunk Review/Test/Handoff Loop
+
+For each sprint chunk/sub-task, use the same minimum gate before moving to the next chunk.
+
+1. Lock target scope:
+   - confirm active task ID, acceptance criteria, in-scope files, and out-of-scope boundaries
+2. Review implementation scope:
+   - ensure the diff stays inside the active task and does not introduce unrelated changes
+   - keep package placement/layering aligned with project conventions
+3. Run chunk-level validation:
+   - run tests for touched behavior first
+   - if contracts or persistence seams changed, run the nearest broader backend slice
+4. Compare against sprint outcomes:
+   - map results to task acceptance criteria and sprint Definition of Done invariants
+5. Prepare handoff notes:
+   - list files changed, tests run, intentionally deferred items, and open risks/questions
+   - update the active sprint doc's execution status block so current, next, blocked, and completed chunks remain visible without re-reading the whole plan
+6. Apply go/no-go gate:
+   - proceed to next chunk only when scope is clean, tests pass, and sprint/spec docs are synced for sprint-shaping decisions

@@ -1,6 +1,6 @@
 ---
-description: Enforce Material token theming and SCSS typography/style conventions.
-globs: src/**/*.{scss,html,ts}
+description: Enforce Material token theming and SCSS conventions in the UI app.
+globs: apps/ui/src/**/*.{scss,html,ts}
 alwaysApply: false
 ---
 

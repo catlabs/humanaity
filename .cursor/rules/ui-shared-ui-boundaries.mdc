@@ -1,0 +1,14 @@
+---
+description: Keep shared UI components reusable, typed, and free of feature-specific logic.
+globs: apps/ui/src/app/shared/ui/**/*
+alwaysApply: false
+---
+
+# Shared UI Boundaries
+
+- Use `src/app/shared/ui/` only for cross-feature reusable UI.
+- Keep shared components standalone with explicit typed `input()` and `output()` APIs.
+- Do not move feature-specific business logic into shared UI.
+- Prefer generic contracts over leaking feature/domain-specific models when possible.
+- Prefer small focused components over one large configurable shared component.
+- Export shared UI through the intended public API surface.

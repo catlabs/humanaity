@@ -1,0 +1,16 @@
+---
+description: Keep active sprint docs aligned with implementation decisions.
+alwaysApply: true
+---
+
+# Sprint Doc Sync
+
+- Treat `docs/sprints/` files as living execution documents.
+- Keep a small execution status block in the active sprint doc that shows the active chunk, next chunk, blocked items, and recently completed chunks.
+- When implementation changes affect sprint scope, technical decisions, deliverables, definition of done, task breakdown, risks, or handoff, propose updating the active sprint doc.
+- When the user or agent decides to start, finish, defer, or block a sprint chunk, update that execution status block in the sprint doc unless the user asked to avoid doc changes.
+- Do not declare a sprint chunk complete until the active sprint doc execution status block is updated in the same turn.
+- Distinguish local code choices from sprint-shaping decisions.
+- Do not update a sprint doc for minor renames or mechanical refactors unless they change plan meaning.
+- When asked to sync a sprint, prefer reconciling the current implementation with the existing sprint file instead of rewriting the sprint from scratch.
+- Preserve roadmap alignment unless the user explicitly chooses to change sprint direction.
