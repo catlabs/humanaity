@@ -1,8 +1,14 @@
 package eu.catlabs.humanaity.simulation.application;
 
+import eu.catlabs.humanaity.city.domain.City;
+import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.human.application.HumanApplicationService;
+import eu.catlabs.humanaity.simulation.domain.SimulationRun;
+import eu.catlabs.humanaity.simulation.domain.SimulationRunStatus;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -19,17 +25,27 @@ public class SimulationApplicationService {
     private final Map<Long, ScheduledFuture<?>> runningTasks = new ConcurrentHashMap<>();
     private final HumanRepository humanRepository;
     private final HumanApplicationService humanApplicationService;
+    private final CityRepository cityRepository;
+    private final SimulationRunRepository simulationRunRepository;
     private final Random random = new Random();
 
-    public SimulationApplicationService(HumanRepository humanRepository, HumanApplicationService humanApplicationService) {
+    public SimulationApplicationService(
+            HumanRepository humanRepository,
+            HumanApplicationService humanApplicationService,
+            CityRepository cityRepository,
+            SimulationRunRepository simulationRunRepository
+    ) {
         this.humanRepository = humanRepository;
         this.humanApplicationService = humanApplicationService;
+        this.cityRepository = cityRepository;
+        this.simulationRunRepository = simulationRunRepository;
     }
 
     public synchronized String startSimulation(Long cityId) {
         if (runningTasks.containsKey(cityId)) {
             return "Simulation already running for city " + cityId;
         }
+        resumeRun(cityId);
 
         ScheduledFuture<?> task = executor.scheduleAtFixedRate(
                 () -> simulateCity(cityId),
@@ -48,11 +64,55 @@ public class SimulationApplicationService {
 
         task.cancel(true);
         runningTasks.remove(cityId);
+        pauseRun(cityId);
         return "Simulation stopped for city " + cityId;
     }
 
     public boolean isRunning(Long cityId) {
         return runningTasks.containsKey(cityId);
+    }
+
+    public SimulationRun createRun(Long cityId) {
+        return createRun(cityId, random.nextLong());
+    }
+
+    public SimulationRun createRun(Long cityId, Long seed) {
+        Optional<SimulationRun> existing = simulationRunRepository.findByCityId(cityId);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        City city = getCityOrThrow(cityId);
+        SimulationRun run = new SimulationRun();
+        run.setCity(city);
+        run.setSeed(seed);
+        run.setTick(0L);
+        run.setStatus(SimulationRunStatus.CREATED);
+        return simulationRunRepository.save(run);
+    }
+
+    public SimulationRun loadRun(Long cityId) {
+        return simulationRunRepository.findByCityId(cityId)
+                .orElseThrow(() -> new EntityNotFoundException("Simulation run not found for city " + cityId));
+    }
+
+    public synchronized SimulationRun pauseRun(Long cityId) {
+        SimulationRun run = loadRun(cityId);
+        run.setStatus(SimulationRunStatus.PAUSED);
+        return simulationRunRepository.save(run);
+    }
+
+    public synchronized SimulationRun resumeRun(Long cityId) {
+        SimulationRun run = simulationRunRepository.findByCityId(cityId)
+                .orElseGet(() -> createRun(cityId, random.nextLong()));
+        run.setStatus(SimulationRunStatus.RUNNING);
+        return simulationRunRepository.save(run);
+    }
+
+    private City getCityOrThrow(Long cityId) {
+        Objects.requireNonNull(cityId, "cityId must not be null");
+        return cityRepository.findById(cityId)
+                .orElseThrow(() -> new EntityNotFoundException("City not found with id: " + cityId));
     }
 
     private void simulateCity(Long cityId) {
