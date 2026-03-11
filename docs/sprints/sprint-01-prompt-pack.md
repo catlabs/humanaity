@@ -277,6 +277,37 @@ Instructions:
 Implement only Task 3d. Add bounded repeated stepping that composes deterministic single-step logic and preserves deterministic state progression across all iterations.
 ```
 
+## Task 3e - Movement Smoke Mode (Neutralize Busy Lock)
+
+```text
+Task ID: Task 3e
+Owner: Cursor
+Mode: modify code
+
+Goal (one sentence):
+Remove or neutralize busy-lock semantics so human movement remains observable during short-interval smoke tests.
+
+Acceptance criteria (copied from sprint doc):
+- simulation logic can run one step at a time
+- repeated runs with the same seed produce the same state transitions
+- scheduling is no longer the source of truth
+- movement smoke checks can observe position changes without humans becoming permanently stuck behind busy-lock semantics
+
+In-scope files:
+- apps/backend/src/main/java/eu/catlabs/humanaity/simulation/application/SimulationApplicationService.java
+- apps/backend/src/main/java/eu/catlabs/humanaity/human/domain/Human.java (only if needed to align behavior/read-model expectations)
+- apps/backend/src/main/java/eu/catlabs/humanaity/human/api/dto/ (only if busy-field contract needs minimal alignment)
+
+Out of scope:
+- scheduler wrapper redesign (Task 4a/4b)
+- broad simulation API redesign outside movement smoke-mode needs
+- full long-term collision model design
+- frontend redesign work
+
+Instructions:
+Implement only Task 3e. Keep the change explicit as a movement smoke-mode simplification and avoid mixing it with unrelated deterministic engine refactors.
+```
+
 ## Task 4a - Scheduler Delegates to `step()` Only
 
 ```text

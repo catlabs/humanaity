@@ -17,6 +17,7 @@
 | Task 3b | blocked | Depends on deterministic `step()` extraction. |
 | Task 3c | blocked | Depends on deterministic `step()` extraction. |
 | Task 3d | blocked | Depends on Tasks 3a-3c. |
+| Task 3e | planned | Movement smoke mode: remove/neutralize busy-lock behavior so human movement can be observed reliably during smoke validation. |
 | Task 4a | blocked | Depends on stable deterministic step engine. |
 | Task 4b | blocked | Depends on scheduler wrapper refactor start. |
 | Task 5a | blocked | Depends on deterministic step engine readiness. |
@@ -109,6 +110,17 @@ Minimum MCP sync for endpoint changes:
 - regenerate MCP OpenAPI types (`npm run api:generate` in `apps/mcp`)
 - add/update MCP tool wrappers for new endpoints under `apps/mcp/src/tools/`
 - rebuild MCP (`npm run build`) and run one smoke flow that exercises the new endpoint path
+
+### Decision 6: movement smoke mode can bypass busy-lock semantics
+
+To keep movement validation observable while deterministic foundations are still evolving, Sprint 1 may temporarily remove or neutralize `busy`-state locking behavior in step execution.
+
+Guardrails for this temporary mode:
+
+- treat this as a testing/usability simplification, not a final behavior contract
+- keep the change isolated to simulation step behavior and related DTO/read-model expectations
+- do not let this block core deterministic engine work (`Task 3a` to `Task 3d`)
+- reintroduce or redesign canonical busy/collision semantics explicitly in a later sprint chunk
 
 ## Deliverables
 
@@ -224,12 +236,14 @@ Replace uncontrolled runtime behavior with a reproducible step-based engine.
 4. Define how humans are selected/processed during a step.
 5. Implement `step(cityId)` or equivalent application service entrypoint.
 6. Implement `step(cityId, count)` or repeated deterministic stepping flow.
+7. Add movement smoke mode by removing or neutralizing `busy` locking so movement remains observable in short-interval smoke checks.
 
 ### Acceptance criteria
 
 - simulation logic can run one step at a time
 - repeated runs with the same seed produce the same state transitions
 - scheduling is no longer the source of truth
+- movement smoke checks can observe position changes without humans becoming permanently stuck behind busy-lock semantics
 
 ### Best owner
 
@@ -301,6 +315,7 @@ Use this split to execute Sprint 1 in reviewable sub-chunks while preserving the
 | Task 3b | Replace uncontrolled randomness with seeded RNG | Codex | Remove unseeded randomness from core step engine. |
 | Task 3c | Enforce deterministic processing order | Codex | Use explicit stable ordering, not implicit repository order. |
 | Task 3d | Support repeated deterministic stepping | Codex | Add deterministic multi-step path (`step(..., count)`). |
+| Task 3e | Remove/neutralize busy-lock for movement smoke mode | Cursor | Keep movement observable during smoke validation while deterministic core hardening continues. |
 | Task 4a | Make scheduler delegate to `step()` only | Cursor | Runtime wrapper over deterministic core. |
 | Task 4b | Remove hidden scheduler-owned business logic | Cursor | Scheduler remains orchestration only. |
 | Task 5a | Add same-seed reproducibility test | Codex | Determinism regression test with explicit fixtures. |
