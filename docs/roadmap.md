@@ -227,6 +227,7 @@ A **single-city deterministic civilization sandbox**:
 - PostgreSQL-ready migration path
 - Config cleanup and environment handling
 - Ownership/authorization tightening
+- External identity provider readiness (`Keycloak` / OIDC / OAuth2)
 - OpenAPI contract alignment
 
 ### Implementation tasks
@@ -235,6 +236,9 @@ A **single-city deterministic civilization sandbox**:
 - Introduce migration tooling before event/invention schema growth.
 - Move toward profile-based config and PostgreSQL-ready setup.
 - Fix city update/delete ownership checks.
+- Evaluate `Keycloak` as a future identity provider so auth can move from app-local JWT flows toward standard OIDC/OAuth2 flows for UI, backend APIs, and MCP clients.
+- Define client/role/scope model for `apps/ui`, `apps/backend`, and `apps/mcp`, including service accounts or delegated access patterns for agent use cases.
+- Plan backend resource-server integration around issuer/JWKS-based token validation and role-to-permission mapping.
 - Fix stale frontend tests and hardcoded API base URL usage.
 
 ### Dependencies
@@ -261,6 +265,7 @@ A **single-city deterministic civilization sandbox**:
 - Extend MCP tools to expose same read models as frontend.
 - Keep MVP MCP mostly read-oriented.
 - Build one polished demo flow: summarize city changes over last N ticks.
+- Prepare MCP authorization for external clients via OIDC/OAuth2 tokens, with `Keycloak` as the default roadmap candidate once MCP flows need scoped third-party access.
 
 ### Dependencies
 
@@ -294,6 +299,7 @@ flowchart TD
 7. Add AI-enriched event and invention summaries.
 8. Extend MCP with snapshot/timeline-focused tools.
 9. Add scoped hardening (tests, config, authorization, contract alignment).
+10. Introduce standards-based identity for external clients and MCP access (`Keycloak`/OIDC/OAuth2) once core product flows are stable.
 
 ## Suggested delegation
 
@@ -328,3 +334,4 @@ flowchart TD
 - Avoid over-investing in infra polish before simulation depth is credible.
 - Optimize for one strong end-to-end demo narrative.
 - Keep event timeline + inventions as product center of gravity.
+- Keep `Keycloak`/IdP adoption scoped to standard authn/authz and external MCP access needs; do not let identity platform work delay core simulation credibility.
