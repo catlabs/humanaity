@@ -27,7 +27,6 @@ public class SimulationApplicationService {
     private final HumanApplicationService humanApplicationService;
     private final CityRepository cityRepository;
     private final SimulationRunRepository simulationRunRepository;
-    private final Random random = new Random();
 
     public SimulationApplicationService(
             HumanRepository humanRepository,
@@ -73,7 +72,7 @@ public class SimulationApplicationService {
     }
 
     public SimulationRun createRun(Long cityId) {
-        return createRun(cityId, random.nextLong());
+        return createRun(cityId, ThreadLocalRandom.current().nextLong());
     }
 
     public SimulationRun createRun(Long cityId, Long seed) {
@@ -104,7 +103,7 @@ public class SimulationApplicationService {
 
     public synchronized SimulationRun resumeRun(Long cityId) {
         SimulationRun run = simulationRunRepository.findByCityId(cityId)
-                .orElseGet(() -> createRun(cityId, random.nextLong()));
+                .orElseGet(() -> createRun(cityId, ThreadLocalRandom.current().nextLong()));
         run.setStatus(SimulationRunStatus.RUNNING);
         return simulationRunRepository.save(run);
     }

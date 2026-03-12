@@ -2,10 +2,10 @@
 
 ## Execution status
 
-- Current phase: Feature 3 deterministic step extraction kickoff after lifecycle API alignment
-- Active chunk: `Task 3a` - extract pure deterministic `step()` path
-- Next chunk: `Task 3b` - enforce deterministic ordering and seeded randomness
-- Last completed chunk: `Task 2c` - add/refine API/controller lifecycle surface
+- Current phase: Feature 3 deterministic step engine hardening (seeded RNG + ordering)
+- Active chunk: `Task 3b` - enforce deterministic ordering and seeded randomness
+- Next chunk: `Task 3c` - enforce deterministic processing order across repositories
+- Last completed chunk: `Task 3a` - extract pure deterministic `step()` path
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -13,8 +13,8 @@
 | Task 2a | done | Domain-only scaffolding (`SimulationRun` + status enum) completed; API/read-model work deferred. |
 | Task 2b | done | Repository and lifecycle service wiring for the city-scoped run model is complete. |
 | Task 2c | done | City-scoped lifecycle API surface added (`create/load/pause/resume`) with DTOs and controller-level `404` translation while preserving existing `start/stop/status` compatibility. |
-| Task 3a | in_progress | Pure deterministic `step()` extraction starts now that lifecycle API surface is aligned. |
-| Task 3b | blocked | Depends on deterministic `step()` extraction. |
+| Task 3a | done | Pure deterministic `step()` extraction wired; scheduler now delegates to deterministic step entrypoint. |
+| Task 3b | in_progress | Seeded RNG and deterministic human processing order under active implementation. |
 | Task 3c | blocked | Depends on deterministic `step()` extraction. |
 | Task 3d | blocked | Depends on Tasks 3a-3c. |
 | Task 3e | planned | Movement smoke mode: remove/neutralize busy-lock behavior so human movement can be observed reliably during smoke validation. |
