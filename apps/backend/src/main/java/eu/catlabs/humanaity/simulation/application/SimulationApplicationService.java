@@ -48,7 +48,7 @@ public class SimulationApplicationService {
         resumeRun(cityId);
 
         ScheduledFuture<?> task = executor.scheduleAtFixedRate(
-                () -> simulateCity(cityId),
+                () -> step(cityId),
                 0, 100, TimeUnit.MILLISECONDS
         );
 
@@ -109,16 +109,33 @@ public class SimulationApplicationService {
         return simulationRunRepository.save(run);
     }
 
+    public synchronized SimulationRun step(Long cityId) {
+        SimulationRun run = loadRun(cityId);
+        Random tickRandom = createTickRandom(run);
+
+        runSingleTick(cityId, tickRandom);
+
+        run.setTick(run.getTick() + 1);
+        return simulationRunRepository.save(run);
+    }
+
     private City getCityOrThrow(Long cityId) {
         Objects.requireNonNull(cityId, "cityId must not be null");
         return cityRepository.findById(cityId)
                 .orElseThrow(() -> new EntityNotFoundException("City not found with id: " + cityId));
     }
 
-    private void simulateCity(Long cityId) {
+    private Random createTickRandom(SimulationRun run) {
+        long seed = Objects.requireNonNullElse(run.getSeed(), 0L);
+        long tick = Objects.requireNonNullElse(run.getTick(), 0L);
+        return new Random(seed ^ (tick * 0x9E3779B97F4A7C15L));
+    }
+
+    private void runSingleTick(Long cityId, Random tickRandom) {
         try {
             List<Human> allHumans = humanRepository.findByCityId(cityId);
-            Collections.shuffle(allHumans);
+            allHumans.sort(Comparator.comparing(Human::getId));
+            Collections.shuffle(allHumans, tickRandom);
             List<Human> randomHumans = allHumans.stream().limit(10).toList();
 
             if (randomHumans.isEmpty()) {
@@ -132,7 +149,7 @@ public class SimulationApplicationService {
                 if (!human.isBusy()) {
                     boolean hadCollision = checkCollisions(human, allHumans, changedHumans);
                     if (!hadCollision) {
-                        updateHumanPosition(human);
+                        updateHumanPosition(human, tickRandom);
                         changedHumans.add(human);
                     }
                 }
@@ -173,9 +190,9 @@ public class SimulationApplicationService {
         return distance < COLLISION_DISTANCE;
     }
 
-    private void updateHumanPosition(Human human) {
-        double deltaX = (random.nextDouble() - 0.5) * 0.1;
-        double deltaY = (random.nextDouble() - 0.5) * 0.1;
+    private void updateHumanPosition(Human human, Random tickRandom) {
+        double deltaX = (tickRandom.nextDouble() - 0.5) * 0.1;
+        double deltaY = (tickRandom.nextDouble() - 0.5) * 0.1;
 
         double newX = Math.max(0, Math.min(1, human.getX() + deltaX));
         double newY = Math.max(0, Math.min(1, human.getY() + deltaY));

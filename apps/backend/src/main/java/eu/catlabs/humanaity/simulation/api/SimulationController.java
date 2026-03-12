@@ -74,6 +74,17 @@ public class SimulationController {
         }
     }
 
+
+    @PostMapping("/{cityId}/step")
+    @Operation(summary = "Execute one deterministic simulation step for a city")
+    public ResponseEntity<SimulationRunOutput> stepSimulation(@PathVariable Long cityId) {
+        try {
+            SimulationRun run = simulationApplicationService.step(cityId);
+            return ResponseEntity.ok(toOutput(run));
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        }
+    }
     @PostMapping("/{cityId}/start")
     @Operation(summary = "Start simulation for a city")
     public ResponseEntity<Map<String, String>> startSimulation(@PathVariable Long cityId) {
