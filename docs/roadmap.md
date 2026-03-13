@@ -160,59 +160,6 @@ A **single-city deterministic civilization sandbox**:
 - Depends on Epics 1 and 2.
 - Unblocks Epics 4 and 7.
 
-## Epic 8: Delivery pipeline and deployment readiness
-
-- **Build order:** After Epic 3, alongside early Epic 4 work
-- **Business/product value:** Makes HUMANAIty reliably buildable and demoable, improving confidence in changes and portfolio readiness without overbuilding infra
-- **Technical portfolio value:** Demonstrates pragmatic CI/CD practice, test strategy, and basic deployment discipline
-- **Estimated complexity:** Medium
-
-### Features
-
-- Documented testing strategy across backend and frontend
-- Automated checks for build, lint, and core tests
-- CI pipelines for pull requests and main branch
-- Simple non-production deployment target (dev or staging)
-- Basic environment configuration model
-- Delivery observability and rollback basics
-
-### Implementation tasks
-
-- Define testing strategy:
-  - Clarify scope for backend unit tests focused on deterministic simulation logic and key domain invariants.
-  - Add backend integration tests for critical simulation and city APIs.
-  - Add lightweight frontend unit tests for key components/services (no heavy E2E flows yet).
-  - Explicitly defer large E2E suites until MVP simulation and UI stabilize.
-- Add baseline automated checks:
-  - Ensure backend build (Gradle/Maven) runs cleanly in a non-IDE environment.
-  - Ensure frontend build (Angular) runs cleanly from the monorepo root.
-  - Wire lint tasks (backend + frontend) into a single commandable pipeline.
-  - Add a focused backend test suite to run in CI (simulation core + key APIs).
-  - Add a minimal but real frontend test suite to run in CI.
-- Introduce CI pipeline:
-  - Add pull request validation (build + lint + targeted tests) with clear pass/fail status.
-  - Add main branch validation with the same or slightly broader checks.
-  - Surface CI status in Git hosting UI to support credible portfolio reviews.
-- Prepare deployment architecture:
-  - Choose simple deployment targets for backend and frontend (e.g., single container per app or simple app service).
-  - Define environment configuration strategy (local vs dev/staging envs, secrets handling, base URLs).
-  - Decide on containerization for backend and frontend where appropriate, keeping images simple.
-- First non-production deployment:
-  - Stand up a dev or staging environment using the chosen deployment targets.
-  - Deploy backend and frontend, ensuring connectivity and correct API base URLs.
-  - Validate environment configuration (auth, database, AI provider config) against MVP flows.
-- Delivery hardening:
-  - Improve logging and error visibility for demo-critical paths.
-  - Add health checks for backend (liveness/readiness) and a simple frontend availability check.
-  - Define a straightforward rollback strategy (e.g., last-known-good build) for non-production.
-  - Document release workflow from local change to deployed dev/staging build.
-
-### Dependencies
-
-- Starts after Epic 3 stabilizes the main read models and API surface.
-- Can run in parallel with Epic 4 UI work once core contracts are stable.
-- Feeds into Epic 6 (Platform hardening) by establishing the baseline delivery and test pipeline.
-
 ## Epic 4: Frontend simulation experience
 
 - **Build order:** After backend core
@@ -327,6 +274,59 @@ A **single-city deterministic civilization sandbox**:
 - Depends on Epic 3 read models.
 - Event explanation quality improves after Epic 5 enrichment.
 
+## Epic 8: Delivery pipeline and deployment readiness
+
+- **Build order:** After Epic 4 begins (post-E3 contract stabilization)
+- **Business/product value:** Makes HUMANAIty reliably buildable and demoable, improving confidence in changes and portfolio readiness without overbuilding infra
+- **Technical portfolio value:** Demonstrates pragmatic CI/CD practice, test strategy, and basic deployment discipline
+- **Estimated complexity:** Medium
+
+### Features
+
+- Documented testing strategy across backend and frontend
+- Automated checks for build, lint, and core tests
+- CI pipelines for pull requests and main branch
+- Simple non-production deployment target (dev or staging)
+- Basic environment configuration model
+- Delivery observability and rollback basics
+
+### Implementation tasks
+
+- Define testing strategy:
+  - Clarify scope for backend unit tests focused on deterministic simulation logic and key domain invariants.
+  - Add backend integration tests for critical simulation and city APIs.
+  - Add lightweight frontend unit tests for key components/services (no heavy E2E flows yet).
+  - Explicitly defer large E2E suites until MVP simulation and UI stabilize.
+- Add baseline automated checks:
+  - Ensure backend build (Gradle/Maven) runs cleanly in a non-IDE environment.
+  - Ensure frontend build (Angular) runs cleanly from the monorepo root.
+  - Wire lint tasks (backend + frontend) into a single commandable pipeline.
+  - Add a focused backend test suite to run in CI (simulation core + key APIs).
+  - Add a minimal but real frontend test suite to run in CI.
+- Introduce CI pipeline:
+  - Add pull request validation (build + lint + targeted tests) with clear pass/fail status.
+  - Add main branch validation with the same or slightly broader checks.
+  - Surface CI status in Git hosting UI to support credible portfolio reviews.
+- Prepare deployment architecture:
+  - Choose simple deployment targets for backend and frontend (e.g., single container per app or simple app service).
+  - Define environment configuration strategy (local vs dev/staging envs, secrets handling, base URLs).
+  - Decide on containerization for backend and frontend where appropriate, keeping images simple.
+- First non-production deployment:
+  - Stand up a dev or staging environment using the chosen deployment targets.
+  - Deploy backend and frontend, ensuring connectivity and correct API base URLs.
+  - Validate environment configuration (auth, database, AI provider config) against MVP flows.
+- Delivery hardening:
+  - Improve logging and error visibility for demo-critical paths.
+  - Add health checks for backend (liveness/readiness) and a simple frontend availability check.
+  - Define a straightforward rollback strategy (e.g., last-known-good build) for non-production.
+  - Document release workflow from local change to deployed dev/staging build.
+
+### Dependencies
+
+- Starts after Epic 3 stabilizes the main read models and API surface.
+- Runs in parallel with Epic 4 UI work once core contracts are stable.
+- Feeds into Epic 6 (Platform hardening) by establishing the baseline delivery and test pipeline.
+
 ## Features by epic and task dependency map
 
 ```mermaid
@@ -353,10 +353,10 @@ flowchart TD
 4. Add persisted invention model.
 5. Expose simulation snapshot/timeline/event/invention APIs.
 6. For every new or changed backend API endpoint, add or update the corresponding MCP tools and smoke tests in the **same sprint**, so flows remain testable without the UI.
-7. Establish testing strategy and baseline automated checks for backend and frontend (build, lint, and focused tests).
-8. Introduce CI pipelines for pull requests and main branch validation.
-9. Prepare simple deployment architecture and perform a first non-production deployment (dev or staging).
-10. Rewire city list/detail UI to consume real snapshot data.
+7. Rewire city list/detail UI to consume real snapshot data.
+8. Establish testing strategy and baseline automated checks for backend and frontend (build, lint, and focused tests).
+9. Introduce CI pipelines for pull requests and main branch validation.
+10. Prepare simple deployment architecture and perform a first non-production deployment (dev or staging).
 11. Add AI-enriched event and invention summaries.
 12. Extend MCP with snapshot/timeline-focused tools.
 13. Add scoped hardening (tests, config, authorization, contract alignment).
