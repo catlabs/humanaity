@@ -276,3 +276,27 @@
 .event-detail {
   @include hai-col(2);
 }
+
+.enrichment-block {
+  @include hai-row(2);
+  align-items: center;
+  margin-top: map.get($spacing-scale, 2);
+}
+
+.enrichment-status {
+  @include hai-meta;
+}
+
+.enrichment-fallback {
+  @include hai-body-small;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  padding: 0 map.get($spacing-scale, 1.5);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.enrichment-text {
+  @include hai-body-small;
+  margin-top: map.get($spacing-scale, 2);
+  color: var(--mat-sys-on-surface);
+}

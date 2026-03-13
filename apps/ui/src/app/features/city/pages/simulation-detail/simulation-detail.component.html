@@ -168,7 +168,14 @@
           </div>
         } @else if (selectedInvention()) {
           <div class="panel-section">
-            <div class="section-title">{{ selectedInvention()!.title }}</div>
+            <div class="section-title">{{ inventionDisplayTitle(selectedInvention()!) }}</div>
+            <div class="enrichment-block">
+              <span class="enrichment-status">Enrichment: {{ inventionEnrichmentStatusLabel(selectedInvention()!) }}</span>
+              @if (selectedInvention()!.enrichmentFallback) {
+                <span class="enrichment-fallback">Fallback</span>
+              }
+            </div>
+            <div class="enrichment-text">{{ inventionDisplaySummary(selectedInvention()!) }}</div>
             <table class="stats">
               <tbody>
                 <tr>
@@ -193,6 +200,17 @@
               <div>{{ eventDescription(selectedEvent()!) }}</div>
               <div class="list-subtitle">{{ eventTimestamp(selectedEvent()!) }}</div>
             </div>
+            <div class="enrichment-block">
+              <span class="enrichment-status">Enrichment: {{ eventEnrichmentStatusLabel(selectedEvent()!) }}</span>
+              @if (selectedEvent()!.enrichmentFallback) {
+                <span class="enrichment-fallback">Fallback</span>
+              }
+            </div>
+            @if (eventNarrative(selectedEvent()!); as narrative) {
+              <div class="enrichment-text">{{ narrative }}</div>
+            } @else {
+              <div class="list-subtitle">No enrichment generated for this event yet.</div>
+            }
           </div>
         }
 
@@ -222,7 +240,7 @@
               @for (inv of inventions(); track inv.id) {
                 <button mat-list-item type="button" (click)="selectInvention(inv)">
                   <mat-icon matListItemIcon>lightbulb</mat-icon>
-                  <div matListItemTitle class="list-title">{{ inv.title }}</div>
+                  <div matListItemTitle class="list-title">{{ inventionDisplayTitle(inv) }}</div>
                   <div matListItemLine class="list-subtitle">
                     {{ inventionCategoryLabel(inv) }} · Year {{ inv.yearCreated }} · Impact {{ inv.impactScore }}%
                   </div>

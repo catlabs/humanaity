@@ -257,12 +257,32 @@ export class SimulationDetailComponent
     return `Tick ${event.tick} • Year ${event.year} • ${this.formatEnumLabel(event.era)}`;
   }
 
+  eventNarrative(event: EventOutput): string | null {
+    return event.enrichedSnippet?.trim() || null;
+  }
+
+  eventEnrichmentStatusLabel(event: EventOutput): string {
+    return this.formatEnumLabel(event.enrichmentStatus);
+  }
+
   eventTimestamp(event: EventOutput): string {
     return new Date(event.createdAt).toLocaleString();
   }
 
   inventionCategoryLabel(invention: InventionOutput): string {
     return this.formatEnumLabel(invention.category);
+  }
+
+  inventionDisplayTitle(invention: InventionOutput): string {
+    return invention.enrichedTitle?.trim() || invention.title;
+  }
+
+  inventionDisplaySummary(invention: InventionOutput): string {
+    return invention.enrichedSummary?.trim() || invention.summary;
+  }
+
+  inventionEnrichmentStatusLabel(invention: InventionOutput): string {
+    return this.formatEnumLabel(invention.enrichmentStatus);
   }
 
   private refreshAll(showLoading = true): void {
