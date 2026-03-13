@@ -1,8 +1,14 @@
 package eu.catlabs.humanaity.simulation.api;
 
+import eu.catlabs.humanaity.event.domain.Event;
+import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
+import eu.catlabs.humanaity.simulation.application.SimulationApplicationService.TimelineHistory;
+import eu.catlabs.humanaity.simulation.api.dto.EventOutput;
+import eu.catlabs.humanaity.simulation.api.dto.InventionOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationRunInput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationRunOutput;
+import eu.catlabs.humanaity.simulation.api.dto.TimelineOutput;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -110,6 +117,88 @@ public class SimulationController {
         return ResponseEntity.ok(Map.of("running", isRunning));
     }
 
+    @GetMapping("/{cityId}/history/events")
+    @Operation(summary = "List city-scoped deterministic history events ordered by tick and sequence")
+    public ResponseEntity<List<EventOutput>> listCityEvents(
+            @PathVariable Long cityId,
+            @RequestParam(required = false) Long fromTick,
+            @RequestParam(required = false) Long toTick,
+            @RequestParam(required = false) Integer limit
+    ) {
+        try {
+            validateTickRange(fromTick, toTick);
+            List<EventOutput> outputs = simulationApplicationService.listCityEvents(cityId, fromTick, toTick, limit).stream()
+                    .map(event -> toEventOutput(cityId, event))
+                    .toList();
+            return ResponseEntity.ok(outputs);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    @GetMapping("/{cityId}/history/inventions")
+    @Operation(summary = "List city-scoped deterministic inventions ordered by tick and key")
+    public ResponseEntity<List<InventionOutput>> listCityInventions(
+            @PathVariable Long cityId,
+            @RequestParam(required = false) Long fromTick,
+            @RequestParam(required = false) Long toTick,
+            @RequestParam(required = false) Integer limit
+    ) {
+        try {
+            validateTickRange(fromTick, toTick);
+            List<InventionOutput> outputs = simulationApplicationService.listCityInventions(cityId, fromTick, toTick, limit).stream()
+                    .map(invention -> toInventionOutput(cityId, invention))
+                    .toList();
+            return ResponseEntity.ok(outputs);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    @GetMapping("/{cityId}/history/timeline")
+    @Operation(summary = "Get a city-scoped timeline bundle containing ordered events and inventions")
+    public ResponseEntity<TimelineOutput> getCityTimeline(
+            @PathVariable Long cityId,
+            @RequestParam(required = false) Long fromTick,
+            @RequestParam(required = false) Long toTick,
+            @RequestParam(required = false) Integer limit
+    ) {
+        try {
+            validateTickRange(fromTick, toTick);
+            TimelineHistory timeline = simulationApplicationService.listCityTimeline(cityId, fromTick, toTick, limit);
+            TimelineOutput output = new TimelineOutput(
+                    timeline.cityId(),
+                    timeline.fromTick(),
+                    timeline.toTick(),
+                    timeline.events().size(),
+                    timeline.inventions().size(),
+                    timeline.events().stream().map(event -> toEventOutput(cityId, event)).toList(),
+                    timeline.inventions().stream().map(invention -> toInventionOutput(cityId, invention)).toList()
+            );
+            return ResponseEntity.ok(output);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    private void validateTickRange(Long fromTick, Long toTick) {
+        if (fromTick != null && fromTick < 0) {
+            throw new IllegalArgumentException("fromTick must be >= 0");
+        }
+        if (toTick != null && toTick < 0) {
+            throw new IllegalArgumentException("toTick must be >= 0");
+        }
+        if (fromTick != null && toTick != null && toTick < fromTick) {
+            throw new IllegalArgumentException("toTick must be >= fromTick");
+        }
+    }
+
     private SimulationRunOutput toOutput(SimulationRun run) {
         boolean isRunning = simulationApplicationService.isRunning(run.getCity().getId());
         return new SimulationRunOutput(
@@ -121,6 +210,41 @@ public class SimulationController {
                 isRunning,
                 run.getCreatedAt(),
                 run.getUpdatedAt()
+        );
+    }
+
+    private EventOutput toEventOutput(Long cityId, Event event) {
+        return new EventOutput(
+                event.getId(),
+                cityId,
+                event.getTick(),
+                event.getSequenceInTick(),
+                event.getEventCategory(),
+                event.getEventType(),
+                event.getActorIds(),
+                event.getPayload(),
+                event.getImportance(),
+                event.getYear(),
+                event.getEra(),
+                event.getEventKey(),
+                event.getCreatedAt()
+        );
+    }
+
+    private InventionOutput toInventionOutput(Long cityId, Invention invention) {
+        return new InventionOutput(
+                invention.getId(),
+                cityId,
+                invention.getTickCreated(),
+                invention.getCategory(),
+                invention.getInventionKey(),
+                invention.getTitle(),
+                invention.getSummary(),
+                invention.getSourceEventKeys(),
+                invention.getImpactScore(),
+                invention.getYearCreated(),
+                invention.getEraCreated(),
+                invention.getCreatedAt()
         );
     }
 }
