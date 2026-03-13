@@ -141,6 +141,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/simulations/{cityId}/step": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Execute one deterministic simulation step for a city */
+        post: operations["stepSimulation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/simulations/{cityId}/start": {
         parameters: {
             query?: never;
@@ -236,6 +253,57 @@ export interface paths {
         };
         /** Check if simulation is running for a city */
         get: operations["isSimulationRunning"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/simulations/{cityId}/history/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a city-scoped timeline bundle containing ordered events and inventions */
+        get: operations["getCityTimeline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/simulations/{cityId}/history/inventions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List city-scoped deterministic inventions ordered by tick and key */
+        get: operations["listCityInventions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/simulations/{cityId}/history/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List city-scoped deterministic history events ordered by tick and sequence */
+        get: operations["listCityEvents"];
         put?: never;
         post?: never;
         delete?: never;
@@ -392,6 +460,69 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        EventOutput: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            cityId: number;
+            /** Format: int64 */
+            tick: number;
+            /** Format: int32 */
+            sequenceInTick: number;
+            /** @enum {string} */
+            eventCategory: "LIFECYCLE" | "INTERACTION" | "DISCOVERY" | "DIALOGUE" | "MILESTONE";
+            /** @enum {string} */
+            eventType: "SIMULATION_STARTED" | "SIMULATION_PAUSED" | "SIMULATION_RESUMED" | "SIMULATION_COMPLETED" | "HUMANS_COLLIDED" | "DISCOVERY_UNLOCKED" | "DIALOGUE_EXCHANGED" | "INVENTION_EMERGED";
+            actorIds: number[];
+            payload: {
+                [key: string]: string;
+            };
+            /** Format: int32 */
+            importance: number;
+            /** Format: int32 */
+            year: number;
+            /** @enum {string} */
+            era: "FOUNDING" | "EXPANSION" | "CONSOLIDATION" | "LEGACY";
+            eventKey: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        InventionOutput: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            cityId: number;
+            /** Format: int64 */
+            tickCreated: number;
+            /** @enum {string} */
+            category: "TECHNIQUE" | "SOCIAL_PRACTICE" | "KNOWLEDGE";
+            inventionKey: string;
+            title: string;
+            summary: string;
+            sourceEventKeys: string[];
+            /** Format: int32 */
+            impactScore: number;
+            /** Format: int32 */
+            yearCreated: number;
+            /** @enum {string} */
+            eraCreated: "FOUNDING" | "EXPANSION" | "CONSOLIDATION" | "LEGACY";
+            /** Format: date-time */
+            createdAt: string;
+        };
+        TimelineOutput: {
+            /** Format: int64 */
+            cityId: number;
+            /** Format: int64 */
+            fromTick: number;
+            /** Format: int64 */
+            toTick?: number;
+            /** Format: int32 */
+            eventCount: number;
+            /** Format: int32 */
+            inventionCount: number;
+            events: components["schemas"]["EventOutput"][];
+            inventions: components["schemas"]["InventionOutput"][];
         };
     };
     responses: never;
@@ -706,6 +837,28 @@ export interface operations {
             };
         };
     };
+    stepSimulation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cityId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SimulationRunOutput"];
+                };
+            };
+        };
+    };
     startSimulation: {
         parameters: {
             query?: never;
@@ -862,6 +1015,84 @@ export interface operations {
                     "*/*": {
                         [key: string]: boolean;
                     };
+                };
+            };
+        };
+    };
+    getCityTimeline: {
+        parameters: {
+            query?: {
+                fromTick?: number;
+                toTick?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                cityId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TimelineOutput"];
+                };
+            };
+        };
+    };
+    listCityInventions: {
+        parameters: {
+            query?: {
+                fromTick?: number;
+                toTick?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                cityId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InventionOutput"][];
+                };
+            };
+        };
+    };
+    listCityEvents: {
+        parameters: {
+            query?: {
+                fromTick?: number;
+                toTick?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                cityId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EventOutput"][];
                 };
             };
         };

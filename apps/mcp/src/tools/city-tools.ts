@@ -17,8 +17,17 @@ export function registerCityTools(
       try {
         const cities = await backendClient.listCities(accessToken);
         return {
-          content: [{ type: "text", text: `Fetched ${cities.length} cities.` }],
-          structuredContent: { ok: true, cities },
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                { ok: true, count: cities.length, cities },
+                null,
+                2,
+              ),
+            },
+          ],
+          structuredContent: { ok: true, count: cities.length, cities },
         };
       } catch (error: unknown) {
         const normalized = toToolError(error);
@@ -46,9 +55,16 @@ export function registerCityTools(
         const cities = await backendClient.listMyCities(accessToken);
         return {
           content: [
-            { type: "text", text: `Fetched ${cities.length} owned cities.` },
+            {
+              type: "text",
+              text: JSON.stringify(
+                { ok: true, count: cities.length, cities },
+                null,
+                2,
+              ),
+            },
           ],
-          structuredContent: { ok: true, cities },
+          structuredContent: { ok: true, count: cities.length, cities },
         };
       } catch (error: unknown) {
         const normalized = toToolError(error);
@@ -77,7 +93,10 @@ export function registerCityTools(
         const city = await backendClient.createCity(name, accessToken);
         return {
           content: [
-            { type: "text", text: `City created: ${city.name} (#${city.id}).` },
+            {
+              type: "text",
+              text: JSON.stringify({ ok: true, city }, null, 2),
+            },
           ],
           structuredContent: { ok: true, city },
         };
@@ -113,7 +132,10 @@ export function registerCityTools(
         );
         return {
           content: [
-            { type: "text", text: `City updated: ${city.name} (#${city.id}).` },
+            {
+              type: "text",
+              text: JSON.stringify({ ok: true, city }, null, 2),
+            },
           ],
           structuredContent: { ok: true, city },
         };

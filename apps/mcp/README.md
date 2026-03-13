@@ -83,6 +83,44 @@ Use this when backend DTOs, endpoint signatures, or OpenAPI annotations change:
 
 `api:generate:check` reruns generation and fails if `src/generated/api-types.ts` changes, which protects against contract drift.
 
+## MCP-proof contract (project rule)
+
+This project treats MCP as a first-class consumption and testing surface.
+
+That means every backend capability that matters for an iteration must be **MCP-proof**:
+
+- it is reachable through an MCP tool (endpoint parity for critical flows)
+- it can be exercised end-to-end without relying on UI-only behavior
+- tool responses include machine-readable JSON so automated agents (and this chat) can read ids and coordinates
+
+### Endpoint parity expectation
+
+When a backend endpoint is added or changed in a sprint (especially anything used by UI/MVP flows), the same sprint must also:
+
+1. regenerate types (`npm run api:generate`)
+2. add/update the MCP tool wrapper in `src/tools/*`
+3. rebuild (`npm run build`)
+4. run at least one smoke path through MCP
+
+### Tool output expectation (JSON)
+
+MCP tools must include a JSON payload in the primary `content[0].text` output (in addition to `structuredContent`).
+
+This is required because some clients only surface the tool `content` text, and we still need to read:
+
+- ids (cityId, humanId, runId)
+- names
+- key numeric state (e.g. human `x`/`y`)
+
+Recommended response pattern:
+
+```ts
+return {
+  content: [{ type: "text", text: JSON.stringify({ ok: true, /* payload */ }, null, 2) }],
+  structuredContent: { ok: true, /* payload */ },
+};
+```
+
 ## Configuration
 
 The server reads configuration from environment variables:
@@ -186,10 +224,14 @@ Behavior/caveats:
 - `simulation_load`
 - `simulation_pause`
 - `simulation_resume`
+- `simulation_step` (optional `count`, repeats deterministic single-step execution)
 - `simulation_start`
 - `simulation_stop`
 - `simulation_status`
 - `simulation_snapshot` (composite tool: status + humans + derived metrics)
+- `simulation_history_events` (optional `fromTick`, `toTick`, `limit`)
+- `simulation_history_inventions` (optional `fromTick`, `toTick`, `limit`)
+- `simulation_history_timeline` (optional `fromTick`, `toTick`, `limit`)
 
 ## Token handling behavior
 
@@ -209,11 +251,16 @@ Use this quick sequence against a local backend:
 5. Run `simulation_resume` and verify `simulation_status`.
 6. Run `simulation_pause` and verify `simulation_status` again.
 7. Run `simulation_start` and optionally `simulation_snapshot`, then `simulation_stop`.
-8. Run `human_create` with minimal input:
+8. Run `simulation_history_timeline` with a city id after stepping:
+   - `{ "cityId": <validCityId>, "fromTick": 0, "limit": 200 }`
+9. Optionally verify list endpoints:
+   - `{ "cityId": <validCityId>, "fromTick": 0, "limit": 50 }` via `simulation_history_events`
+   - `{ "cityId": <validCityId>, "fromTick": 0, "limit": 50 }` via `simulation_history_inventions`
+10. Run `human_create` with minimal input:
    - `{ "cityId": <validCityId> }`
-9. Run `human_create` with advanced input:
+11. Run `human_create` with advanced input:
    - `{ "cityId": <validCityId>, "name": "Ari", "busy": false, "x": 0.3, "y": 0.7, "creativity": 0.9, "intellect": 0.8, "sociability": 0.6, "practicality": 0.5, "personality": "VISIONARY" }`
-10. Validate error handling with an invalid request:
+12. Validate error handling with an invalid request:
    - invalid city: `{ "cityId": -1 }`
    - invalid range: `{ "cityId": <validCityId>, "creativity": 2 }`
 

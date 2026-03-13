@@ -26,8 +26,17 @@ export function registerHumanTools(server: McpServer, backendClient: BackendClie
       try {
         const humans = await backendClient.humansByCity(cityId, accessToken);
         return {
-          content: [{ type: "text", text: `Fetched ${humans.length} humans for city ${cityId}.` }],
-          structuredContent: { ok: true, cityId, humans },
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                { ok: true, cityId, count: humans.length, humans },
+                null,
+                2,
+              ),
+            },
+          ],
+          structuredContent: { ok: true, cityId, count: humans.length, humans },
         };
       } catch (error: unknown) {
         const normalized = toToolError(error);
@@ -93,7 +102,12 @@ export function registerHumanTools(server: McpServer, backendClient: BackendClie
         );
 
         return {
-          content: [{ type: "text", text: `Human created: ${human.name} (#${human.id}).` }],
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ ok: true, human }, null, 2),
+            },
+          ],
           structuredContent: { ok: true, human },
         };
       } catch (error: unknown) {

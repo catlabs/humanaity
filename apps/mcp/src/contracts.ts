@@ -36,6 +36,12 @@ export type SimulationRunInput = BackendSchemas["SimulationRunInput"];
 
 export type SimulationRunOutput = BackendSchemas["SimulationRunOutput"];
 
+export type EventOutput = BackendSchemas["EventOutput"];
+
+export type InventionOutput = BackendSchemas["InventionOutput"];
+
+export type TimelineOutput = BackendSchemas["TimelineOutput"];
+
 export type BackendMessageResponse =
   BackendOperationSuccessPayload<"startSimulation">;
 

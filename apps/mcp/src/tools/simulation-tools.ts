@@ -127,6 +127,62 @@ export function registerSimulationTools(server: McpServer, backendClient: Backen
   );
 
   server.tool(
+    "simulation_step",
+    "Advance a city simulation by one or more deterministic steps without starting the scheduler.",
+    {
+      cityId: z.string().min(1),
+      count: z.number().int().positive().max(10_000).optional(),
+      accessToken: z.string().min(1).optional(),
+    },
+    async ({ cityId, count, accessToken }) => {
+      try {
+        const stepCount = count ?? 1;
+        const run = await backendClient.simulationStep(
+          cityId,
+          stepCount,
+          accessToken,
+        );
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  ok: true,
+                  cityId,
+                  count: stepCount,
+                  summary: summarizeSimulationRun(run),
+                  run,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+          structuredContent: {
+            ok: true,
+            cityId,
+            count: stepCount,
+            summary: summarizeSimulationRun(run),
+            run,
+          },
+        };
+      } catch (error: unknown) {
+        const normalized = toToolError(error);
+        return {
+          isError: true,
+          content: [{ type: "text", text: normalized.message }],
+          structuredContent: {
+            ok: false,
+            error: normalized.message,
+            details: normalized.details,
+          },
+        };
+      }
+    },
+  );
+
+  server.tool(
     "simulation_start",
     "Start simulation for a city.",
     {
@@ -214,6 +270,187 @@ export function registerSimulationTools(server: McpServer, backendClient: Backen
   );
 
   server.tool(
+    "simulation_history_events",
+    "List city-scoped deterministic history events ordered by tick and sequence.",
+    {
+      cityId: z.string().min(1),
+      fromTick: z.number().int().nonnegative().optional(),
+      toTick: z.number().int().nonnegative().optional(),
+      limit: z.number().int().positive().max(1_000).optional(),
+      accessToken: z.string().min(1).optional(),
+    },
+    async ({ cityId, fromTick, toTick, limit, accessToken }) => {
+      try {
+        const events = await backendClient.simulationHistoryEvents(
+          cityId,
+          { fromTick, toTick, limit },
+          accessToken,
+        );
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  ok: true,
+                  cityId,
+                  fromTick,
+                  toTick,
+                  limit,
+                  count: events.length,
+                  events,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+          structuredContent: {
+            ok: true,
+            cityId,
+            fromTick,
+            toTick,
+            limit,
+            count: events.length,
+            events,
+          },
+        };
+      } catch (error: unknown) {
+        const normalized = toToolError(error);
+        return {
+          isError: true,
+          content: [{ type: "text", text: normalized.message }],
+          structuredContent: {
+            ok: false,
+            error: normalized.message,
+            details: normalized.details,
+          },
+        };
+      }
+    },
+  );
+
+  server.tool(
+    "simulation_history_inventions",
+    "List city-scoped deterministic inventions ordered by tick and key.",
+    {
+      cityId: z.string().min(1),
+      fromTick: z.number().int().nonnegative().optional(),
+      toTick: z.number().int().nonnegative().optional(),
+      limit: z.number().int().positive().max(1_000).optional(),
+      accessToken: z.string().min(1).optional(),
+    },
+    async ({ cityId, fromTick, toTick, limit, accessToken }) => {
+      try {
+        const inventions = await backendClient.simulationHistoryInventions(
+          cityId,
+          { fromTick, toTick, limit },
+          accessToken,
+        );
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  ok: true,
+                  cityId,
+                  fromTick,
+                  toTick,
+                  limit,
+                  count: inventions.length,
+                  inventions,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+          structuredContent: {
+            ok: true,
+            cityId,
+            fromTick,
+            toTick,
+            limit,
+            count: inventions.length,
+            inventions,
+          },
+        };
+      } catch (error: unknown) {
+        const normalized = toToolError(error);
+        return {
+          isError: true,
+          content: [{ type: "text", text: normalized.message }],
+          structuredContent: {
+            ok: false,
+            error: normalized.message,
+            details: normalized.details,
+          },
+        };
+      }
+    },
+  );
+
+  server.tool(
+    "simulation_history_timeline",
+    "Get a city-scoped timeline bundle containing ordered events and inventions.",
+    {
+      cityId: z.string().min(1),
+      fromTick: z.number().int().nonnegative().optional(),
+      toTick: z.number().int().nonnegative().optional(),
+      limit: z.number().int().positive().max(1_000).optional(),
+      accessToken: z.string().min(1).optional(),
+    },
+    async ({ cityId, fromTick, toTick, limit, accessToken }) => {
+      try {
+        const timeline = await backendClient.simulationHistoryTimeline(
+          cityId,
+          { fromTick, toTick, limit },
+          accessToken,
+        );
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  ok: true,
+                  cityId,
+                  fromTick,
+                  toTick,
+                  limit,
+                  timeline,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+          structuredContent: {
+            ok: true,
+            cityId,
+            fromTick,
+            toTick,
+            limit,
+            timeline,
+          },
+        };
+      } catch (error: unknown) {
+        const normalized = toToolError(error);
+        return {
+          isError: true,
+          content: [{ type: "text", text: normalized.message }],
+          structuredContent: {
+            ok: false,
+            error: normalized.message,
+            details: normalized.details,
+          },
+        };
+      }
+    },
+  );
+
+  server.tool(
     "simulation_snapshot",
     "Get simulation status + humans and compute snapshot metrics.",
     {
@@ -227,10 +464,10 @@ export function registerSimulationTools(server: McpServer, backendClient: Backen
           content: [
             {
               type: "text",
-              text: `Snapshot for city ${cityId}: running=${snapshot.running}, humans=${snapshot.metrics.count}, busyRatio=${snapshot.metrics.busyRatio.toFixed(3)}`,
+              text: JSON.stringify({ ok: true, cityId, snapshot }, null, 2),
             },
           ],
-          structuredContent: { ok: true, snapshot },
+          structuredContent: { ok: true, cityId, snapshot },
         };
       } catch (error: unknown) {
         const normalized = toToolError(error);

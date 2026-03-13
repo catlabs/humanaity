@@ -7,9 +7,12 @@ import type {
   BackendSimulationStatusResponse,
   CityInput,
   CityOutput,
+  EventOutput,
   HumanInput,
   HumanOutput,
+  InventionOutput,
   MessageResponse,
+  TimelineOutput,
   SimulationRunInput,
   SimulationRunOutput,
   RefreshTokenRequest,
@@ -22,6 +25,12 @@ type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 interface RequestOptions {
   body?: unknown;
   accessToken?: string;
+}
+
+export interface HistoryQueryOptions {
+  fromTick?: number;
+  toTick?: number;
+  limit?: number;
 }
 
 class TokenStore {
@@ -290,6 +299,35 @@ export class BackendClient {
     );
   }
 
+  async simulationStep(
+    cityId: string,
+    count = 1,
+    accessToken?: string,
+  ): Promise<SimulationRunOutput> {
+    if (!Number.isInteger(count) || count <= 0) {
+      throw new Error("count must be a positive integer");
+    }
+
+    const resolvedAccessToken = await this.resolveAccessToken(accessToken);
+    let run: SimulationRunOutput | undefined;
+
+    for (let index = 0; index < count; index += 1) {
+      run = await this.request<SimulationRunOutput>(
+        "POST",
+        `/api/simulations/${encodeURIComponent(cityId)}/step`,
+        {
+          accessToken: resolvedAccessToken,
+        },
+      );
+    }
+
+    if (!run) {
+      throw new Error("Simulation step did not return a run payload.");
+    }
+
+    return run;
+  }
+
   async simulationStop(
     cityId: string,
     accessToken?: string,
@@ -318,6 +356,57 @@ export class BackendClient {
     );
 
     return this.normalizeSimulationStatus(response);
+  }
+
+  async simulationHistoryEvents(
+    cityId: string,
+    options: HistoryQueryOptions = {},
+    accessToken?: string,
+  ): Promise<EventOutput[]> {
+    return this.request<EventOutput[]>(
+      "GET",
+      this.buildHistoryPath(
+        `/api/simulations/${encodeURIComponent(cityId)}/history/events`,
+        options,
+      ),
+      {
+        accessToken: await this.resolveAccessToken(accessToken),
+      },
+    );
+  }
+
+  async simulationHistoryInventions(
+    cityId: string,
+    options: HistoryQueryOptions = {},
+    accessToken?: string,
+  ): Promise<InventionOutput[]> {
+    return this.request<InventionOutput[]>(
+      "GET",
+      this.buildHistoryPath(
+        `/api/simulations/${encodeURIComponent(cityId)}/history/inventions`,
+        options,
+      ),
+      {
+        accessToken: await this.resolveAccessToken(accessToken),
+      },
+    );
+  }
+
+  async simulationHistoryTimeline(
+    cityId: string,
+    options: HistoryQueryOptions = {},
+    accessToken?: string,
+  ): Promise<TimelineOutput> {
+    return this.request<TimelineOutput>(
+      "GET",
+      this.buildHistoryPath(
+        `/api/simulations/${encodeURIComponent(cityId)}/history/timeline`,
+        options,
+      ),
+      {
+        accessToken: await this.resolveAccessToken(accessToken),
+      },
+    );
   }
 
   async simulationSnapshot(
@@ -507,5 +596,56 @@ export class BackendClient {
     return {
       running: firstBooleanValue ?? false,
     };
+  }
+
+  private buildHistoryPath(
+    basePath: string,
+    options: HistoryQueryOptions,
+  ): string {
+    this.validateHistoryQueryOptions(options);
+
+    const params = new URLSearchParams();
+    if (options.fromTick !== undefined) {
+      params.set("fromTick", String(options.fromTick));
+    }
+    if (options.toTick !== undefined) {
+      params.set("toTick", String(options.toTick));
+    }
+    if (options.limit !== undefined) {
+      params.set("limit", String(options.limit));
+    }
+
+    const serialized = params.toString();
+    return serialized.length === 0 ? basePath : `${basePath}?${serialized}`;
+  }
+
+  private validateHistoryQueryOptions(options: HistoryQueryOptions): void {
+    if (
+      options.fromTick !== undefined &&
+      (!Number.isInteger(options.fromTick) || options.fromTick < 0)
+    ) {
+      throw new Error("fromTick must be a non-negative integer");
+    }
+    if (
+      options.toTick !== undefined &&
+      (!Number.isInteger(options.toTick) || options.toTick < 0)
+    ) {
+      throw new Error("toTick must be a non-negative integer");
+    }
+    if (
+      options.fromTick !== undefined &&
+      options.toTick !== undefined &&
+      options.toTick < options.fromTick
+    ) {
+      throw new Error("toTick must be greater than or equal to fromTick");
+    }
+    if (
+      options.limit !== undefined &&
+      (!Number.isInteger(options.limit) ||
+        options.limit <= 0 ||
+        options.limit > 1_000)
+    ) {
+      throw new Error("limit must be an integer between 1 and 1000");
+    }
   }
 }
