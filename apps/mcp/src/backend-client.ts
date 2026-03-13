@@ -17,6 +17,7 @@ import type {
   SimulationRunInput,
   SimulationRunOutput,
   RefreshTokenRequest,
+  SignupRequest,
   SimulationSnapshotOutput,
   SimulationStatus,
 } from "./contracts.js";
@@ -127,6 +128,19 @@ export class BackendClient {
     };
 
     return loginPromise;
+  }
+
+  async authSignup(email: string, password: string, confirmPassword?: string): Promise<{ ok: true; message: string }> {
+    const body: SignupRequest = {
+      email,
+      password,
+      confirmPassword: confirmPassword ?? password,
+    };
+    const response = await this.request<Record<string, unknown>>("POST", "/auth/signup", { body });
+    return {
+      ok: true,
+      message: (response as { message?: string }).message ?? "User created successfully.",
+    };
   }
 
   async authRefresh(refreshToken?: string): Promise<AuthTokens> {
