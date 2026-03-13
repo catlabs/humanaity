@@ -92,6 +92,11 @@ class SimulationHistoryApiContractTest {
         assertThat(timeline.get("inventions").isArray()).isTrue();
         assertThat(timeline.get("eventCount").asInt()).isEqualTo(timeline.get("events").size());
         assertThat(timeline.get("inventionCount").asInt()).isEqualTo(timeline.get("inventions").size());
+        if (timeline.get("inventions").size() > 0) {
+            JsonNode firstInvention = timeline.get("inventions").get(0);
+            assertThat(firstInvention.has("enrichmentStatus")).isTrue();
+            assertThat(firstInvention.has("enrichmentFallback")).isTrue();
+        }
 
         JsonNode timelineEvents = timeline.get("events");
         assertOrderedByTickAndSequence(timelineEvents);
@@ -162,5 +167,7 @@ class SimulationHistoryApiContractTest {
         assertThat(event.get("payload").isObject()).isTrue();
         assertThat(event.has("actorIds")).isTrue();
         assertThat(event.get("actorIds").isArray()).isTrue();
+        assertThat(event.has("enrichmentStatus")).isTrue();
+        assertThat(event.has("enrichmentFallback")).isTrue();
     }
 }
