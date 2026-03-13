@@ -14,7 +14,7 @@ HUMANAIty has a strong technical base, but it is still in early alpha product ma
 
 - Auth lifecycle (`signup`, `login`, refresh, logout) and JWT integration.
 - City creation linked to automatic human seeding.
-- Live simulation loop (currently not deterministic/reproducible).
+- Deterministic simulation foundation in backend: persisted `SimulationRun`, city-scoped lifecycle controls, deterministic `step()` execution, and reproducibility tests.
 - Pixi-based simulation canvas implementation available in UI.
 - AI integration layer with fallback behavior in backend.
 - MCP tools for auth/cities/humans/simulation.
@@ -27,11 +27,10 @@ HUMANAIty has a strong technical base, but it is still in early alpha product ma
 
 ### Primary gaps
 
-- Determinism gap in simulation engine.
 - Missing historical core (events, inventions, timeline as first-class domain).
 - Placeholder-heavy UI in critical simulation experience.
 - Contract drift in places between backend OpenAPI and frontend usage.
-- Minimal tests for core behavior and regressions.
+- Minimal tests outside the deterministic simulation core.
 
 ## Product vision
 
@@ -43,6 +42,7 @@ Core principles:
 - AI enriches narrative artifacts only (dialogue, invention wording, historical recaps).
 - UI exposes an explorable, data-rich, interactive simulation surface.
 - MCP exposes the same world model for agent-driven exploration and control.
+- Every backend feature that matters for iteration must be **MCP-proof**: testable and consumable end-to-end using MCP tools (no UI required).
 
 ## MVP definition
 
@@ -65,6 +65,7 @@ A **single-city deterministic civilization sandbox**:
 - Events/inventions are persisted and queryable.
 - No fake frontend simulation metadata.
 - AI output is non-authoritative and traceable to deterministic facts.
+- All critical MVP flows remain executable via MCP tools (auth → city → simulation → read surfaces) so they can be tested manually without the UI.
 
 ### Explicitly out of MVP
 
@@ -77,7 +78,8 @@ A **single-city deterministic civilization sandbox**:
 
 ## Epic 1: Deterministic simulation core
 
-- **Build order:** First
+- **Build order:** Delivered first
+- **Status:** Completed in Sprint 1
 - **Business/product value:** Defines the platform identity (simulation engine credibility)
 - **Technical portfolio value:** Demonstrates deterministic systems design + backend architecture
 - **Estimated complexity:** High
@@ -95,7 +97,7 @@ A **single-city deterministic civilization sandbox**:
 - Introduce persisted `SimulationRun` aggregate (seed, tick, status, timestamps).
 - Replace unseeded randomness with deterministic seeded randomness.
 - Separate pure tick computation from wall-clock scheduling.
-- Extend simulation API with step/snapshot-friendly endpoints.
+- Extend simulation API with lifecycle and deterministic step-friendly endpoints.
 - Add deterministic regression tests (same seed => same outputs).
 
 ### Dependencies
@@ -105,7 +107,7 @@ A **single-city deterministic civilization sandbox**:
 
 ## Epic 2: Historical events and inventions ledger
 
-- **Build order:** First
+- **Build order:** Second
 - **Business/product value:** Makes simulation explainable and meaningful to users
 - **Technical portfolio value:** Shows domain modeling and historical state design
 - **Estimated complexity:** High
@@ -133,7 +135,7 @@ A **single-city deterministic civilization sandbox**:
 
 ## Epic 3: Simulation read model and API surface
 
-- **Build order:** First
+- **Build order:** Third
 - **Business/product value:** Creates clean product-facing contracts for UI and MCP
 - **Technical portfolio value:** Demonstrates read-model/API design quality
 - **Estimated complexity:** Medium
@@ -157,6 +159,59 @@ A **single-city deterministic civilization sandbox**:
 
 - Depends on Epics 1 and 2.
 - Unblocks Epics 4 and 7.
+
+## Epic 8: Delivery pipeline and deployment readiness
+
+- **Build order:** After Epic 3, alongside early Epic 4 work
+- **Business/product value:** Makes HUMANAIty reliably buildable and demoable, improving confidence in changes and portfolio readiness without overbuilding infra
+- **Technical portfolio value:** Demonstrates pragmatic CI/CD practice, test strategy, and basic deployment discipline
+- **Estimated complexity:** Medium
+
+### Features
+
+- Documented testing strategy across backend and frontend
+- Automated checks for build, lint, and core tests
+- CI pipelines for pull requests and main branch
+- Simple non-production deployment target (dev or staging)
+- Basic environment configuration model
+- Delivery observability and rollback basics
+
+### Implementation tasks
+
+- Define testing strategy:
+  - Clarify scope for backend unit tests focused on deterministic simulation logic and key domain invariants.
+  - Add backend integration tests for critical simulation and city APIs.
+  - Add lightweight frontend unit tests for key components/services (no heavy E2E flows yet).
+  - Explicitly defer large E2E suites until MVP simulation and UI stabilize.
+- Add baseline automated checks:
+  - Ensure backend build (Gradle/Maven) runs cleanly in a non-IDE environment.
+  - Ensure frontend build (Angular) runs cleanly from the monorepo root.
+  - Wire lint tasks (backend + frontend) into a single commandable pipeline.
+  - Add a focused backend test suite to run in CI (simulation core + key APIs).
+  - Add a minimal but real frontend test suite to run in CI.
+- Introduce CI pipeline:
+  - Add pull request validation (build + lint + targeted tests) with clear pass/fail status.
+  - Add main branch validation with the same or slightly broader checks.
+  - Surface CI status in Git hosting UI to support credible portfolio reviews.
+- Prepare deployment architecture:
+  - Choose simple deployment targets for backend and frontend (e.g., single container per app or simple app service).
+  - Define environment configuration strategy (local vs dev/staging envs, secrets handling, base URLs).
+  - Decide on containerization for backend and frontend where appropriate, keeping images simple.
+- First non-production deployment:
+  - Stand up a dev or staging environment using the chosen deployment targets.
+  - Deploy backend and frontend, ensuring connectivity and correct API base URLs.
+  - Validate environment configuration (auth, database, AI provider config) against MVP flows.
+- Delivery hardening:
+  - Improve logging and error visibility for demo-critical paths.
+  - Add health checks for backend (liveness/readiness) and a simple frontend availability check.
+  - Define a straightforward rollback strategy (e.g., last-known-good build) for non-production.
+  - Document release workflow from local change to deployed dev/staging build.
+
+### Dependencies
+
+- Starts after Epic 3 stabilizes the main read models and API surface.
+- Can run in parallel with Epic 4 UI work once core contracts are stable.
+- Feeds into Epic 6 (Platform hardening) by establishing the baseline delivery and test pipeline.
 
 ## Epic 4: Frontend simulation experience
 
@@ -278,10 +333,12 @@ A **single-city deterministic civilization sandbox**:
 flowchart TD
   epic1[DeterministicSimulationCore] --> epic2[HistoryAndInventionsLedger]
   epic2 --> epic3[SimulationReadModelAndAPI]
+  epic3 --> epic8[DeliveryPipelineAndDeploymentReadiness]
   epic3 --> epic4[FrontendSimulationExperience]
   epic2 --> epic5[AIEnrichmentLayer]
   epic3 --> epic7[MCPAndAgentWorkflows]
   epic1 --> epic6[PlatformHardening]
+  epic8 --> mvp[PortfolioMVP]
   epic4 --> mvp[PortfolioMVP]
   epic5 --> mvp
   epic6 --> mvp
@@ -295,11 +352,15 @@ flowchart TD
 3. Add persisted event ledger.
 4. Add persisted invention model.
 5. Expose simulation snapshot/timeline/event/invention APIs.
-6. Rewire city list/detail UI to consume real snapshot data.
-7. Add AI-enriched event and invention summaries.
-8. Extend MCP with snapshot/timeline-focused tools.
-9. Add scoped hardening (tests, config, authorization, contract alignment).
-10. Introduce standards-based identity for external clients and MCP access (`Keycloak`/OIDC/OAuth2) once core product flows are stable.
+6. For every new or changed backend API endpoint, add or update the corresponding MCP tools and smoke tests in the **same sprint**, so flows remain testable without the UI.
+7. Establish testing strategy and baseline automated checks for backend and frontend (build, lint, and focused tests).
+8. Introduce CI pipelines for pull requests and main branch validation.
+9. Prepare simple deployment architecture and perform a first non-production deployment (dev or staging).
+10. Rewire city list/detail UI to consume real snapshot data.
+11. Add AI-enriched event and invention summaries.
+12. Extend MCP with snapshot/timeline-focused tools.
+13. Add scoped hardening (tests, config, authorization, contract alignment).
+14. Introduce standards-based identity for external clients and MCP access (`Keycloak`/OIDC/OAuth2) once core product flows are stable.
 
 ## Suggested delegation
 
