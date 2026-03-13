@@ -1,9 +1,13 @@
 import { CommonModule } from '@angular/common';
 import {
+  AfterViewInit,
   Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
   computed,
   inject,
-  OnInit,
   signal,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
@@ -12,34 +16,20 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { CityOutput } from '@api';
+import {
+  CityOutput,
+  EventOutput,
+  HumanOutput,
+  InventionOutput,
+  SimulationSnapshotOutput,
+} from '@api';
+import { EventItemComponent, EventType } from '@shared';
+import { Observable, Subscription, interval } from 'rxjs';
 import { CityService } from '../../city.service';
-
-type HumanState =
-  | 'active'
-  | 'resting'
-  | 'creating'
-  | 'collaborating'
-  | 'contemplating';
-
-type InventionCategory = 'scientific' | 'philosophical' | 'cultural';
-
-type Human = {
-  id: string;
-  name: string;
-  state: HumanState;
-  primaryTrait: string;
-};
-
-type Invention = {
-  id: string;
-  name: string;
-  category: InventionCategory;
-  year: number;
-  impact: number; // 0-100
-};
+import { PixiCanvasService } from '../../services/pixi-canvas.service';
 
 @Component({
   selector: 'app-simulation-detail',
@@ -53,26 +43,36 @@ type Invention = {
     MatDividerModule,
     MatSidenavModule,
     MatListModule,
+    MatProgressSpinnerModule,
+    EventItemComponent,
   ],
   templateUrl: './simulation-detail.component.html',
   styleUrl: './simulation-detail.component.scss',
 })
-export class SimulationDetailComponent implements OnInit {
+export class SimulationDetailComponent
+  implements OnInit, AfterViewInit, OnDestroy
+{
+  @ViewChild('worldCanvas', { static: false })
+  worldCanvasRef?: ElementRef<HTMLDivElement>;
+
   private route = inject(ActivatedRoute);
   private cityService = inject(CityService);
+  private pixiCanvasService = inject(PixiCanvasService);
+
+  private pollingSubscription?: Subscription;
+  private pixiInitialized = false;
 
   city: CityOutput = this.route.snapshot.data['city'];
 
-  // View model (placeholder data; structure-focused)
-  readonly humanStates: HumanState[] = [
+  readonly humanStates = [
     'active',
     'creating',
     'collaborating',
     'contemplating',
     'resting',
-  ];
+  ] as const;
 
-  filters = signal<Record<HumanState, boolean>>({
+  filters = signal<Record<string, boolean>>({
     active: true,
     resting: true,
     creating: true,
@@ -80,100 +80,337 @@ export class SimulationDetailComponent implements OnInit {
     contemplating: true,
   });
 
-  humans = signal<Human[]>([]);
+  humans = signal<SimulationSnapshotOutput['humans']>([]);
+  inventions = signal<InventionOutput[]>([]);
+  events = signal<EventOutput[]>([]);
 
-  inventions = signal<Invention[]>([]);
+  selectedHumanId = signal<number | null>(null);
+  selectedInventionId = signal<number | null>(null);
+  selectedEventId = signal<number | null>(null);
 
-  selectedHuman = signal<Human | null>(null);
-  selectedInvention = signal<Invention | null>(null);
+  snapshotLoading = signal(true);
+  historyLoading = signal(true);
+  controlBusy = signal(false);
+  snapshotError = signal<string | null>(null);
+  historyError = signal<string | null>(null);
+
+  hasRun = signal(false);
+  isRunning = signal(false);
+  currentTick = signal(0);
+  currentYear = signal(1);
+  currentEra = signal('FOUNDING');
+  worldPhase = signal('CREATED');
+
+  populationTotal = signal(0);
+  populationBusy = signal(0);
+  totalEvents = signal(0);
+  totalInventions = signal(0);
+  recentEventCount = signal(0);
+  recentInventionCount = signal(0);
 
   filteredHumans = computed(() =>
-    this.humans().filter((h) => this.filters()[h.state])
+    this.humans().filter((human) => this.filters()[this.humanState(human)])
   );
 
-  currentEra = signal('Founding');
-  currentYear = signal(1);
-  worldPhase = signal('idle');
+  selectedHuman = computed(() => {
+    const id = this.selectedHumanId();
+    return id === null ? null : this.humans().find((human) => human.id === id) ?? null;
+  });
 
-  populationTotal = computed(() => this.humans().length);
-  populationActive = computed(
-    () => this.humans().filter((h) => h.state === 'active').length
+  selectedInvention = computed(() => {
+    const id = this.selectedInventionId();
+    return id === null
+      ? null
+      : this.inventions().find((invention) => invention.id === id) ?? null;
+  });
+
+  selectedEvent = computed(() => {
+    const id = this.selectedEventId();
+    return id === null ? null : this.events().find((event) => event.id === id) ?? null;
+  });
+
+  populationActive = computed(() =>
+    Math.max(this.populationTotal() - this.populationBusy(), 0)
   );
 
   inventionCounts = computed(() => {
-    const inv = this.inventions();
+    const inventions = this.inventions();
     return {
-      scientific: inv.filter((i) => i.category === 'scientific').length,
-      philosophical: inv.filter((i) => i.category === 'philosophical').length,
-      cultural: inv.filter((i) => i.category === 'cultural').length,
-      total: inv.length,
+      scientific: inventions.filter((inv) => inv.category === 'TECHNIQUE').length,
+      philosophical: inventions.filter((inv) => inv.category === 'KNOWLEDGE').length,
+      cultural: inventions.filter((inv) => inv.category === 'SOCIAL_PRACTICE').length,
+      total: inventions.length,
     };
   });
 
-  toggleFilter(state: HumanState): void {
+  eraLabel = computed(() => this.formatEnumLabel(this.currentEra()));
+  phaseLabel = computed(() => this.formatEnumLabel(this.worldPhase()));
+  canStart = computed(() => !this.controlBusy() && !this.isRunning());
+  canPause = computed(() => !this.controlBusy() && this.isRunning());
+  canStep = computed(
+    () => !this.controlBusy() && this.hasRun() && !this.isRunning()
+  );
+  noRunYet = computed(() => !this.snapshotLoading() && !this.hasRun());
+  hasHumans = computed(() => this.populationTotal() > 0);
+  showWorldOverlay = computed(() => this.noRunYet() || !this.hasHumans());
+
+  ngOnInit(): void {
+    this.refreshAll();
+    this.pollingSubscription = interval(2000).subscribe(() => {
+      if (this.isRunning()) {
+        this.refreshAll(false);
+      }
+    });
+  }
+
+  async ngAfterViewInit(): Promise<void> {
+    const container = this.worldCanvasRef?.nativeElement;
+    if (!container) {
+      return;
+    }
+
+    await this.pixiCanvasService.initialize(container);
+    this.pixiInitialized = true;
+    this.syncPixiHumans();
+  }
+
+  ngOnDestroy(): void {
+    this.pollingSubscription?.unsubscribe();
+    this.pixiCanvasService.destroy();
+  }
+
+  toggleFilter(state: string): void {
     this.filters.update((prev) => ({ ...prev, [state]: !prev[state] }));
   }
 
-  ngOnInit(): void {
-    const cityId = this.city.id;
+  onStart(): void {
+    this.runControlAction((cityId) => this.cityService.startSimulation(cityId));
+  }
+
+  onPause(): void {
+    this.runControlAction((cityId) => this.cityService.stopSimulation(cityId));
+  }
+
+  onStep(): void {
+    this.runControlAction((cityId) => this.cityService.stepSimulation(cityId));
+  }
+
+  onRefresh(): void {
+    if (this.controlBusy()) {
+      return;
+    }
+    this.refreshAll();
+  }
+
+  selectHuman(human: SimulationSnapshotOutput['humans'][number]): void {
+    this.selectedHumanId.set(human.id);
+    this.selectedInventionId.set(null);
+    this.selectedEventId.set(null);
+  }
+
+  selectInvention(invention: InventionOutput): void {
+    this.selectedInventionId.set(invention.id);
+    this.selectedHumanId.set(null);
+    this.selectedEventId.set(null);
+  }
+
+  selectEvent(event: EventOutput): void {
+    this.selectedEventId.set(event.id);
+    this.selectedHumanId.set(null);
+    this.selectedInventionId.set(null);
+  }
+
+  clearSelection(): void {
+    this.selectedHumanId.set(null);
+    this.selectedInventionId.set(null);
+    this.selectedEventId.set(null);
+  }
+
+  humanState(human: SimulationSnapshotOutput['humans'][number]): string {
+    return human.busy ? 'resting' : 'active';
+  }
+
+  humanPrimaryTrait(human: SimulationSnapshotOutput['humans'][number]): string {
+    return human.busy ? 'Focused' : 'Curious';
+  }
+
+  eventType(event: EventOutput): EventType {
+    const typeMap: Record<EventOutput.EventTypeEnum, EventType> = {
+      SIMULATION_STARTED: 'other',
+      SIMULATION_PAUSED: 'other',
+      SIMULATION_RESUMED: 'other',
+      SIMULATION_COMPLETED: 'other',
+      HUMANS_COLLIDED: 'warning',
+      DISCOVERY_UNLOCKED: 'invention',
+      DIALOGUE_EXCHANGED: 'other',
+      INVENTION_EMERGED: 'invention',
+    };
+
+    return typeMap[event.eventType] ?? 'other';
+  }
+
+  eventTitle(event: EventOutput): string {
+    return this.formatEnumLabel(event.eventType);
+  }
+
+  eventDescription(event: EventOutput): string {
+    return `Tick ${event.tick} • Year ${event.year} • ${this.formatEnumLabel(event.era)}`;
+  }
+
+  eventTimestamp(event: EventOutput): string {
+    return new Date(event.createdAt).toLocaleString();
+  }
+
+  inventionCategoryLabel(invention: InventionOutput): string {
+    return this.formatEnumLabel(invention.category);
+  }
+
+  private refreshAll(showLoading = true): void {
+    this.refreshSnapshot(showLoading);
+    this.refreshHistory(showLoading);
+  }
+
+  private refreshSnapshot(showLoading: boolean): void {
+    const cityId = this.requireCityId();
     if (!cityId) {
       return;
     }
+
+    if (showLoading) {
+      this.snapshotLoading.set(true);
+    }
+    this.snapshotError.set(null);
+
     this.cityService.getSimulationSnapshot(cityId).subscribe({
       next: (snapshot) => {
-        this.currentEra.set(this.formatEnumLabel(snapshot.run.era));
-        this.currentYear.set(snapshot.run.year);
-        this.worldPhase.set(snapshot.run.running ? 'running' : (snapshot.run.status?.toLowerCase() ?? 'idle'));
-
-        this.humans.set(snapshot.humans.map((human) => ({
-          id: String(human.id),
-          name: human.name || `Human ${human.id}`,
-          state: human.busy ? 'resting' : 'active',
-          primaryTrait: human.busy ? 'Focused' : 'Curious',
-        })));
-
-        this.inventions.set(snapshot.recentInventions.map((invention) => ({
-          id: invention.inventionKey,
-          name: invention.title,
-          category: this.toInventionCategory(invention.category),
-          year: invention.yearCreated,
-          impact: invention.impactScore,
-        })));
+        this.applySnapshot(snapshot);
+        this.snapshotLoading.set(false);
       },
       error: (error) => {
+        this.snapshotLoading.set(false);
+        this.snapshotError.set('Failed to load simulation snapshot.');
         console.error('Error loading simulation snapshot:', error);
       },
     });
   }
 
-  private toInventionCategory(category: string): InventionCategory {
-    switch (category) {
-      case 'TECHNIQUE':
-        return 'scientific';
-      case 'SOCIAL_PRACTICE':
-        return 'cultural';
-      default:
-        return 'philosophical';
+  private refreshHistory(showLoading: boolean): void {
+    const cityId = this.requireCityId();
+    if (!cityId) {
+      return;
     }
+
+    if (showLoading) {
+      this.historyLoading.set(true);
+    }
+    this.historyError.set(null);
+
+    this.cityService.getSimulationTimeline(cityId, 100).subscribe({
+      next: (timeline) => {
+        this.events.set(timeline.events);
+        this.inventions.set(timeline.inventions);
+        this.totalEvents.set(timeline.eventCount);
+        this.totalInventions.set(timeline.inventionCount);
+        this.historyLoading.set(false);
+      },
+      error: (error) => {
+        this.historyLoading.set(false);
+        this.historyError.set('Failed to load simulation history.');
+        console.error('Error loading simulation timeline:', error);
+      },
+    });
+  }
+
+  private applySnapshot(snapshot: SimulationSnapshotOutput): void {
+    this.hasRun.set(snapshot.run.hasRun);
+    this.isRunning.set(snapshot.run.running);
+    this.currentTick.set(snapshot.run.tick);
+    this.currentYear.set(snapshot.run.year);
+    this.currentEra.set(snapshot.run.era);
+    this.worldPhase.set(
+      snapshot.run.status ?? (snapshot.run.running ? 'RUNNING' : 'CREATED')
+    );
+
+    this.populationTotal.set(snapshot.metrics.population);
+    this.populationBusy.set(snapshot.metrics.busyCount);
+    this.totalEvents.set(snapshot.metrics.eventCount);
+    this.totalInventions.set(snapshot.metrics.inventionCount);
+    this.recentEventCount.set(snapshot.timelineSummary.recentEventCount);
+    this.recentInventionCount.set(snapshot.timelineSummary.recentInventionCount);
+    this.humans.set(snapshot.humans);
+
+    if (this.events().length === 0 && snapshot.recentEvents.length > 0) {
+      this.events.set(snapshot.recentEvents);
+    }
+    if (this.inventions().length === 0 && snapshot.recentInventions.length > 0) {
+      this.inventions.set(snapshot.recentInventions);
+    }
+
+    this.syncPixiHumans(
+      snapshot.humans.map((human) => ({
+        id: human.id,
+        name: human.name,
+        x: human.x ?? 0,
+        y: human.y ?? 0,
+        busy: human.busy,
+      }))
+    );
+  }
+
+  private syncPixiHumans(snapshotHumans = this.humansToOutput()): void {
+    if (!this.pixiInitialized) {
+      return;
+    }
+
+    snapshotHumans.forEach((human) => {
+      this.pixiCanvasService.addHuman(human);
+      this.pixiCanvasService.updateHuman(human);
+    });
+  }
+
+  private humansToOutput(): HumanOutput[] {
+    return this.humans().map((human) => ({
+      id: human.id,
+      name: human.name,
+      x: human.x ?? 0,
+      y: human.y ?? 0,
+      busy: human.busy,
+    }));
+  }
+
+  private runControlAction(action: (cityId: number) => Observable<unknown>): void {
+    const cityId = this.requireCityId();
+    if (!cityId || this.controlBusy()) {
+      return;
+    }
+
+    this.controlBusy.set(true);
+    action(cityId).subscribe({
+      next: () => {
+        this.controlBusy.set(false);
+        this.refreshAll(false);
+      },
+      error: (error: unknown) => {
+        this.controlBusy.set(false);
+        this.snapshotError.set('Simulation control action failed.');
+        console.error('Simulation control action failed:', error);
+      },
+    });
+  }
+
+  private requireCityId(): number | null {
+    if (!this.city.id) {
+      this.snapshotError.set('Missing city id.');
+      return null;
+    }
+    return this.city.id;
   }
 
   private formatEnumLabel(value: string): string {
-    const lower = value.toLowerCase();
-    return lower.charAt(0).toUpperCase() + lower.slice(1);
-  }
-
-  selectHuman(human: Human): void {
-    this.selectedHuman.set(human);
-    this.selectedInvention.set(null);
-  }
-
-  clearSelection(): void {
-    this.selectedHuman.set(null);
-    this.selectedInvention.set(null);
-  }
-
-  selectInvention(invention: Invention): void {
-    this.selectedInvention.set(invention);
-    this.selectedHuman.set(null);
+    return value
+      .toLowerCase()
+      .split('_')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
   }
 }

@@ -3,28 +3,54 @@
     <div class="title-block">
       <div class="title-main">{{ city.name || "Simulation" }}</div>
       <div class="title-sub">
-        Era: {{ currentEra() }} · Year: {{ currentYear() }} · Phase:
-        {{ worldPhase() }}
+        Era: {{ eraLabel() }} · Year: {{ currentYear() }} · Tick: {{ currentTick() }} ·
+        Phase: {{ phaseLabel() }}
       </div>
     </div>
 
     <span class="spacer"></span>
 
-    <button mat-button type="button" class="action-btn">
-      <mat-icon>groups</mat-icon>
-      Population
+    <button mat-stroked-button type="button" (click)="onRefresh()" [disabled]="controlBusy()">
+      <mat-icon>refresh</mat-icon>
+      Refresh
     </button>
-    <button mat-button type="button" class="action-btn">
-      <mat-icon>schedule</mat-icon>
-      Timeline
+    <button mat-flat-button color="primary" type="button" (click)="onStart()" [disabled]="!canStart()">
+      <mat-icon>play_arrow</mat-icon>
+      {{ hasRun() ? "Resume" : "Start" }}
+    </button>
+    <button mat-stroked-button type="button" (click)="onPause()" [disabled]="!canPause()">
+      <mat-icon>pause</mat-icon>
+      Pause
+    </button>
+    <button mat-stroked-button type="button" (click)="onStep()" [disabled]="!canStep()">
+      <mat-icon>skip_next</mat-icon>
+      Step
     </button>
   </mat-toolbar>
+
+  @if (snapshotError()) {
+    <div class="state-banner state-banner--error">
+      <mat-icon>error</mat-icon>
+      <span>{{ snapshotError() }}</span>
+    </div>
+  }
+  @if (historyError()) {
+    <div class="state-banner state-banner--warn">
+      <mat-icon>warning</mat-icon>
+      <span>{{ historyError() }}</span>
+    </div>
+  }
+  @if (noRunYet()) {
+    <div class="state-banner">
+      <mat-icon>info</mat-icon>
+      <span>No simulation run yet. Start or step to begin.</span>
+    </div>
+  }
 
   <mat-drawer-container
     class="drawer-container app-drawer-content-transparent"
     autosize
   >
-    <!-- Left: Controls Panel -->
     <mat-drawer
       position="start"
       mode="side"
@@ -34,39 +60,33 @@
       <div class="panel">
         <div class="panel-header">
           <div class="panel-title">
-            <mat-icon>filter_alt</mat-icon>
-            Filters
+            <mat-icon>tune</mat-icon>
+            Controls and Humans
           </div>
-        </div>
-
-        <div class="filters">
-          @for (state of humanStates; track state) {
-            <mat-checkbox
-              [checked]="filters()[state]"
-              (change)="toggleFilter(state)"
-            >
-              <span class="list-title">{{ state }}</span>
-            </mat-checkbox>
+          @if (controlBusy()) {
+            <mat-spinner diameter="18"></mat-spinner>
           }
         </div>
 
-        <mat-divider></mat-divider>
-
-        <div class="panel-section">
-          <div class="section-title">Statistics</div>
+        <div class="panel-section panel-section--compact">
+          <div class="section-title">State</div>
           <table class="stats">
             <tbody>
               <tr>
-                <td>Total</td>
+                <td>Status</td>
+                <td class="stats-value">{{ isRunning() ? "Running" : "Paused" }}</td>
+              </tr>
+              <tr>
+                <td>Population</td>
                 <td class="stats-value">{{ populationTotal() }}</td>
               </tr>
               <tr>
-                <td>Active</td>
-                <td class="stats-value">{{ populationActive() }}</td>
+                <td>Busy</td>
+                <td class="stats-value">{{ populationBusy() }}</td>
               </tr>
               <tr>
-                <td>Inventions</td>
-                <td class="stats-value">{{ inventionCounts().total }}</td>
+                <td>Recent timeline</td>
+                <td class="stats-value">{{ recentEventCount() }}e / {{ recentInventionCount() }}i</td>
               </tr>
             </tbody>
           </table>
@@ -74,28 +94,39 @@
 
         <mat-divider></mat-divider>
 
-        <div class="panel-section">
-          <div class="section-title">
-            Humans ({{ filteredHumans().length }})
-          </div>
-          <mat-nav-list>
-            @for (human of filteredHumans(); track human.id) {
-              <button mat-list-item type="button" (click)="selectHuman(human)">
-                <mat-icon matListItemIcon>person</mat-icon>
-                <div matListItemTitle class="list-title">{{ human.name }}</div>
-                <div matListItemLine class="list-subtitle">
-                  {{ human.primaryTrait }} · {{ human.state }}
-                </div>
-              </button>
-            } @empty {
-              <div class="empty">No humans match filters</div>
-            }
-          </mat-nav-list>
+        <div class="filters">
+          @for (state of humanStates; track state) {
+            <mat-checkbox [checked]="filters()[state]" (change)="toggleFilter(state)">
+              <span class="list-title">{{ state }}</span>
+            </mat-checkbox>
+          }
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <div class="panel-section scroll-area">
+          <div class="section-title">Humans ({{ filteredHumans().length }})</div>
+          @if (snapshotLoading()) {
+            <div class="empty">Loading humans...</div>
+          } @else {
+            <mat-nav-list>
+              @for (human of filteredHumans(); track human.id) {
+                <button mat-list-item type="button" (click)="selectHuman(human)">
+                  <mat-icon matListItemIcon>person</mat-icon>
+                  <div matListItemTitle class="list-title">{{ human.name }}</div>
+                  <div matListItemLine class="list-subtitle">
+                    {{ humanPrimaryTrait(human) }} · {{ humanState(human) }}
+                  </div>
+                </button>
+              } @empty {
+                <div class="empty">No humans available for selected filters.</div>
+              }
+            </mat-nav-list>
+          }
         </div>
       </div>
     </mat-drawer>
 
-    <!-- Right: Inspector Panel -->
     <mat-drawer
       position="end"
       mode="side"
@@ -103,22 +134,19 @@
       class="drawer drawer--right app-surface-bg app-drawer-flat"
     >
       <div class="panel">
-        @if (selectedHuman()) {
-          <div class="panel-header">
-            <div class="panel-title">
-              <mat-icon>person_search</mat-icon>
-              Human Inspector
-            </div>
-            <button
-              mat-icon-button
-              type="button"
-              (click)="clearSelection()"
-              aria-label="Clear selection"
-            >
+        <div class="panel-header">
+          <div class="panel-title">
+            <mat-icon>notes</mat-icon>
+            History and Inspector
+          </div>
+          @if (selectedHuman() || selectedInvention() || selectedEvent()) {
+            <button mat-icon-button type="button" (click)="clearSelection()" aria-label="Clear selection">
               <mat-icon>close</mat-icon>
             </button>
-          </div>
+          }
+        </div>
 
+        @if (selectedHuman()) {
           <div class="panel-section">
             <div class="section-title">{{ selectedHuman()!.name }}</div>
             <table class="stats">
@@ -129,105 +157,146 @@
                 </tr>
                 <tr>
                   <td>State</td>
-                  <td class="stats-value">{{ selectedHuman()!.state }}</td>
+                  <td class="stats-value">{{ humanState(selectedHuman()!) }}</td>
                 </tr>
                 <tr>
                   <td>Trait</td>
-                  <td class="stats-value">
-                    {{ selectedHuman()!.primaryTrait }}
-                  </td>
+                  <td class="stats-value">{{ humanPrimaryTrait(selectedHuman()!) }}</td>
                 </tr>
               </tbody>
             </table>
           </div>
-        } @else {
-          <div class="panel-header">
-            <div class="panel-title">
-              <mat-icon>inventory_2</mat-icon>
-              Invention Registry
+        } @else if (selectedInvention()) {
+          <div class="panel-section">
+            <div class="section-title">{{ selectedInvention()!.title }}</div>
+            <table class="stats">
+              <tbody>
+                <tr>
+                  <td>Category</td>
+                  <td class="stats-value">{{ inventionCategoryLabel(selectedInvention()!) }}</td>
+                </tr>
+                <tr>
+                  <td>Year</td>
+                  <td class="stats-value">{{ selectedInvention()!.yearCreated }}</td>
+                </tr>
+                <tr>
+                  <td>Impact</td>
+                  <td class="stats-value">{{ selectedInvention()!.impactScore }}%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        } @else if (selectedEvent()) {
+          <div class="panel-section">
+            <div class="section-title">{{ eventTitle(selectedEvent()!) }}</div>
+            <div class="event-detail">
+              <div>{{ eventDescription(selectedEvent()!) }}</div>
+              <div class="list-subtitle">{{ eventTimestamp(selectedEvent()!) }}</div>
             </div>
           </div>
+        }
 
-          <div class="panel-section invention-stats">
-            <div class="stat-block">
-              <div class="stat-label">Scientific</div>
-              <div class="stat-value">{{ inventionCounts().scientific }}</div>
-            </div>
-            <div class="stat-block">
-              <div class="stat-label">Philosophical</div>
-              <div class="stat-value">
-                {{ inventionCounts().philosophical }}
-              </div>
-            </div>
-            <div class="stat-block">
-              <div class="stat-label">Cultural</div>
-              <div class="stat-value">{{ inventionCounts().cultural }}</div>
-            </div>
+        <div class="panel-section invention-stats">
+          <div class="stat-block">
+            <div class="stat-label">Scientific</div>
+            <div class="stat-value">{{ inventionCounts().scientific }}</div>
           </div>
+          <div class="stat-block">
+            <div class="stat-label">Philosophical</div>
+            <div class="stat-value">{{ inventionCounts().philosophical }}</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-label">Cultural</div>
+            <div class="stat-value">{{ inventionCounts().cultural }}</div>
+          </div>
+        </div>
 
-          <mat-divider></mat-divider>
+        <mat-divider></mat-divider>
 
-          <div class="panel-section scroll-area">
+        <div class="panel-section scroll-area">
+          <div class="section-title">Inventions ({{ inventions().length }})</div>
+          @if (historyLoading()) {
+            <div class="empty">Loading inventions...</div>
+          } @else {
             <mat-nav-list>
               @for (inv of inventions(); track inv.id) {
-                <button
-                  mat-list-item
-                  type="button"
-                  (click)="selectInvention(inv)"
-                >
+                <button mat-list-item type="button" (click)="selectInvention(inv)">
                   <mat-icon matListItemIcon>lightbulb</mat-icon>
-                  <div matListItemTitle class="list-title">{{ inv.name }}</div>
+                  <div matListItemTitle class="list-title">{{ inv.title }}</div>
                   <div matListItemLine class="list-subtitle">
-                    {{ inv.category }} · Year {{ inv.year }} · Impact
-                    {{ inv.impact }}%
+                    {{ inventionCategoryLabel(inv) }} · Year {{ inv.yearCreated }} · Impact {{ inv.impactScore }}%
                   </div>
                 </button>
               } @empty {
-                <div class="empty">No inventions recorded</div>
+                <div class="empty">No inventions recorded yet.</div>
               }
             </mat-nav-list>
-          </div>
+          }
+        </div>
 
-          <mat-divider></mat-divider>
+        <mat-divider></mat-divider>
 
-          <div class="panel-footer">
-            <button
-              mat-raised-button
-              color="primary"
-              disabled
-              type="button"
-            >
-              <mat-icon>add</mat-icon>
-              Generate invention (disabled)
-            </button>
-          </div>
-        }
+        <div class="panel-section scroll-area events">
+          <div class="section-title">Events ({{ events().length }})</div>
+          @if (historyLoading()) {
+            <div class="empty">Loading events...</div>
+          } @else {
+            @for (event of events(); track event.id) {
+              <button type="button" class="event-select" (click)="selectEvent(event)">
+                <app-event-item
+                  [title]="eventTitle(event)"
+                  [description]="eventDescription(event)"
+                  [timestamp]="eventTimestamp(event)"
+                  [type]="eventType(event)"
+                ></app-event-item>
+              </button>
+            } @empty {
+              <div class="empty">No events recorded yet.</div>
+            }
+          }
+        </div>
       </div>
     </mat-drawer>
 
-    <!-- Center: World View -->
     <mat-drawer-content class="content">
       <div class="world">
         <div class="world-header">
           <div class="world-title">World View</div>
-          <button mat-icon-button type="button" aria-label="Next">
-            <mat-icon>navigate_next</mat-icon>
-          </button>
+          <div class="world-meta">
+            {{ populationActive() }} active / {{ populationTotal() }} total
+          </div>
         </div>
 
         <div class="world-body">
-          <div class="placeholder">
-            <mat-icon class="placeholder-icon">public</mat-icon>
-            <div class="placeholder-text">World canvas</div>
-          </div>
+          <div class="world-canvas" #worldCanvas></div>
+          @if (showWorldOverlay()) {
+            <div class="world-overlay">
+              <mat-icon>public</mat-icon>
+              <div>
+                {{ noRunYet() ? "No run started yet." : "No humans available yet." }}
+              </div>
+            </div>
+          }
+          @if (snapshotLoading()) {
+            <div class="world-loading">
+              <mat-spinner diameter="24"></mat-spinner>
+              <span>Loading simulation...</span>
+            </div>
+          }
         </div>
 
         <div class="world-footer">
           <div class="pill">
-            <span>Population</span><strong>{{ populationTotal() }}</strong>
+            <span>Status</span><strong>{{ isRunning() ? "Running" : "Paused" }}</strong>
           </div>
           <div class="pill">
-            <span>Active</span><strong>{{ populationActive() }}</strong>
+            <span>Events</span><strong>{{ totalEvents() }}</strong>
+          </div>
+          <div class="pill">
+            <span>Inventions</span><strong>{{ totalInventions() }}</strong>
+          </div>
+          <div class="pill">
+            <span>Recent</span><strong>{{ recentEventCount() }}e / {{ recentInventionCount() }}i</strong>
           </div>
         </div>
       </div>

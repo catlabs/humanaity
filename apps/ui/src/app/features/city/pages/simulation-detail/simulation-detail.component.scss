@@ -49,7 +49,6 @@
 }
 
 .drawer-container {
-  // Proto intent: no extra gap between bar and content.
   margin-top: 0;
   flex: 1 1 0%;
   min-height: 0;
@@ -59,7 +58,6 @@
 }
 
 .drawer {
-  // Proto intent: drawers are the panels (no extra “padding wrapper”).
   padding: 0;
   background: var(--mat-sys-surface-container-lowest);
 }
@@ -75,17 +73,20 @@
 }
 
 .content {
-  height: 100%;
+  display: flex;
+  flex: 1 1 0%;
   min-height: 0;
   padding: 0;
 }
 
 .panel {
-  // Proto intent: avoid nested “panel inside panel” borders.
   border: none;
   border-radius: 0;
   background: transparent;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .panel-header {
@@ -101,6 +102,9 @@
 
 .panel-section {
   padding: map.get($spacing-scale, 4) map.get($spacing-scale, 6);
+}
+.panel-section--compact {
+  padding-top: map.get($spacing-scale, 3);
 }
 .panel-footer {
   @include hai-panel-footer;
@@ -170,6 +174,9 @@
   border-radius: 0;
   background: transparent;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .world-header {
@@ -185,27 +192,40 @@
 .world-body {
   flex: 1 1 0%;
   min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  // Proto intent: canvas reads slightly “deeper” than side panels.
+  position: relative;
+  overflow: hidden;
   background: var(--mat-sys-surface);
 }
 
-.placeholder {
-  @include hai-col(2);
+.world-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.world-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: map.get($spacing-scale, 2);
   color: var(--mat-sys-on-surface-variant);
+  background: color-mix(in srgb, var(--mat-sys-surface) 80%, transparent);
 }
 
-.placeholder-icon {
-  font-size: 2rem;
-  height: 2rem;
-  width: 2rem;
-}
-
-.placeholder-text {
-  @include hai-body-small;
+.world-loading {
+  position: absolute;
+  top: map.get($spacing-scale, 3);
+  right: map.get($spacing-scale, 4);
+  display: flex;
+  align-items: center;
+  gap: map.get($spacing-scale, 2);
+  padding: map.get($spacing-scale, 2) map.get($spacing-scale, 3);
+  border-radius: $radius-sm;
+  background: color-mix(in srgb, var(--mat-sys-surface-container) 92%, transparent);
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.8rem;
 }
 
 .world-footer {
@@ -223,4 +243,36 @@
   strong {
     color: var(--mat-sys-on-surface);
   }
+}
+
+.state-banner {
+  display: flex;
+  align-items: center;
+  gap: map.get($spacing-scale, 2);
+  padding: map.get($spacing-scale, 2) map.get($spacing-scale, 4);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  color: var(--mat-sys-on-surface-variant);
+  background: var(--mat-sys-surface-container-low);
+}
+
+.state-banner--error {
+  color: #ef4444;
+}
+
+.state-banner--warn {
+  color: #f59e0b;
+}
+
+.event-select {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+
+.event-detail {
+  @include hai-col(2);
 }

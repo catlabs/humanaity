@@ -4,8 +4,11 @@ import {Observable, interval} from 'rxjs';
 import {switchMap, startWith, map} from 'rxjs/operators';
 import {
   CitiesService,
+  EventOutput,
   HumansService,
+  InventionOutput,
   SimulationsService,
+  TimelineOutput,
   CityOutput,
   HumanOutput,
   CityOverviewOutput,
@@ -93,6 +96,37 @@ export class CityService {
   getSimulationSnapshot(cityId: number): Observable<SimulationSnapshotOutput> {
     return this.simulationsService.getCitySnapshot(cityId).pipe(
       switchMap(parseApiResponse<SimulationSnapshotOutput>)
+    );
+  }
+
+  stepSimulation(cityId: number): Observable<void> {
+    return this.simulationsService.stepSimulation(cityId).pipe(
+      switchMap(parseApiResponse<Record<string, unknown>>),
+      map(() => void 0)
+    );
+  }
+
+  getSimulationTimeline(
+    cityId: number,
+    limit = 50
+  ): Observable<TimelineOutput> {
+    return this.simulationsService.getCityTimeline(cityId, undefined, undefined, limit).pipe(
+      switchMap(parseApiResponse<TimelineOutput>)
+    );
+  }
+
+  getSimulationEvents(cityId: number, limit = 20): Observable<EventOutput[]> {
+    return this.simulationsService.listCityEvents(cityId, undefined, undefined, limit).pipe(
+      switchMap(parseApiResponse<EventOutput[]>)
+    );
+  }
+
+  getSimulationInventions(
+    cityId: number,
+    limit = 20
+  ): Observable<InventionOutput[]> {
+    return this.simulationsService.listCityInventions(cityId, undefined, undefined, limit).pipe(
+      switchMap(parseApiResponse<InventionOutput[]>)
     );
   }
 
