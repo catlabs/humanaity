@@ -194,29 +194,12 @@
             <button
               mat-raised-button
               color="primary"
-              [matMenuTriggerFor]="generateMenu"
+              disabled
               type="button"
             >
               <mat-icon>add</mat-icon>
-              Generate invention
+              Generate invention (disabled)
             </button>
-            <mat-menu #generateMenu="matMenu">
-              <button mat-menu-item (click)="generateInvention('scientific')">
-                <mat-icon>science</mat-icon>
-                <span>Scientific</span>
-              </button>
-              <button
-                mat-menu-item
-                (click)="generateInvention('philosophical')"
-              >
-                <mat-icon>psychology</mat-icon>
-                <span>Philosophical</span>
-              </button>
-              <button mat-menu-item (click)="generateInvention('cultural')">
-                <mat-icon>diversity_3</mat-icon>
-                <span>Cultural</span>
-              </button>
-            </mat-menu>
           </div>
         }
       </div>

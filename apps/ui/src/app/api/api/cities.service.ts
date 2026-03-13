@@ -38,7 +38,7 @@ export class CitiesService extends BaseService {
     }
 
     /**
-     * Create a new city
+     * Create a new city with generated humans
      * @endpoint post /api/cities
      * @param cityInput 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
@@ -53,6 +53,9 @@ export class CitiesService extends BaseService {
         }
 
         let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
@@ -119,6 +122,9 @@ export class CitiesService extends BaseService {
 
         let localVarHeaders = this.defaultHeaders;
 
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
+
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
         ]);
         if (localVarHttpHeaderAcceptSelected !== undefined) {
@@ -168,6 +174,9 @@ export class CitiesService extends BaseService {
     public getAllCities(observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
 
         let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
@@ -228,6 +237,9 @@ export class CitiesService extends BaseService {
 
         let localVarHeaders = this.defaultHeaders;
 
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
+
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
         ]);
@@ -284,6 +296,9 @@ export class CitiesService extends BaseService {
 
         let localVarHeaders = this.defaultHeaders;
 
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
+
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
         ]);
@@ -323,6 +338,60 @@ export class CitiesService extends BaseService {
     }
 
     /**
+     * Get all cities owned by the current user
+     * @endpoint get /api/cities/mine
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     */
+    public getMyCities(observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<Array<CityOutput>>;
+    public getMyCities(observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Array<CityOutput>>>;
+    public getMyCities(observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Array<CityOutput>>>;
+    public getMyCities(observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            '*/*'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/api/cities/mine`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<Array<CityOutput>>('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Update a city
      * @endpoint put /api/cities/{id}
      * @param id 
@@ -342,6 +411,9 @@ export class CitiesService extends BaseService {
         }
 
         let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'

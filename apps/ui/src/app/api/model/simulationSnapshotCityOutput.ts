@@ -9,9 +9,8 @@
  */
 
 
-export interface CityOutput { 
+export interface SimulationSnapshotCityOutput { 
     id: number;
     name: string;
-    humans?: Array<any>;
 }
 

@@ -261,6 +261,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/simulations/{cityId}/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a backend-owned simulation snapshot for one city */
+        get: operations["getCitySnapshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/simulations/{cityId}/history/timeline": {
         parameters: {
             query?: never;
@@ -304,6 +321,23 @@ export interface paths {
         };
         /** List city-scoped deterministic history events ordered by tick and sequence */
         get: operations["listCityEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/simulations/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List city overviews with backend-owned simulation read-model fields */
+        get: operations["listCityOverviews"];
         put?: never;
         post?: never;
         delete?: never;
@@ -510,6 +544,90 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        SimulationSnapshotBoundsOutput: {
+            /** Format: double */
+            minX?: number;
+            /** Format: double */
+            maxX?: number;
+            /** Format: double */
+            minY?: number;
+            /** Format: double */
+            maxY?: number;
+        };
+        SimulationSnapshotCentroidOutput: {
+            /** Format: double */
+            x?: number;
+            /** Format: double */
+            y?: number;
+        };
+        SimulationSnapshotCityOutput: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+        };
+        SimulationSnapshotHumanOutput: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** Format: double */
+            x?: number;
+            /** Format: double */
+            y?: number;
+            busy: boolean;
+        };
+        SimulationSnapshotMetricsOutput: {
+            /** Format: int32 */
+            population: number;
+            /** Format: int32 */
+            busyCount: number;
+            /** Format: double */
+            busyRatio: number;
+            centroid?: components["schemas"]["SimulationSnapshotCentroidOutput"];
+            bounds?: components["schemas"]["SimulationSnapshotBoundsOutput"];
+            /** Format: int32 */
+            eventCount: number;
+            /** Format: int32 */
+            inventionCount: number;
+        };
+        SimulationSnapshotOutput: {
+            city: components["schemas"]["SimulationSnapshotCityOutput"];
+            run: components["schemas"]["SimulationSnapshotRunOutput"];
+            timelineSummary: components["schemas"]["SimulationTimelineSummaryOutput"];
+            humans: components["schemas"]["SimulationSnapshotHumanOutput"][];
+            metrics: components["schemas"]["SimulationSnapshotMetricsOutput"];
+            recentEvents: components["schemas"]["EventOutput"][];
+            recentInventions: components["schemas"]["InventionOutput"][];
+        };
+        SimulationSnapshotRunOutput: {
+            hasRun: boolean;
+            /** Format: int64 */
+            runId?: number;
+            /** Format: int64 */
+            seed?: number;
+            /** @enum {string} */
+            status?: "CREATED" | "RUNNING" | "PAUSED" | "COMPLETED";
+            running: boolean;
+            /** Format: int64 */
+            tick: number;
+            /** Format: int32 */
+            year: number;
+            /** @enum {string} */
+            era: "FOUNDING" | "EXPANSION" | "CONSOLIDATION" | "LEGACY";
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        SimulationTimelineSummaryOutput: {
+            /** Format: int64 */
+            latestEventTick?: number;
+            /** Format: int64 */
+            latestInventionTick?: number;
+            /** Format: int32 */
+            recentEventCount: number;
+            /** Format: int32 */
+            recentInventionCount: number;
+        };
         TimelineOutput: {
             /** Format: int64 */
             cityId: number;
@@ -523,6 +641,29 @@ export interface components {
             inventionCount: number;
             events: components["schemas"]["EventOutput"][];
             inventions: components["schemas"]["InventionOutput"][];
+        };
+        CityOverviewOutput: {
+            /** Format: int64 */
+            cityId: number;
+            cityName: string;
+            hasRun: boolean;
+            /** @enum {string} */
+            runStatus?: "CREATED" | "RUNNING" | "PAUSED" | "COMPLETED";
+            running: boolean;
+            /** Format: int64 */
+            tick: number;
+            /** Format: int32 */
+            year: number;
+            /** @enum {string} */
+            era: "FOUNDING" | "EXPANSION" | "CONSOLIDATION" | "LEGACY";
+            /** Format: int32 */
+            population: number;
+            /** Format: int32 */
+            inventionCount: number;
+            /** Format: int32 */
+            eventCount: number;
+            /** Format: date-time */
+            updatedAt?: string;
         };
     };
     responses: never;
@@ -1019,6 +1160,28 @@ export interface operations {
             };
         };
     };
+    getCitySnapshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cityId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SimulationSnapshotOutput"];
+                };
+            };
+        };
+    };
     getCityTimeline: {
         parameters: {
             query?: {
@@ -1093,6 +1256,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["EventOutput"][];
+                };
+            };
+        };
+    };
+    listCityOverviews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CityOverviewOutput"][];
                 };
             };
         };

@@ -9,9 +9,10 @@
  */
 
 
-export interface CityOutput { 
-    id: number;
-    name: string;
-    humans?: Array<any>;
+export interface SimulationSnapshotBoundsOutput { 
+    minX?: number;
+    maxX?: number;
+    minY?: number;
+    maxY?: number;
 }
 

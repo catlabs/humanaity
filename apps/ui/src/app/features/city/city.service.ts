@@ -2,7 +2,16 @@ import {inject, Injectable, Inject, Optional} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {Observable, interval} from 'rxjs';
 import {switchMap, startWith, map} from 'rxjs/operators';
-import {CitiesService, HumansService, SimulationsService, CityOutput, HumanOutput, BASE_PATH} from '@api';
+import {
+  CitiesService,
+  HumansService,
+  SimulationsService,
+  CityOutput,
+  HumanOutput,
+  CityOverviewOutput,
+  SimulationSnapshotOutput,
+  BASE_PATH
+} from '@api';
 import {parseApiResponse} from '@core';
 
 @Injectable({
@@ -72,6 +81,18 @@ export class CityService {
     return this.simulationsService.isSimulationRunning(cityId).pipe(
       switchMap(parseApiResponse<Record<string, boolean>>),
       map((response) => response['running'] ?? false)
+    );
+  }
+
+  getSimulationOverview(): Observable<CityOverviewOutput[]> {
+    return this.simulationsService.listCityOverviews().pipe(
+      switchMap(parseApiResponse<CityOverviewOutput[]>)
+    );
+  }
+
+  getSimulationSnapshot(cityId: number): Observable<SimulationSnapshotOutput> {
+    return this.simulationsService.getCitySnapshot(cityId).pipe(
+      switchMap(parseApiResponse<SimulationSnapshotOutput>)
     );
   }
 

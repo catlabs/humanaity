@@ -2,22 +2,22 @@
 
 ## Execution status
 
-- Current phase: Sprint 3 planned
-- Active chunk: none
-- Next chunk: `Task 1a` - simulation read-model spec
+- Current phase: Sprint 3 implementation complete
+- Active chunk: none (awaiting review)
+- Next chunk: none
 - Blocked items: none
-- Last completed chunk: Sprint 2 closeout (`Task 5b` - timeline ordering/scoping/API contract validation)
+- Last completed chunk: `Task 4b` - MCP smoke and frontend integration validation
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | planned | Lock the read-model contract and remove ambiguity around snapshot/overview semantics. |
-| Task 2a | planned | Add backend snapshot and city-overview query DTOs/endpoints. |
-| Task 2b | planned | Centralize deterministic metrics/read-model assembly behind backend query services. |
-| Task 3a | planned | Regenerate OpenAPI clients and align MCP tools with the new read surfaces. |
-| Task 3b | planned | Replace frontend fake/synthesized city overview data with backend-owned contracts. |
-| Task 3c | planned | Replace simulation detail placeholder metadata with backend snapshot data while preserving current layout. |
-| Task 4a | planned | Add backend/API tests for read-model ordering, scoping, and empty-state behavior. |
-| Task 4b | planned | Add MCP smoke validation and minimal frontend integration checks for the new contract path. |
+| Task 1a | completed | Locked `docs/specs/simulation-read-model-spec.md` with canonical/derived/deferred fields, fixed recent-window semantics, and explicit empty-state rules. |
+| Task 2a | completed | Added backend DTOs and endpoints for `/api/simulations/overview` and `/api/simulations/{cityId}/snapshot`. |
+| Task 2b | completed | Added `simulation/application/query/SimulationReadModelQueryService` to centralize deterministic projection and aggregate metric assembly. |
+| Task 3a | completed | Regenerated OpenAPI artifacts for `apps/ui` and `apps/mcp`; MCP client/tools now consume backend-owned overview/snapshot contracts. |
+| Task 3b | completed | City list now reads backend overview data for status/year/era/invention count instead of random/synthesized metadata. |
+| Task 3c | completed | Simulation detail info bar, humans, and invention registry now read backend snapshot data; local fake invention generation disabled. |
+| Task 4a | completed | Added `SimulationReadModelApiContractTest` covering overview/snapshot no-run-yet and no-history-yet contract semantics. |
+| Task 4b | completed | MCP smoke flow validated `simulation_overview` + `simulation_snapshot`; frontend integration path validated with `tsc` type-check (`ng build` blocked only by sandbox font-fetch restriction). |
 
 ## Sprint intent
 

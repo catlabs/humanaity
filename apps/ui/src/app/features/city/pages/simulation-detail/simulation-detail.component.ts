@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   inject,
+  OnInit,
   signal,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
@@ -11,10 +12,10 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
-import { MatMenuModule } from '@angular/material/menu';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { CityOutput } from '@api';
+import { CityService } from '../../city.service';
 
 type HumanState =
   | 'active'
@@ -49,7 +50,6 @@ type Invention = {
     MatButtonModule,
     MatCheckboxModule,
     MatIconModule,
-    MatMenuModule,
     MatDividerModule,
     MatSidenavModule,
     MatListModule,
@@ -57,8 +57,9 @@ type Invention = {
   templateUrl: './simulation-detail.component.html',
   styleUrl: './simulation-detail.component.scss',
 })
-export class SimulationDetailComponent {
+export class SimulationDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private cityService = inject(CityService);
 
   city: CityOutput = this.route.snapshot.data['city'];
 
@@ -79,47 +80,9 @@ export class SimulationDetailComponent {
     contemplating: true,
   });
 
-  humans = signal<Human[]>([
-    { id: 'h-001', name: 'Human 1', state: 'active', primaryTrait: 'Rational' },
-    { id: 'h-002', name: 'Human 2', state: 'creating', primaryTrait: 'Creative' },
-    {
-      id: 'h-003',
-      name: 'Human 3',
-      state: 'collaborating',
-      primaryTrait: 'Cooperative',
-    },
-    {
-      id: 'h-004',
-      name: 'Human 4',
-      state: 'contemplating',
-      primaryTrait: 'Spiritual',
-    },
-    { id: 'h-005', name: 'Human 5', state: 'resting', primaryTrait: 'Skeptical' },
-  ]);
+  humans = signal<Human[]>([]);
 
-  inventions = signal<Invention[]>([
-    {
-      id: 'inv-001',
-      name: 'Fire Mastery',
-      category: 'scientific',
-      year: 12,
-      impact: 95,
-    },
-    {
-      id: 'inv-002',
-      name: 'Oral Storytelling',
-      category: 'cultural',
-      year: 31,
-      impact: 92,
-    },
-    {
-      id: 'inv-003',
-      name: 'The Question of Existence',
-      category: 'philosophical',
-      year: 24,
-      impact: 88,
-    },
-  ]);
+  inventions = signal<Invention[]>([]);
 
   selectedHuman = signal<Human | null>(null);
   selectedInvention = signal<Invention | null>(null);
@@ -128,10 +91,9 @@ export class SimulationDetailComponent {
     this.humans().filter((h) => this.filters()[h.state])
   );
 
-  // Basic “info bar” values (placeholder)
-  currentEra = signal('renaissance');
-  currentYear = signal(247);
-  worldPhase = signal('enlightenment');
+  currentEra = signal('Founding');
+  currentYear = signal(1);
+  worldPhase = signal('idle');
 
   populationTotal = computed(() => this.humans().length);
   populationActive = computed(
@@ -152,6 +114,54 @@ export class SimulationDetailComponent {
     this.filters.update((prev) => ({ ...prev, [state]: !prev[state] }));
   }
 
+  ngOnInit(): void {
+    const cityId = this.city.id;
+    if (!cityId) {
+      return;
+    }
+    this.cityService.getSimulationSnapshot(cityId).subscribe({
+      next: (snapshot) => {
+        this.currentEra.set(this.formatEnumLabel(snapshot.run.era));
+        this.currentYear.set(snapshot.run.year);
+        this.worldPhase.set(snapshot.run.running ? 'running' : (snapshot.run.status?.toLowerCase() ?? 'idle'));
+
+        this.humans.set(snapshot.humans.map((human) => ({
+          id: String(human.id),
+          name: human.name || `Human ${human.id}`,
+          state: human.busy ? 'resting' : 'active',
+          primaryTrait: human.busy ? 'Focused' : 'Curious',
+        })));
+
+        this.inventions.set(snapshot.recentInventions.map((invention) => ({
+          id: invention.inventionKey,
+          name: invention.title,
+          category: this.toInventionCategory(invention.category),
+          year: invention.yearCreated,
+          impact: invention.impactScore,
+        })));
+      },
+      error: (error) => {
+        console.error('Error loading simulation snapshot:', error);
+      },
+    });
+  }
+
+  private toInventionCategory(category: string): InventionCategory {
+    switch (category) {
+      case 'TECHNIQUE':
+        return 'scientific';
+      case 'SOCIAL_PRACTICE':
+        return 'cultural';
+      default:
+        return 'philosophical';
+    }
+  }
+
+  private formatEnumLabel(value: string): string {
+    const lower = value.toLowerCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  }
+
   selectHuman(human: Human): void {
     this.selectedHuman.set(human);
     this.selectedInvention.set(null);
@@ -166,18 +176,4 @@ export class SimulationDetailComponent {
     this.selectedInvention.set(invention);
     this.selectedHuman.set(null);
   }
-
-  generateInvention(category: InventionCategory): void {
-    const next: Invention = {
-      id: `inv-${Date.now()}`,
-      name: `New ${category} discovery`,
-      category,
-      year: this.currentYear(),
-      impact: Math.floor(Math.random() * 30) + 60,
-    };
-    this.inventions.update((prev) => [next, ...prev]);
-    this.selectedInvention.set(next);
-    this.selectedHuman.set(null);
-  }
 }
-

@@ -9,9 +9,10 @@
  */
 
 
-export interface CityOutput { 
-    id: number;
-    name: string;
-    humans?: Array<any>;
+export interface SimulationTimelineSummaryOutput { 
+    latestEventTick?: number;
+    latestInventionTick?: number;
+    recentEventCount: number;
+    recentInventionCount: number;
 }
 

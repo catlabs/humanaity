@@ -39,6 +39,20 @@ Not allowed:
 - wall-clock-derived simulation year or era
 - frontend-only invention or population approximations
 
+## Field Classification
+
+Sprint 3 fields should be treated in exactly one of these buckets:
+
+- canonical: persisted backend facts or direct projections of persisted backend facts
+- derived: backend-computed values produced from canonical fields using deterministic rules
+- deferred: values intentionally excluded from Sprint 3 and left for later sprints
+
+For Sprint 3:
+
+- canonical fields include city identity, run identity/status/tick/seed/timestamps, ordered humans, ordered events, ordered inventions, and persisted counts
+- derived fields include `year`, `era`, `busyRatio`, `centroid`, `bounds`, and bounded summary counters such as `recentEventCount`
+- deferred fields include AI-written summaries, dialogue snippets, narrative explanations, and advanced analytics
+
 ## Contract 1: City Overview
 
 The city overview contract is the minimum list-row payload needed by UI and MCP for product-facing simulation summaries.
@@ -57,6 +71,12 @@ The city overview contract is the minimum list-row payload needed by UI and MCP 
 - `inventionCount`
 - `eventCount`
 - `updatedAt`
+
+Field classification:
+
+- canonical: `cityId`, `cityName`, `hasRun`, `runStatus`, `running`, `tick`, `population`, `inventionCount`, `eventCount`, `updatedAt`
+- derived: `year`, `era`
+- deferred: any UI-only label such as relative-time strings
 
 ### Field semantics
 
@@ -86,6 +106,13 @@ For a city with no simulation run yet:
 - set `year` and `era` from tick `0` using the deterministic mapping
 - keep counts at real persisted values (`population`, `eventCount`, `inventionCount`)
 
+For a city with a run but no persisted history yet:
+
+- return a valid overview row
+- set run-derived fields from the persisted run
+- keep `eventCount = 0`
+- keep `inventionCount = 0`
+
 ## Contract 2: Unified Simulation Snapshot
 
 The simulation snapshot contract is the canonical detail-surface payload for a single city.
@@ -107,6 +134,10 @@ Minimum fields:
 - `id`
 - `name`
 
+Field classification:
+
+- canonical: all city section fields
+
 ### Run section
 
 Minimum fields:
@@ -121,6 +152,11 @@ Minimum fields:
 - `era`
 - `createdAt`
 - `updatedAt`
+
+Field classification:
+
+- canonical: `hasRun`, `runId`, `seed`, `status`, `running`, `tick`, `createdAt`, `updatedAt`
+- derived: `year`, `era`
 
 ### Humans section
 
@@ -138,6 +174,10 @@ Ordering rule:
 
 - humans must be returned in stable ascending `id` order
 
+Field classification:
+
+- canonical: all Sprint 3 human snapshot fields
+
 ### Metrics section
 
 The snapshot metrics are backend-owned deterministic aggregates for current state presentation.
@@ -151,6 +191,11 @@ Minimum fields:
 - `bounds`
 - `eventCount`
 - `inventionCount`
+
+Field classification:
+
+- canonical: `population`, `busyCount`, `eventCount`, `inventionCount`
+- derived: `busyRatio`, `centroid`, `bounds`
 
 Metric rules:
 
@@ -171,11 +216,16 @@ Minimum fields:
 - `recentEventCount`
 - `recentInventionCount`
 
-The exact recent-window size may be implementation-defined for Sprint 3, but it must be:
+Field classification:
 
-- documented in endpoint behavior if exposed as a fixed window
-- deterministic
-- shared by UI and MCP through the backend response instead of recomputed client-side
+- canonical: `latestEventTick`, `latestInventionTick`
+- derived: `recentEventCount`, `recentInventionCount`
+
+Sprint 3 fixes one default recent window for summary counts and bounded recent lists:
+
+- recent window size: latest `20` events and latest `20` inventions after applying city scoping
+- if fewer than `20` records exist, return all available records
+- UI and MCP must consume the backend-provided summary counts and bounded lists instead of recomputing their own window
 
 ### Recent events and recent inventions sections
 
@@ -187,6 +237,11 @@ Rules:
 - inventions are ordered by tick created ascending, then invention key ascending
 - if a limit is applied, ordering semantics must remain explicit and stable
 
+Field classification:
+
+- canonical: all event/invention fields already defined by Sprint 2 contracts
+- derived: none added in Sprint 3 beyond bounded-list selection
+
 ## Year and Era Mapping
 
 Sprint 3 reuses the deterministic year/era mapping defined for Sprint 2 history output.
@@ -195,6 +250,11 @@ Rules:
 
 - overview and snapshot year/era must be computed from the same mapping used by event/invention history metadata
 - UI and MCP must not maintain alternate year/era formulas for the same city state
+
+Tick `0` rule:
+
+- tick `0` must still return a valid `year` and `era`
+- the exact value is inherited from the Sprint 2 history mapping and must be shared across overview, snapshot, event, and invention outputs
 
 ## Endpoint Semantics
 
@@ -210,6 +270,33 @@ Error/empty-state expectations:
 - `404` when the city itself does not exist
 - `200` with explicit empty-state fields when the city exists but has no run/history yet
 
+Snapshot empty-state expectations for a city with no run yet:
+
+- `city` must still be present
+- `run.hasRun = false`
+- `run.runId = null`
+- `run.seed = null`
+- `run.status = null`
+- `run.running = false`
+- `run.tick = 0`
+- `run.year` and `run.era` must be derived from tick `0`
+- `humans` must still return the ordered city humans if they exist
+- `metrics.population` must reflect the humans list
+- `metrics.eventCount = 0`
+- `metrics.inventionCount = 0`
+- `recentEvents` and `recentInventions` must be empty arrays
+- `timelineSummary.latestEventTick = null`
+- `timelineSummary.latestInventionTick = null`
+- `timelineSummary.recentEventCount = 0`
+- `timelineSummary.recentInventionCount = 0`
+
+Snapshot empty-state expectations for a city with a run but no history yet:
+
+- return run-derived fields from the persisted run
+- keep `recentEvents` and `recentInventions` as empty arrays
+- keep latest-history tick fields as `null`
+- keep recent summary counters at `0`
+
 ## Canonical Fields For Contract Tests
 
 Backend/API tests in Sprint 3 must verify at least:
@@ -218,6 +305,19 @@ Backend/API tests in Sprint 3 must verify at least:
 - snapshot `run.tick`, `run.year`, `run.era`, ordered `humans`, `metrics.population`, `metrics.eventCount`, `metrics.inventionCount`
 - empty-state semantics for cities with no run/history
 - stable ordering of humans/events/inventions inside the snapshot
+- recent-window semantics for bounded recent events/inventions lists
+- shared year/era projection behavior across overview and snapshot
+
+## Client Regeneration Guardrails
+
+Sprint 3 endpoint and DTO naming should remain stable enough that regenerated clients in `apps/ui` and `apps/mcp` can become the default consumer path in the same sprint.
+
+Guardrails:
+
+- do not rely on ad hoc frontend-only response reshaping for required Sprint 3 fields
+- prefer nullable fields over omitted fields when representing no-run-yet state
+- prefer arrays over nullable collections for `humans`, `recentEvents`, and `recentInventions`
+- keep ordering and empty-state semantics explicit so generated-client consumers do not need hidden conventions
 
 ## Deferred (Explicitly Not In Sprint 3 Contract)
 

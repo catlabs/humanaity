@@ -451,8 +451,41 @@ export function registerSimulationTools(server: McpServer, backendClient: Backen
   );
 
   server.tool(
+    "simulation_overview",
+    "List backend-owned simulation overview rows for all cities.",
+    {
+      accessToken: z.string().min(1).optional(),
+    },
+    async ({ accessToken }) => {
+      try {
+        const overviews = await backendClient.simulationOverview(accessToken);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ ok: true, count: overviews.length, overviews }, null, 2),
+            },
+          ],
+          structuredContent: { ok: true, count: overviews.length, overviews },
+        };
+      } catch (error: unknown) {
+        const normalized = toToolError(error);
+        return {
+          isError: true,
+          content: [{ type: "text", text: normalized.message }],
+          structuredContent: {
+            ok: false,
+            error: normalized.message,
+            details: normalized.details,
+          },
+        };
+      }
+    },
+  );
+
+  server.tool(
     "simulation_snapshot",
-    "Get simulation status + humans and compute snapshot metrics.",
+    "Get backend-owned simulation snapshot for one city.",
     {
       cityId: z.string().min(1),
       accessToken: z.string().min(1).optional(),

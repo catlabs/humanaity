@@ -5,6 +5,7 @@ import type {
   AuthTokens,
   BackendMessageResponse,
   BackendSimulationStatusResponse,
+  CityOverviewOutput,
   CityInput,
   CityOutput,
   EventOutput,
@@ -16,7 +17,7 @@ import type {
   SimulationRunInput,
   SimulationRunOutput,
   RefreshTokenRequest,
-  SimulationSnapshot,
+  SimulationSnapshotOutput,
   SimulationStatus,
 } from "./contracts.js";
 
@@ -409,57 +410,23 @@ export class BackendClient {
     );
   }
 
+  async simulationOverview(accessToken?: string): Promise<CityOverviewOutput[]> {
+    return this.request<CityOverviewOutput[]>("GET", "/api/simulations/overview", {
+      accessToken: await this.resolveAccessToken(accessToken),
+    });
+  }
+
   async simulationSnapshot(
     cityId: string,
     accessToken?: string,
-  ): Promise<SimulationSnapshot> {
-    const [status, humans] = await Promise.all([
-      this.simulationStatus(cityId, accessToken),
-      this.humansByCity(cityId, accessToken),
-    ]);
-
-    const busyCount = humans.filter((human) => human.busy ?? false).length;
-    const count = humans.length;
-    const busyRatio = count === 0 ? 0 : busyCount / count;
-
-    const validCoordinates = humans.filter(
-      (human) => Number.isFinite(human.x) && Number.isFinite(human.y),
-    );
-
-    const centroid =
-      validCoordinates.length === 0
-        ? null
-        : {
-            x:
-              validCoordinates.reduce((sum, human) => sum + human.x, 0) /
-              validCoordinates.length,
-            y:
-              validCoordinates.reduce((sum, human) => sum + human.y, 0) /
-              validCoordinates.length,
-          };
-
-    const bounds =
-      validCoordinates.length === 0
-        ? null
-        : {
-            minX: Math.min(...validCoordinates.map((human) => human.x)),
-            maxX: Math.max(...validCoordinates.map((human) => human.x)),
-            minY: Math.min(...validCoordinates.map((human) => human.y)),
-            maxY: Math.max(...validCoordinates.map((human) => human.y)),
-          };
-
-    return {
-      cityId,
-      running: status.running,
-      humans,
-      metrics: {
-        count,
-        busyCount,
-        busyRatio,
-        centroid,
-        bounds,
+  ): Promise<SimulationSnapshotOutput> {
+    return this.request<SimulationSnapshotOutput>(
+      "GET",
+      `/api/simulations/${encodeURIComponent(cityId)}/snapshot`,
+      {
+        accessToken: await this.resolveAccessToken(accessToken),
       },
-    };
+    );
   }
 
   private async resolveAccessToken(

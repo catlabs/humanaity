@@ -9,6 +9,7 @@ import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.human.application.HumanApplicationService;
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
+import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
 import eu.catlabs.humanaity.simulation.domain.SimulationRunStatus;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
@@ -48,6 +49,8 @@ class SimulationApplicationServiceDeterminismTest {
     private EventApplicationService eventApplicationService;
     @Mock
     private InventionApplicationService inventionApplicationService;
+    @Mock
+    private SimulationReadModelQueryService simulationReadModelQueryService;
 
     @Test
     void sameSeedAndSameInitialStateYieldSameFinalStateAfterSameStepCount() {
@@ -136,7 +139,8 @@ class SimulationApplicationServiceDeterminismTest {
                 cityRepository,
                 simulationRunRepository,
                 eventApplicationService,
-                inventionApplicationService
+                inventionApplicationService,
+                simulationReadModelQueryService
         );
 
         City city = new City();

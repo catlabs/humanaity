@@ -11,6 +11,7 @@ import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.invention.application.InventionApplicationService;
 import eu.catlabs.humanaity.invention.domain.Invention;
+import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
 import eu.catlabs.humanaity.simulation.domain.SimulationRunStatus;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
@@ -34,6 +35,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Predicate;
 
 @Service
 public class SimulationApplicationService {
@@ -58,6 +60,7 @@ public class SimulationApplicationService {
     private final SimulationRunRepository simulationRunRepository;
     private final EventApplicationService eventApplicationService;
     private final InventionApplicationService inventionApplicationService;
+    private final SimulationReadModelQueryService simulationReadModelQueryService;
 
     public SimulationApplicationService(
             HumanRepository humanRepository,
@@ -65,7 +68,8 @@ public class SimulationApplicationService {
             CityRepository cityRepository,
             SimulationRunRepository simulationRunRepository,
             EventApplicationService eventApplicationService,
-            InventionApplicationService inventionApplicationService
+            InventionApplicationService inventionApplicationService,
+            SimulationReadModelQueryService simulationReadModelQueryService
     ) {
         this.humanRepository = humanRepository;
         this.humanApplicationService = humanApplicationService;
@@ -73,6 +77,7 @@ public class SimulationApplicationService {
         this.simulationRunRepository = simulationRunRepository;
         this.eventApplicationService = eventApplicationService;
         this.inventionApplicationService = inventionApplicationService;
+        this.simulationReadModelQueryService = simulationReadModelQueryService;
     }
 
     public synchronized String startSimulation(Long cityId) {
@@ -247,6 +252,16 @@ public class SimulationApplicationService {
                 events,
                 inventions
         );
+    }
+
+    public List<SimulationReadModelQueryService.CityOverviewProjection> listCityOverviews() {
+        Predicate<Long> runningLookup = this::isRunning;
+        return simulationReadModelQueryService.listCityOverviews(runningLookup);
+    }
+
+    public SimulationReadModelQueryService.SimulationSnapshotProjection getCitySnapshot(Long cityId) {
+        Predicate<Long> runningLookup = this::isRunning;
+        return simulationReadModelQueryService.getCitySnapshot(cityId, runningLookup);
     }
 
     private City getCityOrThrow(Long cityId) {

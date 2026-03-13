@@ -1,13 +1,12 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { CityOutput } from '@api';
+import { CityOverviewOutput } from '@api';
 import { CityService } from '../../city.service';
 
-type SimulationStatus = 'running' | 'paused' | 'stopped';
-type Era = 'ancient' | 'medieval' | 'industrial' | 'modern';
+type SimulationStatus = 'running' | 'paused' | 'created' | 'completed' | 'stopped';
 
 interface SimulationRow {
   id: number;
@@ -15,7 +14,7 @@ interface SimulationRow {
   status: SimulationStatus;
   population: number;
   year: number;
-  era: Era;
+  era: string;
   inventions: number;
   lastUpdated: string;
 }
@@ -32,76 +31,94 @@ interface SimulationRow {
   styleUrl: './city-list.page.scss'
 })
 export class CityListPage implements OnInit {
-  private route = inject(ActivatedRoute);
   private router = inject(Router);
   private cityService = inject(CityService);
 
-  cities = signal<CityOutput[]>([]);
+  overviews = signal<CityOverviewOutput[]>([]);
   simulations = signal<SimulationRow[]>([]);
 
   ngOnInit() {
-    // Load cities from route data or service
-    const routeData = this.route.snapshot.data['cities'];
-    if (routeData) {
-      this.cities.set(routeData);
-      this.convertCitiesToSimulations();
-    } else {
-      this.loadCities();
-    }
+    this.loadOverview();
   }
 
-  loadCities(): void {
-    this.cityService.getCities().subscribe({
-      next: (cities) => {
-        this.cities.set(cities);
+  loadOverview(): void {
+    this.cityService.getSimulationOverview().subscribe({
+      next: (overviews) => {
+        this.overviews.set(overviews);
         this.convertCitiesToSimulations();
       },
       error: (error) => {
-        console.error('Error loading cities:', error);
+        console.error('Error loading simulation overview:', error);
       }
     });
   }
 
   convertCitiesToSimulations(): void {
-    const sims = this.cities().map(city => this.convertToSimulationRow(city));
+    const sims = this.overviews().map((overview) => this.convertToSimulationRow(overview));
     this.simulations.set(sims);
   }
 
-  convertToSimulationRow(city: CityOutput): SimulationRow {
-    // Derive population from humans array length
-    const population = city.humans?.length || 0;
-    
-    // Mock/derive other fields - TODO: Replace with actual data from simulation service
-    const statuses: SimulationStatus[] = ['running', 'paused', 'stopped'];
-    const status = statuses[Math.floor(Math.random() * statuses.length)] as SimulationStatus;
-    
-    // Derive year and era from population or use defaults
-    const year = 500 + (population * 10);
-    const eras: Era[] = ['ancient', 'medieval', 'industrial', 'modern'];
-    const era = eras[Math.floor(year / 500) % eras.length] as Era;
-    
-    // Mock inventions count (could be derived from actual data later)
-    const inventions = Math.floor(population * 0.5);
-    
-    // Mock last updated (could use actual timestamp from city data)
-    const lastUpdated = this.getRelativeTime(city.id || 0);
-    
+  convertToSimulationRow(overview: CityOverviewOutput): SimulationRow {
+    const status = this.toSimulationStatus(overview);
+    const lastUpdated = overview.updatedAt ? this.formatRelativeTime(overview.updatedAt) : 'Never';
     return {
-      id: city.id!,
-      name: city.name || 'Unnamed Simulation',
+      id: overview.cityId,
+      name: overview.cityName || 'Unnamed Simulation',
       status,
-      population,
-      year,
-      era,
-      inventions,
+      population: overview.population,
+      year: overview.year,
+      era: this.formatEnumLabel(overview.era),
+      inventions: overview.inventionCount,
       lastUpdated
     };
   }
 
-  getRelativeTime(cityId: number): string {
-    // Mock relative time based on city ID
-    const times = ['2 minutes ago', '1 hour ago', '5 minutes ago', '3 days ago'];
-    return times[cityId % times.length];
+  private toSimulationStatus(overview: CityOverviewOutput): SimulationStatus {
+    if (overview.running) {
+      return 'running';
+    }
+    if (!overview.hasRun || !overview.runStatus) {
+      return 'stopped';
+    }
+    switch (overview.runStatus) {
+      case CityOverviewOutput.RunStatusEnum.Paused:
+        return 'paused';
+      case CityOverviewOutput.RunStatusEnum.Created:
+        return 'created';
+      case CityOverviewOutput.RunStatusEnum.Completed:
+        return 'completed';
+      default:
+        return 'stopped';
+    }
+  }
+
+  private formatEnumLabel(value: string): string {
+    const lowercase = value.toLowerCase();
+    return lowercase.charAt(0).toUpperCase() + lowercase.slice(1);
+  }
+
+  private formatRelativeTime(isoTimestamp: string): string {
+    const timestamp = Date.parse(isoTimestamp);
+    if (Number.isNaN(timestamp)) {
+      return 'Unknown';
+    }
+
+    const diffMs = Date.now() - timestamp;
+    const diffMinutes = Math.floor(diffMs / 60_000);
+    if (diffMinutes < 1) {
+      return 'Just now';
+    }
+    if (diffMinutes < 60) {
+      return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`;
+    }
+
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) {
+      return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+    }
+
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
   }
 
   onRowClick(simulation: SimulationRow): void {
@@ -114,11 +131,17 @@ export class CityListPage implements OnInit {
 
   onToggleStatus(simulation: SimulationRow, event: Event): void {
     event.stopPropagation();
-    // TODO: Implement status toggle logic
-    const newStatus: SimulationStatus = simulation.status === 'running' ? 'paused' : 'running';
-    this.simulations.update(sims => 
-      sims.map(s => s.id === simulation.id ? { ...s, status: newStatus } : s)
-    );
+    if (simulation.status === 'running') {
+      this.cityService.stopSimulation(simulation.id).subscribe({
+        next: () => this.loadOverview(),
+        error: (error) => console.error('Error stopping simulation:', error)
+      });
+      return;
+    }
+    this.cityService.startSimulation(simulation.id).subscribe({
+      next: () => this.loadOverview(),
+      error: (error) => console.error('Error starting simulation:', error)
+    });
   }
 
   onDelete(simulation: SimulationRow, event: Event): void {

@@ -10,10 +10,10 @@
 
 
 export interface HumanOutput { 
-    id?: number;
-    name?: string;
-    x?: number;
-    y?: number;
+    id: number;
+    name: string;
+    x: number;
+    y: number;
     creativity?: number;
     intellect?: number;
     sociability?: number;

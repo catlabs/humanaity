@@ -1,11 +1,16 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Observable, tap, map, switchMap } from 'rxjs';
-import { AuthControllerService, AuthRequest, SignupRequest, RefreshTokenRequest, AuthResponse } from '@api';
+import { AuthControllerService, AuthRequest, SignupRequest, RefreshTokenRequest } from '@api';
 import { parseApiResponse } from '@core';
 
 const ACCESS_TOKEN_KEY = 'accessToken';
 const REFRESH_TOKEN_KEY = 'refreshToken';
+
+interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+}
 
 @Injectable({
   providedIn: 'root'

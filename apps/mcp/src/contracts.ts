@@ -36,6 +36,10 @@ export type SimulationRunInput = BackendSchemas["SimulationRunInput"];
 
 export type SimulationRunOutput = BackendSchemas["SimulationRunOutput"];
 
+export type CityOverviewOutput = BackendSchemas["CityOverviewOutput"];
+
+export type SimulationSnapshotOutput = BackendSchemas["SimulationSnapshotOutput"];
+
 export type EventOutput = BackendSchemas["EventOutput"];
 
 export type InventionOutput = BackendSchemas["InventionOutput"];
@@ -54,27 +58,4 @@ export interface MessageResponse {
 
 export interface SimulationStatus {
   running: boolean;
-}
-
-export interface SnapshotMetrics {
-  count: number;
-  busyCount: number;
-  busyRatio: number;
-  centroid: {
-    x: number;
-    y: number;
-  } | null;
-  bounds: {
-    minX: number;
-    maxX: number;
-    minY: number;
-    maxY: number;
-  } | null;
-}
-
-export interface SimulationSnapshot {
-  cityId: string;
-  running: boolean;
-  humans: HumanOutput[];
-  metrics: SnapshotMetrics;
 }

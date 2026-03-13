@@ -4,8 +4,18 @@ import eu.catlabs.humanaity.event.domain.Event;
 import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService.TimelineHistory;
+import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
+import eu.catlabs.humanaity.simulation.api.dto.CityOverviewOutput;
 import eu.catlabs.humanaity.simulation.api.dto.EventOutput;
 import eu.catlabs.humanaity.simulation.api.dto.InventionOutput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotBoundsOutput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotCentroidOutput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotCityOutput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotHumanOutput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotMetricsOutput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotOutput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotRunOutput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationTimelineSummaryOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationRunInput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationRunOutput;
 import eu.catlabs.humanaity.simulation.api.dto.TimelineOutput;
@@ -18,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -187,6 +198,26 @@ public class SimulationController {
         }
     }
 
+    @GetMapping("/overview")
+    @Operation(summary = "List city overviews with backend-owned simulation read-model fields")
+    public ResponseEntity<List<CityOverviewOutput>> listCityOverviews() {
+        List<CityOverviewOutput> outputs = simulationApplicationService.listCityOverviews().stream()
+                .sorted(Comparator.comparing(SimulationReadModelQueryService.CityOverviewProjection::cityId))
+                .map(this::toCityOverviewOutput)
+                .toList();
+        return ResponseEntity.ok(outputs);
+    }
+
+    @GetMapping("/{cityId}/snapshot")
+    @Operation(summary = "Get a backend-owned simulation snapshot for one city")
+    public ResponseEntity<SimulationSnapshotOutput> getCitySnapshot(@PathVariable Long cityId) {
+        try {
+            return ResponseEntity.ok(toSimulationSnapshotOutput(simulationApplicationService.getCitySnapshot(cityId)));
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        }
+    }
+
     private void validateTickRange(Long fromTick, Long toTick) {
         if (fromTick != null && fromTick < 0) {
             throw new IllegalArgumentException("fromTick must be >= 0");
@@ -245,6 +276,88 @@ public class SimulationController {
                 invention.getYearCreated(),
                 invention.getEraCreated(),
                 invention.getCreatedAt()
+        );
+    }
+
+    private CityOverviewOutput toCityOverviewOutput(SimulationReadModelQueryService.CityOverviewProjection projection) {
+        return new CityOverviewOutput(
+                projection.cityId(),
+                projection.cityName(),
+                projection.hasRun(),
+                projection.runStatus(),
+                projection.running(),
+                projection.tick(),
+                projection.year(),
+                projection.era(),
+                projection.population(),
+                projection.inventionCount(),
+                projection.eventCount(),
+                projection.updatedAt()
+        );
+    }
+
+    private SimulationSnapshotOutput toSimulationSnapshotOutput(SimulationReadModelQueryService.SimulationSnapshotProjection projection) {
+        SimulationReadModelQueryService.CityProjection city = projection.city();
+        SimulationReadModelQueryService.RunProjection run = projection.run();
+        SimulationReadModelQueryService.MetricsProjection metrics = projection.metrics();
+        SimulationReadModelQueryService.TimelineSummaryProjection timelineSummary = projection.timelineSummary();
+
+        SimulationSnapshotCentroidOutput centroidOutput = metrics.centroid() == null
+                ? null
+                : new SimulationSnapshotCentroidOutput(metrics.centroid().x(), metrics.centroid().y());
+        SimulationSnapshotBoundsOutput boundsOutput = metrics.bounds() == null
+                ? null
+                : new SimulationSnapshotBoundsOutput(
+                metrics.bounds().minX(),
+                metrics.bounds().maxX(),
+                metrics.bounds().minY(),
+                metrics.bounds().maxY()
+        );
+
+        return new SimulationSnapshotOutput(
+                new SimulationSnapshotCityOutput(city.id(), city.name()),
+                new SimulationSnapshotRunOutput(
+                        run.hasRun(),
+                        run.runId(),
+                        run.seed(),
+                        run.status(),
+                        run.running(),
+                        run.tick(),
+                        run.year(),
+                        run.era(),
+                        run.createdAt(),
+                        run.updatedAt()
+                ),
+                new SimulationTimelineSummaryOutput(
+                        timelineSummary.latestEventTick(),
+                        timelineSummary.latestInventionTick(),
+                        timelineSummary.recentEventCount(),
+                        timelineSummary.recentInventionCount()
+                ),
+                projection.humans().stream()
+                        .map(human -> new SimulationSnapshotHumanOutput(
+                                human.id(),
+                                human.name(),
+                                human.x(),
+                                human.y(),
+                                human.busy()
+                        ))
+                        .toList(),
+                new SimulationSnapshotMetricsOutput(
+                        metrics.population(),
+                        metrics.busyCount(),
+                        metrics.busyRatio(),
+                        centroidOutput,
+                        boundsOutput,
+                        metrics.eventCount(),
+                        metrics.inventionCount()
+                ),
+                projection.recentEvents().stream()
+                        .map(event -> toEventOutput(city.id(), event))
+                        .toList(),
+                projection.recentInventions().stream()
+                        .map(invention -> toInventionOutput(city.id(), invention))
+                        .toList()
         );
     }
 }
