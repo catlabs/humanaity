@@ -25,7 +25,6 @@ import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,10 +97,10 @@ public class Event {
     private Instant updatedAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 16)
+    @Column(nullable = false, length = 16, columnDefinition = "varchar(16) not null default 'NONE'")
     private AiEnrichmentStatus enrichmentStatus;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "boolean not null default false")
     private Boolean enrichmentFallback;
 
     @Column(length = 2000)

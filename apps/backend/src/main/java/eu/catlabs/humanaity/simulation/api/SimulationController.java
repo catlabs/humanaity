@@ -1,5 +1,6 @@
 package eu.catlabs.humanaity.simulation.api;
 
+import eu.catlabs.humanaity.ai.domain.AiEnrichmentStatus;
 import eu.catlabs.humanaity.event.domain.Event;
 import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
@@ -53,7 +54,7 @@ public class SimulationController {
             SimulationRun run = (input != null && input.getSeed() != null)
                     ? simulationApplicationService.createRun(cityId, input.getSeed())
                     : simulationApplicationService.createRun(cityId);
-            return ResponseEntity.ok(toOutput(run));
+            return ResponseEntity.ok(toOutput(run, cityId));
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         }
@@ -64,7 +65,7 @@ public class SimulationController {
     public ResponseEntity<SimulationRunOutput> loadRun(@PathVariable Long cityId) {
         try {
             SimulationRun run = simulationApplicationService.loadRun(cityId);
-            return ResponseEntity.ok(toOutput(run));
+            return ResponseEntity.ok(toOutput(run, cityId));
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         }
@@ -75,7 +76,7 @@ public class SimulationController {
     public ResponseEntity<SimulationRunOutput> pauseRun(@PathVariable Long cityId) {
         try {
             SimulationRun run = simulationApplicationService.pauseRun(cityId);
-            return ResponseEntity.ok(toOutput(run));
+            return ResponseEntity.ok(toOutput(run, cityId));
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         }
@@ -86,7 +87,7 @@ public class SimulationController {
     public ResponseEntity<SimulationRunOutput> resumeRun(@PathVariable Long cityId) {
         try {
             SimulationRun run = simulationApplicationService.resumeRun(cityId);
-            return ResponseEntity.ok(toOutput(run));
+            return ResponseEntity.ok(toOutput(run, cityId));
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         }
@@ -98,7 +99,7 @@ public class SimulationController {
     public ResponseEntity<SimulationRunOutput> stepSimulation(@PathVariable Long cityId) {
         try {
             SimulationRun run = simulationApplicationService.step(cityId);
-            return ResponseEntity.ok(toOutput(run));
+            return ResponseEntity.ok(toOutput(run, cityId));
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         }
@@ -230,11 +231,11 @@ public class SimulationController {
         }
     }
 
-    private SimulationRunOutput toOutput(SimulationRun run) {
-        boolean isRunning = simulationApplicationService.isRunning(run.getCity().getId());
+    private SimulationRunOutput toOutput(SimulationRun run, Long cityId) {
+        boolean isRunning = simulationApplicationService.isRunning(cityId);
         return new SimulationRunOutput(
                 run.getId(),
-                run.getCity().getId(),
+                cityId,
                 run.getSeed(),
                 run.getTick(),
                 run.getStatus(),
@@ -259,8 +260,8 @@ public class SimulationController {
                 event.getEra(),
                 event.getEventKey(),
                 event.getCreatedAt(),
-                event.getEnrichmentStatus(),
-                event.getEnrichmentFallback(),
+                event.getEnrichmentStatus() != null ? event.getEnrichmentStatus() : AiEnrichmentStatus.NONE,
+                event.getEnrichmentFallback() != null ? event.getEnrichmentFallback() : false,
                 event.getEnrichedSnippet(),
                 event.getEnrichmentProvider(),
                 event.getEnrichmentModel(),
@@ -282,8 +283,8 @@ public class SimulationController {
                 invention.getYearCreated(),
                 invention.getEraCreated(),
                 invention.getCreatedAt(),
-                invention.getEnrichmentStatus(),
-                invention.getEnrichmentFallback(),
+                invention.getEnrichmentStatus() != null ? invention.getEnrichmentStatus() : AiEnrichmentStatus.NONE,
+                invention.getEnrichmentFallback() != null ? invention.getEnrichmentFallback() : false,
                 invention.getEnrichedTitle(),
                 invention.getEnrichedSummary(),
                 invention.getEnrichmentProvider(),
