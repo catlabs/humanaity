@@ -12,6 +12,8 @@ alwaysApply: false
 - Wrap generated services inside feature services for feature-specific behavior.
 - Avoid direct `HttpClient` endpoint calls unless explicitly required as a temporary workaround.
 - If fetch-mode Blob responses apply, handle Blob-to-JSON conversion in wrapper services.
+- Do not declare frontend interfaces/types that duplicate backend contract models in feature pages/components.
+- If UI-specific shaping is needed, keep source state as generated types and map via `computed()` or helper functions.
 
 ## Example
 
