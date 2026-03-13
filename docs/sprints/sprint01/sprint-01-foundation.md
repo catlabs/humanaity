@@ -2,10 +2,10 @@
 
 ## Execution status
 
-- Current phase: Feature 3 deterministic step engine hardening (seeded RNG + ordering)
-- Active chunk: `Task 3b` - enforce deterministic ordering and seeded randomness
-- Next chunk: `Task 3c` - enforce deterministic processing order across repositories
-- Last completed chunk: `Task 3a` - extract pure deterministic `step()` path
+- Current phase: Feature 5 determinism validation complete for Sprint 1 deterministic foundation scope
+- Active chunk: none (awaiting review)
+- Next chunk: none
+- Last completed chunk: `Task 5c` - scheduler/manual deterministic-step equivalence coverage
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -13,16 +13,16 @@
 | Task 2a | done | Domain-only scaffolding (`SimulationRun` + status enum) completed; API/read-model work deferred. |
 | Task 2b | done | Repository and lifecycle service wiring for the city-scoped run model is complete. |
 | Task 2c | done | City-scoped lifecycle API surface added (`create/load/pause/resume`) with DTOs and controller-level `404` translation while preserving existing `start/stop/status` compatibility. |
-| Task 3a | done | Pure deterministic `step()` extraction wired; scheduler now delegates to deterministic step entrypoint. |
-| Task 3b | in_progress | Seeded RNG and deterministic human processing order under active implementation. |
-| Task 3c | blocked | Depends on deterministic `step()` extraction. |
-| Task 3d | blocked | Depends on Tasks 3a-3c. |
-| Task 3e | planned | Movement smoke mode: remove/neutralize busy-lock behavior so human movement can be observed reliably during smoke validation. |
-| Task 4a | blocked | Depends on stable deterministic step engine. |
-| Task 4b | blocked | Depends on scheduler wrapper refactor start. |
-| Task 5a | blocked | Depends on deterministic step engine readiness. |
-| Task 5b | blocked | Depends on run lifecycle and deterministic stepping. |
-| Task 5c | blocked | Depends on scheduler/manual-step parity path. |
+| Task 3a | done | Pure deterministic `step()` path extracted as the simulation source of truth. |
+| Task 3b | done | Seed-derived deterministic RNG and step invariants are in place. |
+| Task 3c | done | Human processing and retrieval now enforce explicit stable ordering by `Human.id`. |
+| Task 3d | done | Deterministic repeated stepping (`step(cityId, count)`) composes single-step logic. |
+| Task 3e | done | Busy-lock semantics neutralized for movement smoke-mode observability. |
+| Task 4a | done | Scheduler path delegates to deterministic `step()` execution only. |
+| Task 4b | done | Remaining scheduler mutation logic removed; scheduler is orchestration-only. |
+| Task 5a | done | Same-seed reproducibility test added for deterministic state equivalence. |
+| Task 5b | done | Pause/resume continuity test added for deterministic progression guarantees. |
+| Task 5c | done | Scheduler-wrapper/manual-step equivalence test added for deterministic parity. |
 
 ## Sprint intent
 
