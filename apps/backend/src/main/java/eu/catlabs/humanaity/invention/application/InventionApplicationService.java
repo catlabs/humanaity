@@ -1,5 +1,6 @@
 package eu.catlabs.humanaity.invention.application;
 
+import eu.catlabs.humanaity.ai.application.enrichment.AiHistoryEnrichmentService;
 import eu.catlabs.humanaity.city.domain.City;
 import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
 import eu.catlabs.humanaity.event.domain.Event;
@@ -29,15 +30,18 @@ public class InventionApplicationService {
     private final InventionRepository inventionRepository;
     private final EventRepository eventRepository;
     private final CityRepository cityRepository;
+    private final AiHistoryEnrichmentService aiHistoryEnrichmentService;
 
     public InventionApplicationService(
             InventionRepository inventionRepository,
             EventRepository eventRepository,
-            CityRepository cityRepository
+            CityRepository cityRepository,
+            AiHistoryEnrichmentService aiHistoryEnrichmentService
     ) {
         this.inventionRepository = inventionRepository;
         this.eventRepository = eventRepository;
         this.cityRepository = cityRepository;
+        this.aiHistoryEnrichmentService = aiHistoryEnrichmentService;
     }
 
     @Transactional
@@ -88,6 +92,7 @@ public class InventionApplicationService {
             invention.setEraCreated(HistoryTimelineMapper.eraForTick(discovery.getTick()));
 
             Invention saved = inventionRepository.save(invention);
+            aiHistoryEnrichmentService.enrichInvention(saved);
             created.add(saved);
             existingKeys.add(inventionKey);
         }

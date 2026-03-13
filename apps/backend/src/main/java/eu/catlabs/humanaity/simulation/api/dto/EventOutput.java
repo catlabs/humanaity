@@ -1,5 +1,6 @@
 package eu.catlabs.humanaity.simulation.api.dto;
 
+import eu.catlabs.humanaity.ai.domain.AiEnrichmentStatus;
 import eu.catlabs.humanaity.event.domain.EventCategory;
 import eu.catlabs.humanaity.event.domain.EventType;
 import eu.catlabs.humanaity.history.domain.HistoryEra;
@@ -42,4 +43,16 @@ public class EventOutput {
     private String eventKey;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant createdAt;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+    private AiEnrichmentStatus enrichmentStatus;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+    private Boolean enrichmentFallback;
+    @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String enrichedSnippet;
+    @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String enrichmentProvider;
+    @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String enrichmentModel;
+    @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private Instant enrichmentUpdatedAt;
 }

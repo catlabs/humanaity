@@ -258,7 +258,13 @@ public class SimulationController {
                 event.getYear(),
                 event.getEra(),
                 event.getEventKey(),
-                event.getCreatedAt()
+                event.getCreatedAt(),
+                event.getEnrichmentStatus(),
+                event.getEnrichmentFallback(),
+                event.getEnrichedSnippet(),
+                event.getEnrichmentProvider(),
+                event.getEnrichmentModel(),
+                event.getEnrichmentUpdatedAt()
         );
     }
 
@@ -275,7 +281,14 @@ public class SimulationController {
                 invention.getImpactScore(),
                 invention.getYearCreated(),
                 invention.getEraCreated(),
-                invention.getCreatedAt()
+                invention.getCreatedAt(),
+                invention.getEnrichmentStatus(),
+                invention.getEnrichmentFallback(),
+                invention.getEnrichedTitle(),
+                invention.getEnrichedSummary(),
+                invention.getEnrichmentProvider(),
+                invention.getEnrichmentModel(),
+                invention.getEnrichmentUpdatedAt()
         );
     }
 

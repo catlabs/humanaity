@@ -1,5 +1,6 @@
 package eu.catlabs.humanaity.event.application;
 
+import eu.catlabs.humanaity.ai.application.enrichment.AiHistoryEnrichmentService;
 import eu.catlabs.humanaity.city.domain.City;
 import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
 import eu.catlabs.humanaity.event.domain.Event;
@@ -26,10 +27,16 @@ public class EventApplicationService {
 
     private final EventRepository eventRepository;
     private final CityRepository cityRepository;
+    private final AiHistoryEnrichmentService aiHistoryEnrichmentService;
 
-    public EventApplicationService(EventRepository eventRepository, CityRepository cityRepository) {
+    public EventApplicationService(
+            EventRepository eventRepository,
+            CityRepository cityRepository,
+            AiHistoryEnrichmentService aiHistoryEnrichmentService
+    ) {
         this.eventRepository = eventRepository;
         this.cityRepository = cityRepository;
+        this.aiHistoryEnrichmentService = aiHistoryEnrichmentService;
     }
 
     @Transactional
@@ -91,6 +98,7 @@ public class EventApplicationService {
         }
 
         List<Event> saved = eventRepository.saveAll(persisted);
+        saved.forEach(aiHistoryEnrichmentService::enrichEventDialogueIfEligible);
         saved.sort(Comparator.comparing(Event::getTick)
                 .thenComparing(Event::getSequenceInTick)
                 .thenComparing(Event::getId, Comparator.nullsLast(Long::compareTo)));

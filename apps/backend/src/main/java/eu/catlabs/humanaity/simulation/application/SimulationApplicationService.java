@@ -19,6 +19,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -189,10 +190,12 @@ public class SimulationApplicationService {
         return savedRun;
     }
 
+    @Transactional
     public synchronized SimulationRun step(Long cityId) {
         return step(cityId, 1);
     }
 
+    @Transactional
     public synchronized SimulationRun step(Long cityId, int count) {
         if (count <= 0 || count > MAX_STEPS_PER_REQUEST) {
             throw new IllegalArgumentException("count must be between 1 and " + MAX_STEPS_PER_REQUEST);

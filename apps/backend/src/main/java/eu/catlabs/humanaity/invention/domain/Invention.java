@@ -1,5 +1,6 @@
 package eu.catlabs.humanaity.invention.domain;
 
+import eu.catlabs.humanaity.ai.domain.AiEnrichmentStatus;
 import eu.catlabs.humanaity.city.domain.City;
 import eu.catlabs.humanaity.history.domain.HistoryEra;
 import jakarta.persistence.CollectionTable;
@@ -89,6 +90,27 @@ public class Invention {
     @Column(nullable = false)
     private Instant updatedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private AiEnrichmentStatus enrichmentStatus;
+
+    @Column(nullable = false)
+    private Boolean enrichmentFallback;
+
+    @Column(length = 200)
+    private String enrichedTitle;
+
+    @Column(length = 2000)
+    private String enrichedSummary;
+
+    @Column(length = 64)
+    private String enrichmentProvider;
+
+    @Column(length = 128)
+    private String enrichmentModel;
+
+    private Instant enrichmentUpdatedAt;
+
     @PrePersist
     protected void onCreate() {
         Instant now = Instant.now();
@@ -96,6 +118,12 @@ public class Invention {
         updatedAt = now;
         if (sourceEventKeys == null) {
             sourceEventKeys = new ArrayList<>();
+        }
+        if (enrichmentStatus == null) {
+            enrichmentStatus = AiEnrichmentStatus.NONE;
+        }
+        if (enrichmentFallback == null) {
+            enrichmentFallback = false;
         }
     }
 
