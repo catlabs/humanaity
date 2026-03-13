@@ -23,6 +23,12 @@ export interface EventOutput {
     era: EventOutput.EraEnum;
     eventKey: string;
     createdAt: string;
+    enrichmentStatus: EventOutput.EnrichmentStatusEnum;
+    enrichmentFallback: boolean;
+    enrichedSnippet?: string;
+    enrichmentProvider?: string;
+    enrichmentModel?: string;
+    enrichmentUpdatedAt?: string;
 }
 export namespace EventOutput {
     export const EventCategoryEnum = {
@@ -51,6 +57,12 @@ export namespace EventOutput {
         Legacy: 'LEGACY'
     } as const;
     export type EraEnum = typeof EraEnum[keyof typeof EraEnum];
+    export const EnrichmentStatusEnum = {
+        None: 'NONE',
+        Ready: 'READY',
+        Fallback: 'FALLBACK'
+    } as const;
+    export type EnrichmentStatusEnum = typeof EnrichmentStatusEnum[keyof typeof EnrichmentStatusEnum];
 }
 
 

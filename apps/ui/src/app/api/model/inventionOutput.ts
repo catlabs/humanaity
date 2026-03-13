@@ -22,6 +22,13 @@ export interface InventionOutput {
     yearCreated: number;
     eraCreated: InventionOutput.EraCreatedEnum;
     createdAt: string;
+    enrichmentStatus: InventionOutput.EnrichmentStatusEnum;
+    enrichmentFallback: boolean;
+    enrichedTitle?: string;
+    enrichedSummary?: string;
+    enrichmentProvider?: string;
+    enrichmentModel?: string;
+    enrichmentUpdatedAt?: string;
 }
 export namespace InventionOutput {
     export const CategoryEnum = {
@@ -37,6 +44,12 @@ export namespace InventionOutput {
         Legacy: 'LEGACY'
     } as const;
     export type EraCreatedEnum = typeof EraCreatedEnum[keyof typeof EraCreatedEnum];
+    export const EnrichmentStatusEnum = {
+        None: 'NONE',
+        Ready: 'READY',
+        Fallback: 'FALLBACK'
+    } as const;
+    export type EnrichmentStatusEnum = typeof EnrichmentStatusEnum[keyof typeof EnrichmentStatusEnum];
 }
 
 

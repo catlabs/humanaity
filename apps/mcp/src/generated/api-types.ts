@@ -521,6 +521,14 @@ export interface components {
             eventKey: string;
             /** Format: date-time */
             createdAt: string;
+            /** @enum {string} */
+            enrichmentStatus: "NONE" | "READY" | "FALLBACK";
+            enrichmentFallback: boolean;
+            enrichedSnippet?: string;
+            enrichmentProvider?: string;
+            enrichmentModel?: string;
+            /** Format: date-time */
+            enrichmentUpdatedAt?: string;
         };
         InventionOutput: {
             /** Format: int64 */
@@ -543,6 +551,15 @@ export interface components {
             eraCreated: "FOUNDING" | "EXPANSION" | "CONSOLIDATION" | "LEGACY";
             /** Format: date-time */
             createdAt: string;
+            /** @enum {string} */
+            enrichmentStatus: "NONE" | "READY" | "FALLBACK";
+            enrichmentFallback: boolean;
+            enrichedTitle?: string;
+            enrichedSummary?: string;
+            enrichmentProvider?: string;
+            enrichmentModel?: string;
+            /** Format: date-time */
+            enrichmentUpdatedAt?: string;
         };
         SimulationSnapshotBoundsOutput: {
             /** Format: double */
