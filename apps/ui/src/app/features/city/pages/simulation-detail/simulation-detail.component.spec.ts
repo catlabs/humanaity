@@ -198,6 +198,45 @@ describe('SimulationDetailComponent', () => {
     expect(fixture.componentInstance.selectedEventId()).toBe(12);
   });
 
+  it('renders guided compare and follow context from structured backend data', () => {
+    cityService.sendAgentChat.and.returnValue(
+      of({
+        conversationId: 'conv-guided',
+        message: 'Compared and followed selected humans.',
+        commandClass: 'GUIDED',
+        executedActions: [],
+        referencedEntities: { cityId: 7, humanIds: [101, 202] },
+        uiEffects: [{ type: 'FOCUS_HUMAN', humanId: 101 }],
+        structuredData: {
+          compareHumans: {
+            left: { id: 101, name: 'Ada', busy: false, x: 0.1, y: 0.2 },
+            right: { id: 202, name: 'Ben', busy: true, x: 0.3, y: 0.4 },
+          },
+          followHuman: {
+            human: { id: 101, name: 'Ada', busy: false, x: 0.1, y: 0.2 },
+            ticks: 5,
+            fromTick: 20,
+            resultTick: 24,
+            eventWindow: [],
+            inventionWindow: [],
+          },
+        },
+      } as any)
+    );
+
+    fixture.componentInstance.onChatInput('follow ada for 5 ticks');
+    fixture.componentInstance.onSendChat();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.guidedComparison()).not.toBeNull();
+    expect(fixture.componentInstance.guidedFollow()?.ticks).toBe(5);
+    expect(fixture.componentInstance.trackedHumanId()).toBe(101);
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Guided compare');
+    expect(text).toContain('Follow window');
+  });
+
   it('renders backend enrichment fields for selected invention and event', () => {
     const component = fixture.componentInstance;
     component.selectInvention(component.inventions()[0]);

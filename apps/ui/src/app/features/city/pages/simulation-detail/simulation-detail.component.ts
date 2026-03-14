@@ -91,6 +91,10 @@ export class SimulationDetailComponent
   selectedHumanId = signal<number | null>(null);
   selectedInventionId = signal<number | null>(null);
   selectedEventId = signal<number | null>(null);
+  trackedHumanId = signal<number | null>(null);
+  guidedFocus = signal<GuidedHumanSummary | null>(null);
+  guidedComparison = signal<GuidedCompareSummary | null>(null);
+  guidedFollow = signal<GuidedFollowSummary | null>(null);
   chatInput = signal('');
   chatBusy = signal(false);
   chatError = signal<string | null>(null);
@@ -136,6 +140,13 @@ export class SimulationDetailComponent
   selectedEvent = computed(() => {
     const id = this.selectedEventId();
     return id === null ? null : this.events().find((event) => event.id === id) ?? null;
+  });
+  trackedHuman = computed(() => {
+    const trackedId = this.trackedHumanId();
+    if (trackedId === null) {
+      return null;
+    }
+    return this.humans().find((human) => human.id === trackedId) ?? null;
   });
 
   populationActive = computed(() =>
@@ -286,6 +297,7 @@ export class SimulationDetailComponent
     this.selectedHumanId.set(null);
     this.selectedInventionId.set(null);
     this.selectedEventId.set(null);
+    this.trackedHumanId.set(null);
   }
 
   humanState(human: SimulationSnapshotOutput['humans'][number]): string {
@@ -345,6 +357,10 @@ export class SimulationDetailComponent
 
   inventionEnrichmentStatusLabel(invention: InventionOutput): string {
     return this.formatEnumLabel(invention.enrichmentStatus);
+  }
+
+  humanBusyLabel(isBusy: boolean): string {
+    return isBusy ? 'Busy' : 'Active';
   }
 
   private refreshAll(showLoading = true): void {
@@ -511,6 +527,7 @@ export class SimulationDetailComponent
     ]);
 
     this.applyUiEffects(response.uiEffects ?? []);
+    this.applyGuidedStructuredData(response);
   }
 
   private applyUiEffects(effects: AgentUiEffectOutput[]): void {
@@ -520,6 +537,7 @@ export class SimulationDetailComponent
       this.selectedHumanId.set(resolution.selectedHumanId);
       this.selectedEventId.set(null);
       this.selectedInventionId.set(null);
+      this.trackedHumanId.set(resolution.selectedHumanId);
     }
     if (resolution.selectedEventId !== null) {
       this.selectedEventId.set(resolution.selectedEventId);
@@ -539,10 +557,96 @@ export class SimulationDetailComponent
       this.refreshHistory(false);
     }
   }
+
+  private applyGuidedStructuredData(response: AgentChatResponseOutput): void {
+    const structuredData = this.readStructuredData(response);
+    if (!structuredData) {
+      return;
+    }
+
+    if (structuredData.focusHuman) {
+      this.guidedFocus.set(structuredData.focusHuman);
+      this.selectedHumanId.set(structuredData.focusHuman.id);
+      this.selectedEventId.set(null);
+      this.selectedInventionId.set(null);
+    }
+
+    if (structuredData.compareHumans) {
+      this.guidedComparison.set(structuredData.compareHumans);
+      this.selectedHumanId.set(structuredData.compareHumans.left.id);
+      this.selectedEventId.set(null);
+      this.selectedInventionId.set(null);
+    }
+
+    if (structuredData.followHuman) {
+      this.guidedFollow.set(structuredData.followHuman);
+      this.trackedHumanId.set(structuredData.followHuman.human.id);
+      this.selectedHumanId.set(structuredData.followHuman.human.id);
+      this.selectedEventId.set(null);
+      this.selectedInventionId.set(null);
+    }
+  }
+
+  private readStructuredData(
+    response: AgentChatResponseOutput
+  ): GuidedChatStructuredData | null {
+    const maybeStructured = (response as AgentChatResponseWithStructuredData)
+      .structuredData;
+    if (!maybeStructured || typeof maybeStructured !== 'object') {
+      return null;
+    }
+    return maybeStructured;
+  }
 }
 
 type ChatEntry = {
   role: 'user' | 'agent';
   content: string;
   timestamp: string;
+};
+
+type GuidedHumanSummary = {
+  id: number;
+  name: string;
+  busy: boolean;
+  x: number;
+  y: number;
+};
+
+type GuidedCompareSummary = {
+  left: GuidedHumanSummary;
+  right: GuidedHumanSummary;
+};
+
+type GuidedFollowEventSummary = {
+  id: number;
+  tick: number;
+  type: string;
+  year: number;
+};
+
+type GuidedFollowInventionSummary = {
+  id: number;
+  tickCreated: number;
+  title: string;
+  category: string;
+};
+
+type GuidedFollowSummary = {
+  human: GuidedHumanSummary;
+  ticks: number;
+  fromTick: number;
+  resultTick: number;
+  eventWindow: GuidedFollowEventSummary[];
+  inventionWindow: GuidedFollowInventionSummary[];
+};
+
+type GuidedChatStructuredData = {
+  focusHuman?: GuidedHumanSummary;
+  compareHumans?: GuidedCompareSummary;
+  followHuman?: GuidedFollowSummary;
+};
+
+type AgentChatResponseWithStructuredData = AgentChatResponseOutput & {
+  structuredData?: GuidedChatStructuredData;
 };

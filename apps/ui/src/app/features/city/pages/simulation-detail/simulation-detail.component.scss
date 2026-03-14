@@ -310,6 +310,49 @@
   @include hai-col(2);
 }
 
+.guided-panel {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  padding: map.get($spacing-scale, 2) map.get($spacing-scale, 3);
+  background: var(--mat-sys-surface);
+}
+
+.guided-panel-title {
+  @include hai-meta;
+  color: var(--mat-sys-on-surface-variant);
+  margin-bottom: map.get($spacing-scale, 1);
+}
+
+.guided-compare-grid {
+  @include hai-row(2);
+}
+
+.guided-chip {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  background: var(--mat-sys-surface-container-low);
+  color: var(--mat-sys-on-surface);
+  cursor: pointer;
+  @include hai-col(0.5);
+  padding: map.get($spacing-scale, 1.5) map.get($spacing-scale, 2);
+}
+
+.guided-chip small {
+  @include hai-meta;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.guided-follow-summary {
+  @include hai-body-small;
+  color: var(--mat-sys-on-surface);
+}
+
+.guided-follow-meta {
+  @include hai-meta;
+  color: var(--mat-sys-on-surface-variant);
+  margin-top: map.get($spacing-scale, 1);
+}
+
 .chat-entry {
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: $radius-sm;

@@ -265,6 +265,9 @@
           <div class="world-title">Simulation Console</div>
           <div class="world-meta">
             {{ populationActive() }} active / {{ populationTotal() }} total
+            @if (trackedHuman(); as tracked) {
+              · Tracking {{ tracked.name }}
+            }
           </div>
         </div>
 
@@ -313,6 +316,34 @@
             <div class="state-banner state-banner--error chat-error">
               <mat-icon>error</mat-icon>
               <span>{{ chatError() }}</span>
+            </div>
+          }
+
+          @if (guidedComparison(); as compare) {
+            <div class="guided-panel">
+              <div class="guided-panel-title">Guided compare</div>
+              <div class="guided-compare-grid">
+                <button type="button" class="guided-chip" (click)="selectedHumanId.set(compare.left.id)">
+                  <span>{{ compare.left.name }}</span>
+                  <small>#{{ compare.left.id }} · {{ humanBusyLabel(compare.left.busy) }}</small>
+                </button>
+                <button type="button" class="guided-chip" (click)="selectedHumanId.set(compare.right.id)">
+                  <span>{{ compare.right.name }}</span>
+                  <small>#{{ compare.right.id }} · {{ humanBusyLabel(compare.right.busy) }}</small>
+                </button>
+              </div>
+            </div>
+          }
+
+          @if (guidedFollow(); as follow) {
+            <div class="guided-panel">
+              <div class="guided-panel-title">Follow window</div>
+              <div class="guided-follow-summary">
+                {{ follow.human.name }} · {{ follow.ticks }} tick(s) · {{ follow.fromTick }} → {{ follow.resultTick }}
+              </div>
+              <div class="guided-follow-meta">
+                Events {{ follow.eventWindow.length }} · Inventions {{ follow.inventionWindow.length }}
+              </div>
             </div>
           }
 
