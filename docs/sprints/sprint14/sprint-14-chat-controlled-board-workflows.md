@@ -2,11 +2,11 @@
 
 ## Execution status
 
-- Current phase: Sprint 14 planned
-- Active chunk: `Task 4a` - validation and closeout
-- Next chunk: none
+- Current phase: Sprint 14 complete
+- Active chunk: none
+- Next chunk: deferred post-Sprint 14 board polish increments
 - Blocked items: depends on Sprint 13 board overlays; intervention-related work also depends on Sprint 11 completion
-- Last completed chunk: `Task 3b` - intervention board visualization (2026-03-14)
+- Last completed chunk: `Task 4a` - validation and closeout (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -15,7 +15,7 @@
 | Task 2b | done | Extended `AgentChatEffectsService` and simulation effect handling for board-aware tracking, event marking, and intervention pending/executed effect states. |
 | Task 3a | done | Added board pulse/highlight feedback and board reaction summaries so safe/guided chat effects produce immediate visible board responses. |
 | Task 3b | done | Integrated explicit intervention board visualization using pending/executed state styling and status labels, aligned with Sprint 11 confirmation/provenance behavior. |
-| Task 4a | planned | Validate the end-to-end “chat drives board” product story and document residual gaps. |
+| Task 4a | done | Backend agent chat contract tests passed and UI type checks passed for board/effect integration; `npm run build` terminated with exit `-1` in this environment and is tracked as residual delivery risk. |
 
 ## Sprint intent
 
