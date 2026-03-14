@@ -5,7 +5,9 @@ import eu.catlabs.humanaity.city.domain.City;
 import eu.catlabs.humanaity.auth.domain.User;
 import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
 import eu.catlabs.humanaity.human.application.HumanGenerationApplicationService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.EntityManager;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,23 +61,31 @@ public class CityApplicationService {
         return savedCity;
     }
 
-    public City updateCity(String id, CityInput input) {
-        Optional<City> existingCity = cityRepository.findById(Long.parseLong(id));
-
-        if (existingCity.isPresent()) {
-            City city = existingCity.get();
-            city.setName(input.getName());
-            return cityRepository.save(city);
-        }
-
-        throw new RuntimeException("City not found with id: " + id);
+    public City updateCity(Long id, CityInput input, User currentUser) {
+        City city = cityRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("City not found with id: " + id));
+        enforceOwnership(city, currentUser);
+        city.setName(input.getName());
+        return cityRepository.save(city);
     }
 
-    public void deleteCity(Long id) {
-        cityRepository.deleteById(id);
+    public void deleteCity(Long id, User currentUser) {
+        City city = cityRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("City not found with id: " + id));
+        enforceOwnership(city, currentUser);
+        cityRepository.delete(city);
     }
 
     public List<City> getCitiesForUser(User user) {
         return cityRepository.findByOwner(user);
+    }
+
+    private void enforceOwnership(City city, User currentUser) {
+        if (city.getOwner() == null || city.getOwner().getId() == null || currentUser == null || currentUser.getId() == null) {
+            throw new AccessDeniedException("City ownership cannot be verified");
+        }
+        if (!city.getOwner().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("You do not own this city");
+        }
     }
 }

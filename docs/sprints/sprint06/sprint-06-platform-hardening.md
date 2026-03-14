@@ -4,14 +4,14 @@
 
 - Current phase: Sprint 6 ready for implementation
 - Active chunk: none
-- Next chunk: `Task 2a` - city ownership enforcement and authorization tests
+- Next chunk: `Task 2b` - migration tooling and backend config cleanup
 - Blocked items: none
-- Last completed chunk: `Task 1a` - hardening baseline and acceptance lock (2026-03-14)
+- Last completed chunk: `Task 2a` - city ownership enforcement and authorization tests (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Sprint boundary locked: this sprint is limited to ownership hardening, migration/config groundwork, client base-path cleanup, and OIDC readiness notes. |
-| Task 2a | planned | Enforce city ownership on update/delete flows and add focused authorization tests. |
+| Task 2a | done | Enforced owner-only city update/delete with explicit `401`/`403`/`404` behavior and added focused API authorization tests. |
 | Task 2b | planned | Introduce migration tooling plus profile-based database/config setup that can grow beyond H2 `ddl-auto=update`. |
 | Task 3a | planned | Remove hardcoded frontend API base URL usage and stabilize the touched UI tests. |
 | Task 3b | planned | Align contract-generation workflow and MCP/client environment handling with the hardened backend/UI setup. |

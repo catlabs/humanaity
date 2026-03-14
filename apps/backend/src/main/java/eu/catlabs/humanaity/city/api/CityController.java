@@ -9,9 +9,11 @@ import eu.catlabs.humanaity.auth.infrastructure.persistence.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -95,24 +97,48 @@ public class CityController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update a city")
-    public ResponseEntity<CityOutput> updateCity(@PathVariable String id, @Valid @RequestBody CityInput input) {
+    public ResponseEntity<CityOutput> updateCity(
+            @PathVariable Long id,
+            @Valid @RequestBody CityInput input,
+            Authentication authentication
+    ) {
         try {
-            City city = cityApplicationService.updateCity(id, input);
+            User currentUser = resolveCurrentUser(authentication);
+            City city = cityApplicationService.updateCity(id, input, currentUser);
             return ResponseEntity.ok(toCityOutput(city));
-        } catch (RuntimeException e) {
+        } catch (UnauthorizedException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a city")
-    public ResponseEntity<Void> deleteCity(@PathVariable String id) {
+    public ResponseEntity<Void> deleteCity(@PathVariable Long id, Authentication authentication) {
         try {
-            cityApplicationService.deleteCity(Long.parseLong(id));
+            User currentUser = resolveCurrentUser(authentication);
+            cityApplicationService.deleteCity(id, currentUser);
             return ResponseEntity.noContent().build();
-        } catch (Exception e) {
+        } catch (UnauthorizedException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    private User resolveCurrentUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedException();
+        }
+
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(UnauthorizedException::new);
     }
 
     private CityOutput toCityOutput(City city) {
@@ -122,5 +148,8 @@ public class CityController {
         // Humans will be loaded separately if needed via /api/humans/city/{cityId}
         output.setHumans(null);
         return output;
+    }
+
+    private static class UnauthorizedException extends RuntimeException {
     }
 }
