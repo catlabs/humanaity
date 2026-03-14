@@ -2,11 +2,11 @@
 
 ## Execution status
 
-- Current phase: Sprint 12 planned
-- Active chunk: `Task 4a` - validation and closeout
-- Next chunk: none
+- Current phase: Sprint 12 complete
+- Active chunk: none
+- Next chunk: Sprint 13 `Task 1a` - place and overlay semantics lock
 - Blocked items: depends on Sprint 11 completion for full sequencing, but most of the sprint can proceed on top of Sprint 10 plus Sprint 9 console work
-- Last completed chunk: `Task 3a` - symbolic board component and page integration (2026-03-14)
+- Last completed chunk: `Task 4a` - validation and closeout (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -14,7 +14,7 @@
 | Task 2a | done | Audited `SimulationSnapshotOutput`/`SimulationSnapshotHumanOutput`; existing `humans[].{id,name,x,y,busy}` plus run/timeline metrics are sufficient for board MVP, so no backend contract change is required in Sprint 12. |
 | Task 2b | done | Added `BoardViewModelService` with deterministic normalized/clamped position mapping and fallback rules, covered by focused unit tests. |
 | Task 3a | done | Added reusable `SymbolicBoardComponent` and integrated it into simulation detail as the primary board surface with CSS marker movement transitions. |
-| Task 4a | planned | Validate board refresh, movement animation, and console compatibility. |
+| Task 4a | done | UI type checks passed for app/spec configs and board integration; `npm run build` terminated with exit `-1` in this environment and is tracked as residual delivery risk. |
 
 ## Sprint intent
 
