@@ -232,6 +232,8 @@ Behavior/caveats:
 - `simulation_history_events` (optional `fromTick`, `toTick`, `limit`)
 - `simulation_history_inventions` (optional `fromTick`, `toTick`, `limit`)
 - `simulation_history_timeline` (optional `fromTick`, `toTick`, `limit`)
+- `simulation_event_explain` (requires `eventId` or `eventKey`, optional `fromTick`, `toTick`, `limit`)
+- `simulation_changes_summary` (optional `lastTicks`, `fromTick`, `toTick`, `limit`)
 
 ## Token handling behavior
 
@@ -265,3 +267,25 @@ Use this quick sequence against a local backend:
    - invalid range: `{ "cityId": <validCityId>, "creativity": 2 }`
 
 If any tool fails, inspect returned `structuredContent.error` and `structuredContent.details` for normalized backend error information.
+
+## Sprint 7 agent demo flow
+
+Use this flow when you want one polished "what changed recently?" MCP demo:
+
+1. Run `auth_login`.
+2. Run `cities_mine` and pick one `cityId`.
+3. Run `simulation_create`, then `simulation_step` with a bounded count:
+   - `{ "cityId": "<validCityId>", "count": 8 }`
+4. Run `simulation_snapshot` to confirm current run tick/year state:
+   - `{ "cityId": "<validCityId>" }`
+5. Run `simulation_changes_summary` with an explicit bounded window:
+   - `{ "cityId": "<validCityId>", "lastTicks": 20, "limit": 200 }`
+6. Run `simulation_history_events` for the same window and copy one event id:
+   - `{ "cityId": "<validCityId>", "fromTick": 0, "limit": 200 }`
+7. Run `simulation_event_explain` on that specific event:
+   - `{ "cityId": "<validCityId>", "eventId": "<eventId>", "fromTick": 0, "limit": 200 }`
+
+The last two tools are intentionally complementary:
+
+- `simulation_changes_summary` gives a bounded city-level digest
+- `simulation_event_explain` explains one deterministic event with traceable source fields

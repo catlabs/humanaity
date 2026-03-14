@@ -173,7 +173,7 @@ Out of scope:
 - broad MCP product copy editing unrelated to the touched flow
 
 Instructions:
-Implement only Task 3a. Add concrete usage examples and a clear recommended tool sequence for the Sprint 7 demo path.
+Implement only Task 3a. Add concrete usage examples and a clear recommended tool sequence for the Sprint 7 demo path, including `simulation_changes_summary` and `simulation_event_explain`.
 ```
 
 ## Task 4a - MCP Build, Smoke Validation, and Closeout

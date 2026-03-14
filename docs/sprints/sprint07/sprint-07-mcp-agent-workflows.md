@@ -2,19 +2,19 @@
 
 ## Execution status
 
-- Current phase: Sprint 7 planned
-- Active chunk: `Task 1a` - scope and workflow lock
-- Next chunk: `Task 2a` - read-tool normalization
+- Current phase: Sprint 7 implementation in progress
+- Active chunk: `Task 4a` - build, smoke validation, and closeout
+- Next chunk: `Task 4a` - closeout execution
 - Blocked items: none
-- Last completed chunk: none
+- Last completed chunk: `Task 3a` - README and demo-flow documentation (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | planned | Lock Sprint 7 to agent-facing MCP workflow improvements on top of existing backend read models. |
-| Task 2a | planned | Normalize touched simulation-tool outputs and shared response helpers so read flows are consistently machine-readable. |
-| Task 2b | planned | Add agent-oriented explanation and city-change summary tools using existing snapshot/history contracts where possible. |
-| Task 3a | planned | Document the polished MCP demo flow, update README/examples, and capture any narrow contract gaps discovered during implementation. |
-| Task 4a | planned | Run MCP build plus a focused smoke flow, then sync sprint status and residual risks. |
+| Task 1a | done | Locked Sprint 7 boundaries, non-goals, and task decomposition around Epic 7 agent workflow outcomes. |
+| Task 2a | done | Normalized Sprint 7 read-path tool outputs through shared JSON success/error helpers in `simulation-tools.ts`. |
+| Task 2b | done | Added `simulation_event_explain` and `simulation_changes_summary` tools with bounded-window semantics and deterministic source linkage. |
+| Task 3a | done | Updated MCP README with Sprint 7 demo flow and usage guidance for new explanation/summary tools. |
+| Task 4a | in_progress | Build and focused smoke validation in progress; sprint closeout pending validation notes and residual-risk capture. |
 
 ## Sprint intent
 
