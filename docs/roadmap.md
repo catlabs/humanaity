@@ -15,9 +15,11 @@ HUMANAIty has a strong technical base, but it is still in early alpha product ma
 - Auth lifecycle (`signup`, `login`, refresh, logout) and JWT integration.
 - City creation linked to automatic human seeding.
 - Deterministic simulation foundation in backend: persisted `SimulationRun`, city-scoped lifecycle controls, deterministic `step()` execution, and reproducibility tests.
+- Historical event, invention, and timeline persistence/query surfaces.
+- Backend-owned simulation snapshot and overview read models for UI and MCP consumers.
 - Pixi-based simulation canvas implementation available in UI.
-- AI integration layer with fallback behavior in backend.
-- MCP tools for auth/cities/humans/simulation.
+- AI integration layer with fallback behavior in backend, including history enrichment.
+- MCP tools for auth/cities/humans/simulation, including recent-change summaries and event explanation workflows.
 
 ### Current maturity level
 
@@ -27,10 +29,10 @@ HUMANAIty has a strong technical base, but it is still in early alpha product ma
 
 ### Primary gaps
 
-- Missing historical core (events, inventions, timeline as first-class domain).
-- Placeholder-heavy UI in critical simulation experience.
-- Contract drift in places between backend OpenAPI and frontend usage.
-- Minimal tests outside the deterministic simulation core.
+- Main product UX is still spread across several surfaces instead of one strong simulation-console experience.
+- No backend-owned agent orchestration layer exists yet for chat-driven simulation commands.
+- The frontend still treats map controls, history reading, and agent workflows as adjacent features rather than one coherent interaction loop.
+- Delivery/test maturity is still limited outside the most mature backend slices.
 
 ## Product vision
 
@@ -40,7 +42,8 @@ Core principles:
 
 - Backend simulation remains deterministic and reproducible.
 - AI enriches narrative artifacts only (dialogue, invention wording, historical recaps).
-- UI exposes an explorable, data-rich, interactive simulation surface.
+- UI should converge on one primary simulation-console surface: map first, lightweight context panels, and agent chat as the main interaction loop.
+- Agent orchestration belongs in the backend application layer so command policy, auth, tool access, and UI effects remain controlled.
 - MCP exposes the same world model for agent-driven exploration and control.
 - Every backend feature that matters for iteration must be **MCP-proof**: testable and consumable end-to-end using MCP tools (no UI required).
 
@@ -48,16 +51,16 @@ Core principles:
 
 ### Impressive MVP first (portfolio-maximizing)
 
-A **single-city deterministic civilization sandbox**:
+A **single-city deterministic civilization sandbox** presented as an **agentic simulation console**:
 
 - User signs up/logs in
 - User creates a city
 - Backend seeds initial population
-- User starts/steps deterministic simulation
-- User observes humans + metrics on live map
-- User sees event feed + timeline + inventions generated from deterministic state
-- User sees AI-enriched summaries/dialogues linked to deterministic source events
-- User can query same simulation state through MCP tools
+- User sees a live simulation map plus one chat-driven control surface
+- User asks for safe actions and reads in natural language (`step`, `summarize`, `explain`, `show latest inventions`, `show city state`)
+- Backend orchestration interprets the request, executes allowed tools/workflows, and returns UI-friendly effects
+- UI refreshes simulation state after allowed actions
+- User can still query the same simulation state through MCP tools
 
 ### Must-have MVP constraints
 
@@ -65,6 +68,8 @@ A **single-city deterministic civilization sandbox**:
 - Events/inventions are persisted and queryable.
 - No fake frontend simulation metadata.
 - AI output is non-authoritative and traceable to deterministic facts.
+- Chat orchestration does not become canonical world state; it only interprets requests, invokes allowed deterministic actions/reads, and explains results.
+- Frontend does not orchestrate MCP directly as the primary runtime architecture.
 - All critical MVP flows remain executable via MCP tools (auth → city → simulation → read surfaces) so they can be tested manually without the UI.
 
 ### Explicitly out of MVP
@@ -72,6 +77,7 @@ A **single-city deterministic civilization sandbox**:
 - Multi-city geopolitics
 - Economy depth/resource chains
 - Warfare/institutions/world-scale modeling
+- Unbounded autonomous agent behavior acting on the simulation without explicit policy
 - Production-grade infra completeness
 
 ## Epics
@@ -327,6 +333,63 @@ A **single-city deterministic civilization sandbox**:
 - Runs in parallel with Epic 4 UI work once core contracts are stable.
 - Feeds into Epic 6 (Platform hardening) by establishing the baseline delivery and test pipeline.
 
+## Epic 9: Agentic simulation console
+
+- **Build order:** Recommended next product-facing milestone after Epic 7
+- **Business/product value:** Creates one coherent flagship user experience instead of a scattered prototype
+- **Technical portfolio value:** Demonstrates backend orchestration, AI-assisted tool use, and UI effects on top of deterministic systems
+- **Estimated complexity:** High
+
+### Features
+
+- Backend-owned agent orchestration endpoint/service
+- Safe MVP natural-language command set
+- Map + chat primary simulation surface
+- UI effect contract for refresh/focus/highlight behavior
+- Clear backend policy separating orchestration from canonical simulation state
+
+### Implementation tasks
+
+- Add a backend orchestration slice that interprets chat requests for one city and executes only allowed commands.
+- Define a stable response contract for message text, executed actions, referenced entities, and UI effects.
+- Embed a chat panel into the primary simulation surface and refresh snapshot/history after allowed actions.
+- Keep MVP commands limited to safe reads plus deterministic step advancement.
+- Preserve MCP as a tool/access layer and parity surface, not the app's only runtime backend.
+
+### Dependencies
+
+- Depends on Epics 3, 4, 5, and 7.
+- Benefits from Epic 6 hardening but should not wait on broad platform work.
+- Becomes the preferred product surface before larger delivery-pipeline investment.
+
+## Epic 10: Guided observation and controlled interventions
+
+- **Build order:** After Epic 9 establishes the console and safe command loop
+- **Business/product value:** Expands the console from passive reading to guided exploration and explicit world intervention
+- **Technical portfolio value:** Shows policy-aware agent tooling and safe boundaries around simulation control
+- **Estimated complexity:** High
+
+### Features
+
+- Guided human-centric observation commands
+- Follow/focus/compare workflows tied to map state
+- Explicit intervention command model
+- Confirmation/audit semantics for director actions
+
+### Implementation tasks
+
+- Add guided commands such as focus human, compare humans, and follow one human for bounded ticks.
+- Add UI effects and read-model support needed for tracked/focused human workflows.
+- Introduce an explicit intervention model for commands that alter world behavior beyond normal deterministic progression.
+- Require confirmation, policy checks, and visible labeling for director actions such as forcing a meeting or guided interaction.
+- Record intervention provenance so users can distinguish autonomous simulation history from user-authored interventions.
+
+### Dependencies
+
+- Depends on Epic 9.
+- Intervention work may require narrow backend-domain additions beyond orchestration/read layers.
+- Should remain scoped and explicit so director controls do not blur deterministic world semantics.
+
 ## Features by epic and task dependency map
 
 ```mermaid
@@ -337,12 +400,19 @@ flowchart TD
   epic3 --> epic4[FrontendSimulationExperience]
   epic2 --> epic5[AIEnrichmentLayer]
   epic3 --> epic7[MCPAndAgentWorkflows]
+  epic3 --> epic9[AgenticSimulationConsole]
+  epic4 --> epic9
+  epic5 --> epic9
+  epic7 --> epic9
+  epic9 --> epic10[GuidedObservationAndControlledInterventions]
   epic1 --> epic6[PlatformHardening]
   epic8 --> mvp[PortfolioMVP]
   epic4 --> mvp[PortfolioMVP]
   epic5 --> mvp
   epic6 --> mvp
   epic7 --> mvp
+  epic9 --> mvp
+  epic10 --> mvp
 ```
 
 ## Recommended implementation order
@@ -354,13 +424,17 @@ flowchart TD
 5. Expose simulation snapshot/timeline/event/invention APIs.
 6. For every new or changed backend API endpoint, add or update the corresponding MCP tools and smoke tests in the **same sprint**, so flows remain testable without the UI.
 7. Rewire city list/detail UI to consume real snapshot data.
-8. Establish testing strategy and baseline automated checks for backend and frontend (build, lint, and focused tests).
-9. Introduce CI pipelines for pull requests and main branch validation.
-10. Prepare simple deployment architecture and perform a first non-production deployment (dev or staging).
-11. Add AI-enriched event and invention summaries.
-12. Extend MCP with snapshot/timeline-focused tools.
-13. Add scoped hardening (tests, config, authorization, contract alignment).
-14. Introduce standards-based identity for external clients and MCP access (`Keycloak`/OIDC/OAuth2) once core product flows are stable.
+8. Add AI-enriched event and invention summaries.
+9. Extend MCP with snapshot/timeline-focused tools.
+10. Add a backend-owned agent orchestration layer plus safe chat commands on the main simulation surface.
+11. Consolidate the UI around a map + chat simulation console with lightweight supporting panels.
+12. Add guided human observation commands once the MVP chat loop is stable.
+13. Add explicit intervention semantics for director-style commands; keep them visibly separate from normal simulation behavior.
+14. Add scoped hardening (tests, config, authorization, contract alignment).
+15. Establish testing strategy and baseline automated checks for backend and frontend (build, lint, and focused tests).
+16. Introduce CI pipelines for pull requests and main branch validation.
+17. Prepare simple deployment architecture and perform a first non-production deployment (dev or staging).
+18. Introduce standards-based identity for external clients and MCP access (`Keycloak`/OIDC/OAuth2) once core product flows are stable.
 
 ## Suggested delegation
 
@@ -395,4 +469,7 @@ flowchart TD
 - Avoid over-investing in infra polish before simulation depth is credible.
 - Optimize for one strong end-to-end demo narrative.
 - Keep event timeline + inventions as product center of gravity.
+- Prefer one flagship simulation-console flow over multiple equal-status UI surfaces.
+- Keep agent chat in a backend-controlled orchestration layer; do not let direct frontend-to-MCP execution become the default app architecture.
+- Treat director commands as explicit interventions with auditability, not as normal autonomous simulation behavior.
 - Keep `Keycloak`/IdP adoption scoped to standard authn/authz and external MCP access needs; do not let identity platform work delay core simulation credibility.
