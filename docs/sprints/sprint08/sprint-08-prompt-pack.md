@@ -12,9 +12,11 @@ Use this contract for every Codex-targeted prompt:
   - `docs/sprints/sprint08/sprint-08-agent-chat-mvp.md`
   - `docs/specs/agent-chat-orchestration-spec.md`
   - `docs/roadmap.md`
+  - `docs/sprint-execution-contract.md` (end-of-task: update execution status, one commit per task, commit format; do not push)
   - relevant `.cursor/rules/*.mdc`
 - restate any mandatory constraints directly
 - include the hard boundary: "Implement only this task ID; do not expand to other sprint tasks"
+- for multi-sprint runs (e.g. sprint 8 to 11), include `docs/sprint-execution-contract.md` and the implement-sprint-range expectations so the agent commits after each task
 
 Re-integrate Codex output before opening the next chunk:
 
@@ -22,6 +24,7 @@ Re-integrate Codex output before opening the next chunk:
 - confirm deterministic/backend-owned state remains canonical
 - run chunk-level validation for touched backend or UI paths
 - update sprint/spec docs if implementation changes sprint-shaping decisions
+- ensure execution status was updated and one commit was created for the task (per `docs/sprint-execution-contract.md`); if Codex did not commit, Cursor does it before the next chunk
 
 ## Per-chunk review/test/handoff checklist
 

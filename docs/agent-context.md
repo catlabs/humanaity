@@ -82,6 +82,7 @@ Keep a skill at the top level only when it is truly cross-cutting, such as `comm
 ## Current pairing recommendations
 
 - `docs/create-sprint` -> pair with `docs-sprint-planning.mdc`
+- `docs/implement-sprint-range` -> pair with `sprint-chunk-completion-gate.mdc`, `docs-chunk-review-loop.mdc`, and `docs/sprint-execution-contract.md` for Codex
 - `docs/sync-sprint-from-implementation` -> pair with `sprint-doc-sync.mdc`
 - `ui/feature-scaffold` -> pair with `ui-feature-architecture.mdc`
 - `ui/openapi-regenerate-adapt` -> pair with `ui-api-generated-client.mdc`
@@ -100,6 +101,7 @@ For Codex tasks, always provide:
 3. the relevant rule files
 4. exact target files
 5. explicit out-of-scope items
+6. **for sprint implementation:** `docs/sprint-execution-contract.md` so Codex updates execution status and creates one commit per task (with format and no push)
 
 Do not rely on Codex discovering project skills.
 

@@ -82,6 +82,8 @@ A **single-city deterministic civilization sandbox** presented as an **agentic s
 
 ## Epics
 
+**Sprint vs Epic:** Sprints are numbered by **execution order** (sprint01 = 1st delivery slice, sprint02 = 2nd, …). Epics are **product themes** in this roadmap (Epic 1 … Epic 10). One epic can span several sprints: e.g. Epic 10 is delivered in sprint10 (guided human workflows) and sprint11 (controlled director interventions). So “sprint11” is the 11th sprint, not “Epic 11”.
+
 ## Epic 1: Deterministic simulation core
 
 - **Build order:** Delivered first
