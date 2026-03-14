@@ -3,14 +3,14 @@
 ## Execution status
 
 - Current phase: Sprint 13 planned
-- Active chunk: `Task 1a` - place and overlay semantics lock
-- Next chunk: `Task 2a` - board read-model gap closure
+- Active chunk: `Task 2a` - board read-model gap closure
+- Next chunk: `Task 2b` - generated client regeneration (if contract changes)
 - Blocked items: depends on Sprint 12 board MVP completion
-- Last completed chunk: none
+- Last completed chunk: `Task 1a` - place and overlay semantics lock (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | planned | Lock place ownership, interaction semantics, and transient overlay rules. |
+| Task 1a | done | Locked place anchors as non-canonical frontend presentation, fixed interaction/event overlay lifetimes, and explicit rule that overlays cannot invent world meaning. |
 | Task 2a | planned | Add only the minimal backend/read-model support needed for place or interaction meaning. |
 | Task 2b | planned | Regenerate generated API clients if the contract changes. |
 | Task 3a | planned | Render fixed places and add interaction overlays on the board. |
@@ -64,6 +64,12 @@ Places exist to help users interpret interactions and movement. They are symboli
 ### Decision 2: overlays must remain bounded and explainable
 
 Interaction lines and event markers should appear briefly and predictably. The board must not accumulate noisy or long-lived visual state.
+
+Sprint 13 overlay lifetime lock:
+
+- interaction overlays auto-expire after a short bounded window (default 6s)
+- transient event markers auto-expire after a short bounded window (default 5s)
+- overlays are refreshed from backend-owned snapshot/timeline refresh cycles only; no autonomous UI timer-driven world mutations
 
 ### Decision 3: canonical meaning stays in backend-owned data
 
