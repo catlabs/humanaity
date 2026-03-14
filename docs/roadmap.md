@@ -30,7 +30,7 @@ HUMANAIty has a strong technical base, but it is still in early alpha product ma
 ### Primary gaps
 
 - Main product UX is still spread across several surfaces instead of one strong simulation-console experience.
-- No backend-owned agent orchestration layer exists yet for chat-driven simulation commands.
+- The current simulation presentation still leans on an implementation-oriented canvas instead of a clear symbolic observatory board.
 - The frontend still treats map controls, history reading, and agent workflows as adjacent features rather than one coherent interaction loop.
 - Delivery/test maturity is still limited outside the most mature backend slices.
 
@@ -82,7 +82,7 @@ A **single-city deterministic civilization sandbox** presented as an **agentic s
 
 ## Epics
 
-**Sprint vs Epic:** Sprints are numbered by **execution order** (sprint01 = 1st delivery slice, sprint02 = 2nd, …). Epics are **product themes** in this roadmap (Epic 1 … Epic 10). One epic can span several sprints: e.g. Epic 10 is delivered in sprint10 (guided human workflows) and sprint11 (controlled director interventions). So “sprint11” is the 11th sprint, not “Epic 11”.
+**Sprint vs Epic:** Sprints are numbered by **execution order** (sprint01 = 1st delivery slice, sprint02 = 2nd, …). Epics are **product themes** in this roadmap (Epic 1 … Epic 13). One epic can span several sprints: e.g. Epic 10 is delivered in sprint10 (guided human workflows) and sprint11 (controlled director interventions). So “sprint11” is the 11th sprint, not “Epic 11”.
 
 ## Epic 1: Deterministic simulation core
 
@@ -392,6 +392,87 @@ A **single-city deterministic civilization sandbox** presented as an **agentic s
 - Intervention work may require narrow backend-domain additions beyond orchestration/read layers.
 - Should remain scoped and explicit so director controls do not blur deterministic world semantics.
 
+## Epic 11: Symbolic simulation board foundation
+
+- **Build order:** After Epic 10 guided workflows stabilize the main console
+- **Business/product value:** Makes the flagship simulation page immediately legible and more portfolio-impressive
+- **Technical portfolio value:** Demonstrates pragmatic frontend architecture without heavy rendering engines
+- **Estimated complexity:** Medium
+
+### Features
+
+- Board-first simulation layout on the existing city route
+- Symbolic human markers positioned from backend-owned normalized coordinates
+- CSS-based movement animation between snapshot refreshes
+- Lightweight selection/focus behavior tied to existing chat and context flows
+
+### Implementation tasks
+
+- Define the board boundary explicitly as a symbolic observatory UI, not a game engine or realistic map.
+- Add a frontend board view-model layer that maps snapshot DTOs into renderable board entities.
+- Introduce a dedicated Angular board component using HTML/CSS positioning and transitions.
+- Recompose the simulation detail page so board, chat, and context panels read as one coherent console.
+- Validate that existing snapshot refresh and guided focus flows still work on the new board surface.
+
+### Dependencies
+
+- Depends on Epic 9 and benefits from Epic 10 guided-focus behavior.
+- Reuses Epic 3 snapshot contracts and should avoid broad backend work unless a real semantic gap exists.
+
+## Epic 12: Board semantics and reactive visualization
+
+- **Build order:** After Epic 11 establishes the board foundation
+- **Business/product value:** Makes movement, interactions, and simulation context intelligible at a glance
+- **Technical portfolio value:** Shows disciplined separation between canonical backend state and derived frontend visualization
+- **Estimated complexity:** Medium-high
+
+### Features
+
+- Fixed symbolic places such as forest, farm, church, market, workshop, river, and campfire
+- Temporary interaction overlays between humans
+- Temporary event markers near involved humans
+- Board/context synchronization for selection and focus
+
+### Implementation tasks
+
+- Lock which visualization semantics must be backend-owned versus safely derived in the frontend.
+- Add minimal read-model extensions only if current snapshot/history surfaces are insufficient for place or interaction meaning.
+- Render fixed places on the board with stable positioning rules.
+- Add SVG or lightweight overlay rendering for interactions and transient event markers.
+- Sync board clicks and backend `uiEffects` with context-panel focus/highlight behavior.
+
+### Dependencies
+
+- Depends on Epic 11.
+- May introduce narrow read-model additions on top of Epic 3 if board semantics cannot be derived safely from current contracts.
+
+## Epic 13: Chat-controlled board workflows
+
+- **Build order:** After Epic 12 gives the board enough expressive power to react visibly
+- **Business/product value:** Completes the product story of a chat-driven simulation observatory
+- **Technical portfolio value:** Demonstrates controlled orchestration driving a reactive UI on top of deterministic state
+- **Estimated complexity:** Medium
+
+### Features
+
+- Board-visible reactions to safe chat commands
+- Board-visible focus, follow, and compare workflows
+- Board-aware UI effect contract for highlight/track/transient board effects
+- Optional intervention visualization once explicit director commands are available
+
+### Implementation tasks
+
+- Lock the chat-to-board effect contract for refresh, focus, tracking, and transient overlays.
+- Extend backend `uiEffects` only where the board needs stable semantics beyond the current effect set.
+- Centralize frontend effect handling so board reactions stay consistent and backend-led.
+- Make safe commands such as step, summary, and focus visibly update the board.
+- Integrate explicit intervention visualization only after intervention policy/provenance work is complete.
+
+### Dependencies
+
+- Depends on Epic 12.
+- Intervention-oriented board flows depend on Epic 10's explicit intervention path being complete.
+
 ## Features by epic and task dependency map
 
 ```mermaid
@@ -407,6 +488,10 @@ flowchart TD
   epic5 --> epic9
   epic7 --> epic9
   epic9 --> epic10[GuidedObservationAndControlledInterventions]
+  epic9 --> epic11[SymbolicSimulationBoardFoundation]
+  epic10 --> epic11
+  epic11 --> epic12[BoardSemanticsAndReactiveVisualization]
+  epic12 --> epic13[ChatControlledBoardWorkflows]
   epic1 --> epic6[PlatformHardening]
   epic8 --> mvp[PortfolioMVP]
   epic4 --> mvp[PortfolioMVP]
@@ -415,6 +500,9 @@ flowchart TD
   epic7 --> mvp
   epic9 --> mvp
   epic10 --> mvp
+  epic11 --> mvp
+  epic12 --> mvp
+  epic13 --> mvp
 ```
 
 ## Recommended implementation order
@@ -432,11 +520,14 @@ flowchart TD
 11. Consolidate the UI around a map + chat simulation console with lightweight supporting panels.
 12. Add guided human observation commands once the MVP chat loop is stable.
 13. Add explicit intervention semantics for director-style commands; keep them visibly separate from normal simulation behavior.
-14. Add scoped hardening (tests, config, authorization, contract alignment).
-15. Establish testing strategy and baseline automated checks for backend and frontend (build, lint, and focused tests).
-16. Introduce CI pipelines for pull requests and main branch validation.
-17. Prepare simple deployment architecture and perform a first non-production deployment (dev or staging).
-18. Introduce standards-based identity for external clients and MCP access (`Keycloak`/OIDC/OAuth2) once core product flows are stable.
+14. Replace the current simulation canvas emphasis with a symbolic board built from Angular, HTML, CSS, and lightweight overlays.
+15. Add fixed places, transient interaction links, and event markers once the board foundation is stable.
+16. Extend chat/UI-effect flows so board reactions become the primary visual feedback loop for simulation commands.
+17. Add scoped hardening (tests, config, authorization, contract alignment).
+18. Establish testing strategy and baseline automated checks for backend and frontend (build, lint, and focused tests).
+19. Introduce CI pipelines for pull requests and main branch validation.
+20. Prepare simple deployment architecture and perform a first non-production deployment (dev or staging).
+21. Introduce standards-based identity for external clients and MCP access (`Keycloak`/OIDC/OAuth2) once core product flows are stable.
 
 ## Suggested delegation
 
