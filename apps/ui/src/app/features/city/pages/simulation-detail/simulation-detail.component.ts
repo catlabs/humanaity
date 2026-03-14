@@ -99,6 +99,7 @@ export class SimulationDetailComponent
   boardEventEntries = signal<BoardEventEntry[]>([]);
   boardPulseNonce = signal(0);
   lastBoardReaction = signal<string | null>(null);
+  directorBoardState = signal<'pending' | 'executed' | null>(null);
   chatInput = signal('');
   chatBusy = signal(false);
   chatError = signal<string | null>(null);
@@ -605,7 +606,12 @@ export class SimulationDetailComponent
     }
     if (resolution.directorInterventionState === 'executed') {
       this.pendingDirectorConfirmation.set(null);
+      this.directorBoardState.set('executed');
       this.lastBoardReaction.set('Intervention executed and reflected on board');
+    }
+    if (resolution.directorInterventionState === 'pending') {
+      this.directorBoardState.set('pending');
+      this.lastBoardReaction.set('Intervention pending explicit confirmation');
     }
   }
 
@@ -639,9 +645,11 @@ export class SimulationDetailComponent
 
     if (structuredData.directorConfirmation) {
       this.pendingDirectorConfirmation.set(structuredData.directorConfirmation);
+      this.directorBoardState.set('pending');
     }
     if (structuredData.directorIntervention?.status === 'EXECUTED') {
       this.pendingDirectorConfirmation.set(null);
+      this.directorBoardState.set('executed');
     }
   }
 
@@ -702,6 +710,7 @@ export class SimulationDetailComponent
 
   onCancelDirectorIntervention(): void {
     this.pendingDirectorConfirmation.set(null);
+    this.directorBoardState.set(null);
   }
 
   private syncBoardEventEntries(events: EventOutput[]): void {

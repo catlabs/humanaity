@@ -21,6 +21,7 @@ export class SymbolicBoardComponent {
   @Input() eventMarkers: BoardEventMarkerViewModel[] = [];
   @Input() pulseNonce = 0;
   @Input() highlightedEventId: number | null = null;
+  @Input() interventionState: 'pending' | 'executed' | null = null;
   @Input() selectedHumanId: number | null = null;
   @Input() trackedHumanId: number | null = null;
   @Output() markerSelected = new EventEmitter<number>();

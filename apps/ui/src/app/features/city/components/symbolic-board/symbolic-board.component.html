@@ -1,4 +1,11 @@
-<div class="board-shell" [class.board-shell--pulse]="pulseNonce % 2 === 1" role="img" aria-label="Symbolic simulation board">
+<div
+  class="board-shell"
+  [class.board-shell--pulse]="pulseNonce % 2 === 1"
+  [class.board-shell--intervention-pending]="interventionState === 'pending'"
+  [class.board-shell--intervention-executed]="interventionState === 'executed'"
+  role="img"
+  aria-label="Symbolic simulation board"
+>
   <div class="board-grid"></div>
 
   <svg class="interaction-layer" viewBox="0 0 100 100" preserveAspectRatio="none">

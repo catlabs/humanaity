@@ -13,6 +13,14 @@
   animation: board-pulse 520ms ease-out;
 }
 
+.board-shell--intervention-pending {
+  box-shadow: inset 0 0 0 3px rgb(245 158 11 / 55%);
+}
+
+.board-shell--intervention-executed {
+  box-shadow: inset 0 0 0 3px rgb(239 68 68 / 55%);
+}
+
 @keyframes board-pulse {
   0% {
     box-shadow: inset 0 0 0 0 rgb(59 130 246 / 0%);

@@ -3,10 +3,10 @@
 ## Execution status
 
 - Current phase: Sprint 14 planned
-- Active chunk: `Task 3b` - intervention board visualization
-- Next chunk: `Task 4a` - validation and closeout
+- Active chunk: `Task 4a` - validation and closeout
+- Next chunk: none
 - Blocked items: depends on Sprint 13 board overlays; intervention-related work also depends on Sprint 11 completion
-- Last completed chunk: `Task 3a` - safe and guided board reactions (2026-03-14)
+- Last completed chunk: `Task 3b` - intervention board visualization (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -14,7 +14,7 @@
 | Task 2a | done | Added minimal backend board-oriented effect hints (`TRACK_HUMAN`, `MARK_EVENT`, `BOARD_INTERVENTION_PENDING`, `BOARD_INTERVENTION_EXECUTED`) with updated contract tests. |
 | Task 2b | done | Extended `AgentChatEffectsService` and simulation effect handling for board-aware tracking, event marking, and intervention pending/executed effect states. |
 | Task 3a | done | Added board pulse/highlight feedback and board reaction summaries so safe/guided chat effects produce immediate visible board responses. |
-| Task 3b | planned | Integrate intervention visualization if Sprint 11 has landed; otherwise keep this slice blocked and explicit. |
+| Task 3b | done | Integrated explicit intervention board visualization using pending/executed state styling and status labels, aligned with Sprint 11 confirmation/provenance behavior. |
 | Task 4a | planned | Validate the end-to-end “chat drives board” product story and document residual gaps. |
 
 ## Sprint intent

@@ -280,6 +280,7 @@
             [eventMarkers]="boardEventMarkers()"
             [pulseNonce]="boardPulseNonce()"
             [highlightedEventId]="selectedEventId()"
+            [interventionState]="directorBoardState()"
             [selectedHumanId]="selectedHumanId()"
             [trackedHumanId]="trackedHumanId()"
             (markerSelected)="selectHumanById($event)"
@@ -317,6 +318,16 @@
           @if (lastBoardReaction(); as reaction) {
             <div class="pill">
               <span>Board</span><strong>{{ reaction }}</strong>
+            </div>
+          }
+          @if (directorBoardState() === 'pending') {
+            <div class="pill">
+              <span>Intervention</span><strong>Pending confirmation</strong>
+            </div>
+          }
+          @if (directorBoardState() === 'executed') {
+            <div class="pill">
+              <span>Intervention</span><strong>Executed</strong>
             </div>
           }
         </div>
