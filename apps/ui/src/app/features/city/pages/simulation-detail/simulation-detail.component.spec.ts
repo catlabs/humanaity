@@ -166,6 +166,38 @@ describe('SimulationDetailComponent', () => {
     expect(text).toContain('Advanced the city by 3 step(s). Current tick is 3.');
   });
 
+  it('applies uiEffects refresh and highlight signals from backend chat responses', () => {
+    cityService.sendAgentChat.and.returnValue(
+      of({
+        conversationId: 'conv-2',
+        message: 'Refreshed and highlighted latest event.',
+        commandClass: 'SAFE_MVP',
+        executedActions: [],
+        referencedEntities: { cityId: 7, eventIds: [12] },
+        uiEffects: [
+          { type: 'REFRESH_SNAPSHOT' },
+          { type: 'REFRESH_TIMELINE' },
+          { type: 'HIGHLIGHT_EVENT', eventId: 12 },
+        ],
+      } as any)
+    );
+
+    const beforeSnapshotCalls = cityService.getSimulationSnapshot.calls.count();
+    const beforeTimelineCalls = cityService.getSimulationTimeline.calls.count();
+
+    fixture.componentInstance.onChatInput('explain event 12');
+    fixture.componentInstance.onSendChat();
+    fixture.detectChanges();
+
+    expect(cityService.getSimulationSnapshot.calls.count()).toBeGreaterThan(
+      beforeSnapshotCalls
+    );
+    expect(cityService.getSimulationTimeline.calls.count()).toBeGreaterThan(
+      beforeTimelineCalls
+    );
+    expect(fixture.componentInstance.selectedEventId()).toBe(12);
+  });
+
   it('renders backend enrichment fields for selected invention and event', () => {
     const component = fixture.componentInstance;
     component.selectInvention(component.inventions()[0]);

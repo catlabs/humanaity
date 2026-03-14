@@ -21,6 +21,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import {
   AgentChatResponseOutput,
+  AgentUiEffectOutput,
   CityOutput,
   EventOutput,
   HumanOutput,
@@ -500,6 +501,54 @@ export class SimulationDetailComponent
         timestamp: new Date().toISOString(),
       },
     ]);
+
+    this.applyUiEffects(response.uiEffects ?? []);
+  }
+
+  private applyUiEffects(effects: AgentUiEffectOutput[]): void {
+    let shouldRefreshSnapshot = false;
+    let shouldRefreshHistory = false;
+
+    for (const effect of effects) {
+      switch (effect.type) {
+        case 'REFRESH_SNAPSHOT':
+          shouldRefreshSnapshot = true;
+          break;
+        case 'REFRESH_TIMELINE':
+          shouldRefreshHistory = true;
+          break;
+        case 'FOCUS_HUMAN':
+          if (typeof effect.humanId === 'number') {
+            this.selectedHumanId.set(effect.humanId);
+            this.selectedEventId.set(null);
+            this.selectedInventionId.set(null);
+          }
+          break;
+        case 'HIGHLIGHT_EVENT':
+          if (typeof effect.eventId === 'number') {
+            this.selectedEventId.set(effect.eventId);
+            this.selectedHumanId.set(null);
+            this.selectedInventionId.set(null);
+          }
+          break;
+        case 'HIGHLIGHT_INVENTION':
+          if (typeof effect.inventionId === 'number') {
+            this.selectedInventionId.set(effect.inventionId);
+            this.selectedHumanId.set(null);
+            this.selectedEventId.set(null);
+          }
+          break;
+        default:
+          break;
+      }
+    }
+
+    if (shouldRefreshSnapshot) {
+      this.refreshSnapshot(false);
+    }
+    if (shouldRefreshHistory) {
+      this.refreshHistory(false);
+    }
   }
 }
 

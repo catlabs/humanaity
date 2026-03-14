@@ -3,10 +3,10 @@
 ## Execution status
 
 - Current phase: Sprint 8 planned
-- Active chunk: `Task 3b` - UI effects and refresh loop
-- Next chunk: `Task 4a` - validation and sprint closeout
+- Active chunk: `Task 4a` - validation and sprint closeout
+- Next chunk: none
 - Blocked items: none
-- Last completed chunk: `Task 3a` - simulation-page chat panel (2026-03-14)
+- Last completed chunk: `Task 3b` - UI effects and refresh loop (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -14,7 +14,7 @@
 | Task 2a | done | Added `/api/agent/cities/{cityId}/chat` endpoint, stable request/response DTOs, ownership enforcement, and skeleton contract test. |
 | Task 2b | done | Implemented bounded safe command execution (step, snapshot, summary, explain event, recent inventions) with user-facing messages and backend-owned `uiEffects`. |
 | Task 3a | done | Added a lightweight in-page Agent Chat panel wired to backend orchestration with conversation continuity and response rendering. |
-| Task 3b | planned | Wire backend `uiEffects` and refresh behavior into the frontend simulation loop. |
+| Task 3b | done | Applied backend `uiEffects` to trigger snapshot/timeline refresh and stable focus/highlight selection behavior. |
 | Task 4a | planned | Add focused validation, update sprint status, and record residual risks. |
 
 ## Sprint intent
