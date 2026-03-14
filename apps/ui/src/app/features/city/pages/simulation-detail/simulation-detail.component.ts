@@ -1,11 +1,8 @@
 import { CommonModule } from '@angular/common';
 import {
-  AfterViewInit,
   Component,
-  ElementRef,
   OnDestroy,
   OnInit,
-  ViewChild,
   computed,
   inject,
   signal,
@@ -25,15 +22,15 @@ import {
   AgentUiEffectOutput,
   CityOutput,
   EventOutput,
-  HumanOutput,
   InventionOutput,
   SimulationSnapshotOutput,
 } from '@api';
 import { EventItemComponent, EventType } from '@shared';
 import { Observable, Subscription, interval } from 'rxjs';
 import { CityService } from '../../city.service';
+import { SymbolicBoardComponent } from '../../components/symbolic-board/symbolic-board.component';
 import { AgentChatEffectsService } from '../../services/agent-chat-effects.service';
-import { PixiCanvasService } from '../../services/pixi-canvas.service';
+import { BoardViewModelService } from '../../services/board-view-model.service';
 
 @Component({
   selector: 'app-simulation-detail',
@@ -49,23 +46,20 @@ import { PixiCanvasService } from '../../services/pixi-canvas.service';
     MatListModule,
     MatProgressSpinnerModule,
     EventItemComponent,
+    SymbolicBoardComponent,
   ],
   templateUrl: './simulation-detail.component.html',
   styleUrl: './simulation-detail.component.scss',
 })
 export class SimulationDetailComponent
-  implements OnInit, AfterViewInit, OnDestroy
+  implements OnInit, OnDestroy
 {
-  @ViewChild('worldCanvas', { static: false })
-  worldCanvasRef?: ElementRef<HTMLDivElement>;
-
   private route = inject(ActivatedRoute);
   private cityService = inject(CityService);
   private agentChatEffectsService = inject(AgentChatEffectsService);
-  private pixiCanvasService = inject(PixiCanvasService);
+  private boardViewModelService = inject(BoardViewModelService);
 
   private pollingSubscription?: Subscription;
-  private pixiInitialized = false;
 
   city: CityOutput = this.route.snapshot.data['city'];
 
@@ -125,6 +119,9 @@ export class SimulationDetailComponent
 
   filteredHumans = computed(() =>
     this.humans().filter((human) => this.filters()[this.humanState(human)])
+  );
+  boardMarkers = computed(() =>
+    this.boardViewModelService.fromHumans(this.humans()).markers
   );
 
   selectedHuman = computed(() => {
@@ -194,20 +191,8 @@ export class SimulationDetailComponent
     });
   }
 
-  async ngAfterViewInit(): Promise<void> {
-    const container = this.worldCanvasRef?.nativeElement;
-    if (!container) {
-      return;
-    }
-
-    await this.pixiCanvasService.initialize(container);
-    this.pixiInitialized = true;
-    this.syncPixiHumans();
-  }
-
   ngOnDestroy(): void {
     this.pollingSubscription?.unsubscribe();
-    this.pixiCanvasService.destroy();
   }
 
   toggleFilter(state: string): void {
@@ -282,6 +267,13 @@ export class SimulationDetailComponent
     this.selectedHumanId.set(human.id);
     this.selectedInventionId.set(null);
     this.selectedEventId.set(null);
+  }
+
+  selectHumanById(humanId: number): void {
+    const human = this.humans().find((item) => item.id === humanId);
+    if (human) {
+      this.selectHuman(human);
+    }
   }
 
   selectInvention(invention: InventionOutput): void {
@@ -446,37 +438,6 @@ export class SimulationDetailComponent
     if (this.inventions().length === 0 && snapshot.recentInventions.length > 0) {
       this.inventions.set(snapshot.recentInventions);
     }
-
-    this.syncPixiHumans(
-      snapshot.humans.map((human) => ({
-        id: human.id,
-        name: human.name,
-        x: human.x ?? 0,
-        y: human.y ?? 0,
-        busy: human.busy,
-      }))
-    );
-  }
-
-  private syncPixiHumans(snapshotHumans = this.humansToOutput()): void {
-    if (!this.pixiInitialized) {
-      return;
-    }
-
-    snapshotHumans.forEach((human) => {
-      this.pixiCanvasService.addHuman(human);
-      this.pixiCanvasService.updateHuman(human);
-    });
-  }
-
-  private humansToOutput(): HumanOutput[] {
-    return this.humans().map((human) => ({
-      id: human.id,
-      name: human.name,
-      x: human.x ?? 0,
-      y: human.y ?? 0,
-      busy: human.busy,
-    }));
   }
 
   private runControlAction(action: (cityId: number) => Observable<unknown>): void {

@@ -272,7 +272,13 @@
         </div>
 
         <div class="world-body">
-          <div class="world-canvas" #worldCanvas></div>
+          <app-symbolic-board
+            class="world-board"
+            [markers]="boardMarkers()"
+            [selectedHumanId]="selectedHumanId()"
+            [trackedHumanId]="trackedHumanId()"
+            (markerSelected)="selectHumanById($event)"
+          ></app-symbolic-board>
           @if (showWorldOverlay()) {
             <div class="world-overlay">
               <mat-icon>public</mat-icon>

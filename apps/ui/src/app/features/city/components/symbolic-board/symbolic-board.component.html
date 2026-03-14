@@ -1,0 +1,20 @@
+<div class="board-shell" role="img" aria-label="Symbolic simulation board">
+  <div class="board-grid"></div>
+
+  @for (marker of markers; track trackByMarkerId($index, marker)) {
+    <button
+      type="button"
+      class="marker"
+      [class.marker--busy]="marker.state === 'busy'"
+      [class.marker--selected]="selectedHumanId === marker.id"
+      [class.marker--tracked]="trackedHumanId === marker.id"
+      [style.left.%]="marker.leftPct"
+      [style.top.%]="marker.topPct"
+      (click)="onMarkerClick(marker.id)"
+      [attr.aria-label]="'Select ' + marker.name"
+    >
+      <span class="marker-dot"></span>
+      <span class="marker-label">{{ marker.name }}</span>
+    </button>
+  }
+</div>

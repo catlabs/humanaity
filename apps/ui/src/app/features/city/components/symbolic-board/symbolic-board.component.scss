@@ -1,0 +1,67 @@
+.board-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 20%, rgb(16 185 129 / 8%), transparent 38%),
+    radial-gradient(circle at 80% 78%, rgb(59 130 246 / 9%), transparent 42%),
+    linear-gradient(180deg, rgb(15 23 42 / 5%), transparent 65%);
+}
+
+.board-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgb(148 163 184 / 15%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(148 163 184 / 15%) 1px, transparent 1px);
+  background-size: 7.5% 7.5%;
+}
+
+.marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: left 500ms ease, top 500ms ease, transform 240ms ease;
+}
+
+.marker:hover {
+  transform: translate(-50%, -50%) scale(1.04);
+}
+
+.marker-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: block;
+  border: 2px solid rgb(15 23 42 / 75%);
+  background: rgb(34 197 94);
+  box-shadow: 0 0 0 4px rgb(34 197 94 / 14%);
+}
+
+.marker--busy .marker-dot {
+  background: rgb(245 158 11);
+  box-shadow: 0 0 0 4px rgb(245 158 11 / 18%);
+}
+
+.marker--selected .marker-dot {
+  border-color: rgb(30 64 175);
+  box-shadow: 0 0 0 5px rgb(59 130 246 / 22%);
+}
+
+.marker--tracked .marker-dot {
+  box-shadow: 0 0 0 6px rgb(239 68 68 / 24%);
+}
+
+.marker-label {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1;
+  color: rgb(15 23 42 / 85%);
+  text-shadow: 0 1px 0 rgb(255 255 255 / 60%);
+  white-space: nowrap;
+}

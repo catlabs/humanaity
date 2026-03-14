@@ -143,6 +143,7 @@ describe('SimulationDetailComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Spec City');
     expect(text).toContain('No simulation run yet');
+    expect(fixture.nativeElement.querySelector('app-symbolic-board')).not.toBeNull();
   });
 
   it('steps simulation through backend service', () => {
