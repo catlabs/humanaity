@@ -2,11 +2,11 @@
 
 ## Execution status
 
-- Current phase: Sprint 6 ready for implementation
+- Current phase: Sprint 6 completed
 - Active chunk: none
-- Next chunk: `Task 4b` - validation and sprint closeout
+- Next chunk: none
 - Blocked items: none
-- Last completed chunk: `Task 4a` - OIDC readiness note (2026-03-14)
+- Last completed chunk: `Task 4b` - validation and sprint closeout (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -16,7 +16,7 @@
 | Task 3a | done | Removed hardcoded UI backend URL usage from runtime paths (`provideApi` + `getMyCities`), but local Angular test/build validation is blocked by a Node allocator crash in this environment. |
 | Task 3b | done | Aligned UI and MCP contract-generation workflows to `HUMANAITY_API_BASE_URL`-driven endpoints and updated setup docs to avoid hardcoded localhost-only assumptions. |
 | Task 4a | done | Added a concrete OIDC readiness model for UI/backend/MCP clients, scope-role mapping, token-validation direction, and explicit deferred integration items. |
-| Task 4b | planned | Run targeted validation, record residual risks, and close the sprint. |
+| Task 4b | done | Re-ran targeted backend hardening tests and MCP build, recorded UI toolchain crash as residual risk, and closed Sprint 6. |
 
 ## Sprint intent
 
@@ -410,6 +410,18 @@ Capture the future auth direction without expanding Sprint 6 into a full identit
 - UI config cleanup can expose hidden dependencies on generated-client defaults
 - OIDC readiness notes can become vague unless they stay tied to concrete current app boundaries
 - Sprint 6 can bloat if "platform hardening" is treated as an excuse for unrelated cleanup
+
+## Task 4b validation log
+
+Validated in this closeout:
+
+- backend: `bash ./mvnw -q -Dtest=CityAuthorizationApiContractTest,HumanaityApplicationTests test`
+- backend: `bash ./mvnw -q -Dtest=SimulationReadModelApiContractTest,SimulationHistoryApiContractTest test`
+- mcp: `npm run build`
+
+Residual risk recorded:
+
+- UI validation remains partially blocked in this environment due a Node allocator crash during `ng test` and `ng build` (`pointer being freed was not allocated`)
 
 ## Handoff to next sprint
 
