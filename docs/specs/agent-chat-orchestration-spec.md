@@ -144,6 +144,13 @@ These are the first commands the orchestration layer should support:
 - show recent inventions
 - show latest city snapshot/state
 
+Sprint 8 hard boundary:
+
+- safe intents are limited to `step`, `snapshot`, `summary`, `explain_event`, and `recent_inventions`
+- command matching must fail closed; unsupported requests return a clear refusal message
+- no guided/follow/compare semantics in this phase
+- no intervention semantics in this phase
+
 Rules:
 
 - commands stay city-scoped
@@ -245,6 +252,12 @@ The backend may suggest effects such as:
 - `SELECT_PANEL`
 
 The frontend owns visual rendering of these effects, but the backend owns when they are suggested.
+
+Sprint 8 hard boundary for effects:
+
+- mutation replies should use `REFRESH_SNAPSHOT` and `REFRESH_TIMELINE`
+- read-only replies may use `HIGHLIGHT_EVENT`, `HIGHLIGHT_INVENTION`, or `SELECT_PANEL`
+- `FOCUS_HUMAN` is reserved for guided workflows in Sprint 10
 
 ### `snapshot`
 

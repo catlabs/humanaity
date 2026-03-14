@@ -3,14 +3,14 @@
 ## Execution status
 
 - Current phase: Sprint 8 planned
-- Active chunk: `Task 1a` - orchestration spec lock
-- Next chunk: `Task 2a` - backend agent API and orchestration skeleton
+- Active chunk: `Task 2a` - backend agent API and orchestration skeleton
+- Next chunk: `Task 2b` - safe MVP command executors
 - Blocked items: none
-- Last completed chunk: none
+- Last completed chunk: `Task 1a` - orchestration spec lock (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | planned | Lock the agent chat orchestration spec and Sprint 8 command boundary. |
+| Task 1a | done | Locked Sprint 8 safe-command/effect boundaries in the orchestration spec to prevent guided/director scope creep. |
 | Task 2a | planned | Add a backend-owned city-scoped agent chat endpoint, DTOs, and orchestration service skeleton. |
 | Task 2b | planned | Implement the safe MVP command executors for step, snapshot, recent summary, event explanation, and latest inventions. |
 | Task 3a | planned | Add a lightweight chat panel to the authoritative simulation page without redesigning the whole page yet. |
