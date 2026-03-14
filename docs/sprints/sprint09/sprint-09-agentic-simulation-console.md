@@ -3,17 +3,17 @@
 ## Execution status
 
 - Current phase: Sprint 9 planned
-- Active chunk: `Task 3a` - supporting-panel simplification
-- Next chunk: `Task 4a` - validation and closeout
+- Active chunk: `Task 4a` - validation and closeout
+- Next chunk: none
 - Blocked items: depends on Sprint 8 orchestration loop
-- Last completed chunk: `Task 2b` - UI effect stabilization (2026-03-14)
+- Last completed chunk: `Task 3a` - supporting-panel simplification (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Locked a console-first boundary: map + chat are primary, supporting panels are secondary, and no new command classes are introduced in Sprint 9. |
 | Task 2a | done | Consolidated the simulation shell around a stronger central console hierarchy (map + chat prominence, reduced side-panel weight). |
 | Task 2b | done | Centralized `uiEffects` interpretation in a dedicated frontend service so refresh/focus/highlight behavior is applied consistently. |
-| Task 3a | planned | Simplify history/info surfaces so they support the console instead of competing with it. |
+| Task 3a | done | Simplified supporting context surfaces by reducing panel density and showing bounded recent history/invention lists. |
 | Task 4a | planned | Validate the consolidated console flow and close the sprint. |
 
 ## Sprint intent

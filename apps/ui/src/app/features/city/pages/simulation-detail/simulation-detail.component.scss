@@ -153,22 +153,6 @@
   padding: 0;
 }
 
-.invention-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: map.get($spacing-scale, 3);
-}
-
-.stat-label {
-  @include hai-meta;
-}
-
-.stat-value {
-  @include hai-body;
-  font-weight: 700;
-  margin-top: map.get($spacing-scale, 0.5);
-}
-
 .world {
   border: none;
   border-radius: 0;

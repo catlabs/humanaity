@@ -151,6 +151,12 @@ export class SimulationDetailComponent
       total: inventions.length,
     };
   });
+  displayedInventions = computed(() =>
+    this.inventions().slice(-12).reverse()
+  );
+  displayedEvents = computed(() =>
+    this.events().slice(-20).reverse()
+  );
 
   eraLabel = computed(() => this.formatEnumLabel(this.currentEra()));
   phaseLabel = computed(() => this.formatEnumLabel(this.worldPhase()));

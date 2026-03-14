@@ -137,7 +137,7 @@
         <div class="panel-header">
           <div class="panel-title">
             <mat-icon>notes</mat-icon>
-            History and Inspector
+            Context
           </div>
           @if (selectedHuman() || selectedInvention() || selectedEvent()) {
             <button mat-icon-button type="button" (click)="clearSelection()" aria-label="Clear selection">
@@ -214,30 +214,13 @@
           </div>
         }
 
-        <div class="panel-section invention-stats">
-          <div class="stat-block">
-            <div class="stat-label">Scientific</div>
-            <div class="stat-value">{{ inventionCounts().scientific }}</div>
-          </div>
-          <div class="stat-block">
-            <div class="stat-label">Philosophical</div>
-            <div class="stat-value">{{ inventionCounts().philosophical }}</div>
-          </div>
-          <div class="stat-block">
-            <div class="stat-label">Cultural</div>
-            <div class="stat-value">{{ inventionCounts().cultural }}</div>
-          </div>
-        </div>
-
-        <mat-divider></mat-divider>
-
         <div class="panel-section scroll-area">
-          <div class="section-title">Inventions ({{ inventions().length }})</div>
+          <div class="section-title">Recent inventions ({{ inventions().length }})</div>
           @if (historyLoading()) {
             <div class="empty">Loading inventions...</div>
           } @else {
             <mat-nav-list>
-              @for (inv of inventions(); track inv.id) {
+              @for (inv of displayedInventions(); track inv.id) {
                 <button mat-list-item type="button" (click)="selectInvention(inv)">
                   <mat-icon matListItemIcon>lightbulb</mat-icon>
                   <div matListItemTitle class="list-title">{{ inventionDisplayTitle(inv) }}</div>
@@ -255,11 +238,11 @@
         <mat-divider></mat-divider>
 
         <div class="panel-section scroll-area events">
-          <div class="section-title">Events ({{ events().length }})</div>
+          <div class="section-title">Recent events ({{ events().length }})</div>
           @if (historyLoading()) {
             <div class="empty">Loading events...</div>
           } @else {
-            @for (event of events(); track event.id) {
+            @for (event of displayedEvents(); track event.id) {
               <button type="button" class="event-select" (click)="selectEvent(event)">
                 <app-event-item
                   [title]="eventTitle(event)"
