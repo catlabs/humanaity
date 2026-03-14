@@ -31,6 +31,7 @@ import {
 import { EventItemComponent, EventType } from '@shared';
 import { Observable, Subscription, interval } from 'rxjs';
 import { CityService } from '../../city.service';
+import { AgentChatEffectsService } from '../../services/agent-chat-effects.service';
 import { PixiCanvasService } from '../../services/pixi-canvas.service';
 
 @Component({
@@ -59,6 +60,7 @@ export class SimulationDetailComponent
 
   private route = inject(ActivatedRoute);
   private cityService = inject(CityService);
+  private agentChatEffectsService = inject(AgentChatEffectsService);
   private pixiCanvasService = inject(PixiCanvasService);
 
   private pollingSubscription?: Subscription;
@@ -506,47 +508,28 @@ export class SimulationDetailComponent
   }
 
   private applyUiEffects(effects: AgentUiEffectOutput[]): void {
-    let shouldRefreshSnapshot = false;
-    let shouldRefreshHistory = false;
+    const resolution = this.agentChatEffectsService.resolve(effects);
 
-    for (const effect of effects) {
-      switch (effect.type) {
-        case 'REFRESH_SNAPSHOT':
-          shouldRefreshSnapshot = true;
-          break;
-        case 'REFRESH_TIMELINE':
-          shouldRefreshHistory = true;
-          break;
-        case 'FOCUS_HUMAN':
-          if (typeof effect.humanId === 'number') {
-            this.selectedHumanId.set(effect.humanId);
-            this.selectedEventId.set(null);
-            this.selectedInventionId.set(null);
-          }
-          break;
-        case 'HIGHLIGHT_EVENT':
-          if (typeof effect.eventId === 'number') {
-            this.selectedEventId.set(effect.eventId);
-            this.selectedHumanId.set(null);
-            this.selectedInventionId.set(null);
-          }
-          break;
-        case 'HIGHLIGHT_INVENTION':
-          if (typeof effect.inventionId === 'number') {
-            this.selectedInventionId.set(effect.inventionId);
-            this.selectedHumanId.set(null);
-            this.selectedEventId.set(null);
-          }
-          break;
-        default:
-          break;
-      }
+    if (resolution.selectedHumanId !== null) {
+      this.selectedHumanId.set(resolution.selectedHumanId);
+      this.selectedEventId.set(null);
+      this.selectedInventionId.set(null);
+    }
+    if (resolution.selectedEventId !== null) {
+      this.selectedEventId.set(resolution.selectedEventId);
+      this.selectedHumanId.set(null);
+      this.selectedInventionId.set(null);
+    }
+    if (resolution.selectedInventionId !== null) {
+      this.selectedInventionId.set(resolution.selectedInventionId);
+      this.selectedHumanId.set(null);
+      this.selectedEventId.set(null);
     }
 
-    if (shouldRefreshSnapshot) {
+    if (resolution.refreshSnapshot) {
       this.refreshSnapshot(false);
     }
-    if (shouldRefreshHistory) {
+    if (resolution.refreshTimeline) {
       this.refreshHistory(false);
     }
   }
