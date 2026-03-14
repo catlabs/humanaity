@@ -3,16 +3,16 @@
 ## Execution status
 
 - Current phase: Sprint 11 planned
-- Active chunk: `Task 2b` - first director command implementation
-- Next chunk: `Task 3a` - console confirmation and intervention labeling
+- Active chunk: `Task 3a` - console confirmation and intervention labeling
+- Next chunk: `Task 4a` - validation and closeout
 - Blocked items: depends on Sprint 10 guided workflow completion
-- Last completed chunk: `Task 2a` - backend intervention model and orchestration path (2026-03-14)
+- Last completed chunk: `Task 2b` - first director command implementation (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Locked first-command boundary (`DIRECTOR_MEET_HUMANS`), two-step confirmation semantics, and explicit provenance/labeling requirements. |
 | Task 2a | done | Added persistent director intervention model, Flyway schema, and token-based confirmation orchestration path with explicit DIRECTOR action labels. |
-| Task 2b | planned | Implement one narrow first director command with explicit confirmation and policy checks. |
+| Task 2b | done | Implemented `DIRECTOR_MEET_HUMANS` execution after valid token confirmation, with policy checks, persisted provenance status updates, and explicit intervention action labels. |
 | Task 3a | planned | Add console confirmation and intervention-labeling behavior. |
 | Task 4a | planned | Validate the first intervention flow and close the sprint. |
 

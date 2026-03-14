@@ -451,26 +451,52 @@ public class AgentChatOrchestrationService {
                 return;
             }
 
-            pending.setStatus(DirectorInterventionStatus.CONFIRMED_PENDING_EXECUTION);
+            Human actorA = resolveHumanByIdOrDefault(humans, pending.getActorHumanIds().get(0), List.of(), 0);
+            Human actorB = resolveHumanByIdOrDefault(humans, pending.getActorHumanIds().get(1), List.of(), 0);
+
+            double midpointX = ((actorA.getX() == null ? 0.0 : actorA.getX()) + (actorB.getX() == null ? 0.0 : actorB.getX())) / 2.0;
+            double midpointY = ((actorA.getY() == null ? 0.0 : actorA.getY()) + (actorB.getY() == null ? 0.0 : actorB.getY())) / 2.0;
+            actorA.setX(midpointX - 0.01);
+            actorA.setY(midpointY);
+            actorB.setX(midpointX + 0.01);
+            actorB.setY(midpointY);
+            actorA.setBusy(true);
+            actorB.setBusy(true);
+            humanRepository.saveAll(List.of(actorA, actorB));
+
+            SimulationRun run = simulationApplicationService.step(cityId, 1);
+
+            pending.setStatus(DirectorInterventionStatus.EXECUTED);
             pending.setConfirmedAt(java.time.Instant.now());
-            pending.setSummary("Confirmation accepted for DIRECTOR_MEET_HUMANS");
+            pending.setExecutedAtTick(run.getTick());
+            pending.setSummary("Executed DIRECTOR_MEET_HUMANS for humans "
+                    + actorA.getId() + " and " + actorB.getId() + " at tick " + run.getTick());
             directorInterventionRepository.save(pending);
 
             response.getExecutedActions().add(new AgentActionOutput(
-                    "INTERVENTION_CONFIRMATION_ACCEPTED",
+                    "INTERVENTION_EXECUTED",
                     "COMPLETED",
-                    "Director intervention confirmation accepted and queued for execution"
+                    "Executed DIRECTOR_MEET_HUMANS with explicit user confirmation"
             ));
+            response.getReferencedEntities().setHumanIds(List.of(actorA.getId(), actorB.getId()));
+            AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
+            focus.setHumanId(actorA.getId());
+            AgentUiEffectOutput refreshTimeline = new AgentUiEffectOutput("REFRESH_TIMELINE");
+            refreshTimeline.setFromTick(Math.max(1L, run.getTick()));
+            response.getUiEffects().add(focus);
+            response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
+            response.getUiEffects().add(refreshTimeline);
             response.setStructuredData(Map.of(
                     "directorIntervention", Map.of(
                             "id", pending.getId(),
                             "status", pending.getStatus().name(),
                             "commandType", pending.getCommandType(),
-                            "humanIds", pending.getActorHumanIds()
+                            "humanIds", pending.getActorHumanIds(),
+                            "executedTick", pending.getExecutedAtTick()
                     )
             ));
-            response.setMessage("Confirmation accepted for intervention #" + pending.getId()
-                    + ". Execution path is locked and will run in the next chunk.");
+            response.setMessage("Intervention executed: directed " + actorA.getName() + " and " + actorB.getName()
+                    + " to meet. Simulation advanced to tick " + run.getTick() + ".");
             return;
         }
 

@@ -241,7 +241,7 @@ class AgentChatApiContractTest {
     }
 
     @Test
-    void chatDirectorMeetHumansAcceptsValidConfirmationTokenAndPersistsConfirmedState() throws Exception {
+    void chatDirectorMeetHumansExecutesAfterValidConfirmationToken() throws Exception {
         User owner = persistUser("owner-agent-director-exec@example.com");
         City city = persistCity("DirectorCity", owner);
         Human left = persistHuman(city, "Lio", 0.2, 0.2);
@@ -268,9 +268,12 @@ class AgentChatApiContractTest {
 
         assertThat(payload.get("commandClass").asText()).isEqualTo("DIRECTOR");
         assertThat(payload.get("executedActions").get(0).get("type").asText())
-                .isEqualTo("INTERVENTION_CONFIRMATION_ACCEPTED");
-        assertThat(intervention.path("status").asText()).isEqualTo("CONFIRMED_PENDING_EXECUTION");
+                .isEqualTo("INTERVENTION_EXECUTED");
+        assertThat(intervention.path("status").asText()).isEqualTo("EXECUTED");
         assertThat(intervention.path("commandType").asText()).isEqualTo("DIRECTOR_MEET_HUMANS");
+        assertThat(intervention.path("executedTick").asLong()).isPositive();
+        assertThat(payload.path("referencedEntities").path("humanIds").toString()).contains(left.getId().toString());
+        assertThat(payload.path("referencedEntities").path("humanIds").toString()).contains(right.getId().toString());
     }
 
     private User persistUser(String email) {
