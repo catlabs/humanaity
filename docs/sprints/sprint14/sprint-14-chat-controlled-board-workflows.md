@@ -3,14 +3,14 @@
 ## Execution status
 
 - Current phase: Sprint 14 planned
-- Active chunk: `Task 1a` - chat-to-board effect contract lock
-- Next chunk: `Task 2a` - backend and frontend effect path alignment
+- Active chunk: `Task 2a` - backend and frontend effect path alignment
+- Next chunk: `Task 2b` - frontend board effect resolver alignment
 - Blocked items: depends on Sprint 13 board overlays; intervention-related work also depends on Sprint 11 completion
-- Last completed chunk: none
+- Last completed chunk: `Task 1a` - chat-to-board effect contract lock (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | planned | Lock the board-aware `uiEffects` contract and command-to-board behavior expectations. |
+| Task 1a | done | Locked board reaction expectations by command class: SAFE (refresh + optional highlight), GUIDED (focus/track markers), DIRECTOR (explicit intervention styling and confirmation-gated reaction). |
 | Task 2a | planned | Extend backend effect shaping only where the board needs stable new semantics. |
 | Task 2b | planned | Align the frontend effect resolver with the new board-oriented effect contract. |
 | Task 3a | planned | Make safe commands and guided workflows visibly react on the board. |
@@ -63,6 +63,12 @@ The board should react to backend-owned effects and state refreshes, not parse f
 ### Decision 2: safe and guided commands ship first-class board feedback
 
 Stepping, focus, compare, follow, and summary flows should have visible board consequences where that improves comprehension.
+
+Sprint 14 command-to-board contract lock:
+
+- SAFE commands: refresh board state and optionally highlight event/invention context markers
+- GUIDED commands: focus or track explicit humans on-board with bounded visual emphasis
+- DIRECTOR commands: show explicit intervention-pending/executed states with distinct styling; never render as ordinary safe updates
 
 ### Decision 3: intervention reactions remain explicitly gated
 
