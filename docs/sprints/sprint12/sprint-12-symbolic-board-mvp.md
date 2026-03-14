@@ -3,16 +3,16 @@
 ## Execution status
 
 - Current phase: Sprint 12 planned
-- Active chunk: `Task 2b` - board view-model mapping rules
-- Next chunk: `Task 3a` - symbolic board component and page integration
+- Active chunk: `Task 3a` - symbolic board component and page integration
+- Next chunk: `Task 4a` - validation and closeout
 - Blocked items: depends on Sprint 11 completion for full sequencing, but most of the sprint can proceed on top of Sprint 10 plus Sprint 9 console work
-- Last completed chunk: `Task 2a` - snapshot contract audit (2026-03-14)
+- Last completed chunk: `Task 2b` - board view-model mapping rules (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Locked Sprint 12 as a board-observatory MVP: normalized human markers only, CSS movement transitions only, and no place/overlay/game-engine semantics. |
 | Task 2a | done | Audited `SimulationSnapshotOutput`/`SimulationSnapshotHumanOutput`; existing `humans[].{id,name,x,y,busy}` plus run/timeline metrics are sufficient for board MVP, so no backend contract change is required in Sprint 12. |
-| Task 2b | planned | Define the frontend board view model and state mapping rules. |
+| Task 2b | done | Added `BoardViewModelService` with deterministic normalized/clamped position mapping and fallback rules, covered by focused unit tests. |
 | Task 3a | planned | Implement the first Angular board component and move the simulation page toward a board-first layout. |
 | Task 4a | planned | Validate board refresh, movement animation, and console compatibility. |
 
