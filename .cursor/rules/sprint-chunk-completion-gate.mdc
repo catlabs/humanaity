@@ -20,6 +20,7 @@ Before marking the active chunk complete, the agent must:
    - update `Last completed chunk`
    - update the chunk status table row(s)
 5. list intentionally deferred items for the next chunk(s)
+6. **commit the chunk's changes** using the commit-message workflow (see `.cursor/skills/commit-message/SKILL.md`): stage only files touched for this task, generate a Conventional Commit message with epic/task mapping, and create the commit; do not push unless the user explicitly asks
 
 ## No status-sync, no completion
 
@@ -33,3 +34,4 @@ Any completion response must include:
 - sprint file updated
 - execution status synced
 - deferred follow-on work called out
+- commit created for the chunk (message follows commit-message skill; no push unless requested)
