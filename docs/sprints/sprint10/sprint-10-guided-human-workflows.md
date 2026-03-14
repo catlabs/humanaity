@@ -3,14 +3,14 @@
 ## Execution status
 
 - Current phase: Sprint 10 planned
-- Active chunk: `Task 1a` - guided command semantics lock
-- Next chunk: `Task 2a` - backend guided workflow support
+- Active chunk: `Task 2a` - backend guided workflow support
+- Next chunk: `Task 2b` - narrow read-model and effect helpers
 - Blocked items: depends on Sprint 9 console stabilization
-- Last completed chunk: none
+- Last completed chunk: `Task 1a` - guided command semantics lock (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | planned | Lock guided-command semantics and keep them clearly separate from interventions. |
+| Task 1a | done | Locked guided-command semantics as observation-first only (focus, compare, bounded follow) and explicitly excluded intervention behavior. |
 | Task 2a | planned | Add backend orchestration support for focus, compare, and follow workflows. |
 | Task 2b | planned | Add any narrow read-model helpers and response effects needed for guided workflows. |
 | Task 3a | planned | Integrate guided workflow UI behavior on the simulation console. |
@@ -62,6 +62,13 @@ Sprint 10 commands may change what the UI emphasizes or how much bounded steppin
 ### Decision 2: focus and follow need stable ids and effects
 
 The backend should return stable human ids and effect hints so the UI can focus or track the right entities without parsing free text.
+
+Sprint 10 hard boundary:
+
+- `focus` selects/centers one existing human by backend-owned id
+- `compare` returns structured, side-by-side human facts from backend-owned state
+- `follow` is bounded by explicit tick count and never injects intervention actions
+- any request to force meetings/alter intent remains out of scope and must be refused
 
 ### Decision 3: follow workflows must stay bounded
 
