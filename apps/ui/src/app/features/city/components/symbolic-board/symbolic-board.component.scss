@@ -76,6 +76,36 @@
   white-space: nowrap;
 }
 
+.event-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 0;
+  background: transparent;
+  color: rgb(248 113 113 / 95%);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  text-shadow: 0 0 8px rgb(239 68 68 / 42%);
+  animation: marker-blink 900ms ease-in-out infinite;
+}
+
+.event-marker--milestone {
+  color: rgb(251 191 36 / 95%);
+  text-shadow: 0 0 8px rgb(251 191 36 / 42%);
+}
+
+@keyframes marker-blink {
+  0% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.35;
+  }
+}
+
 .marker {
   position: absolute;
   transform: translate(-50%, -50%);

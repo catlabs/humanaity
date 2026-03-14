@@ -31,6 +31,7 @@ import { CityService } from '../../city.service';
 import { SymbolicBoardComponent } from '../../components/symbolic-board/symbolic-board.component';
 import { AgentChatEffectsService } from '../../services/agent-chat-effects.service';
 import {
+  BoardEventMarkerViewModel,
   BoardInteractionViewModel,
   BoardPlaceViewModel,
   BoardViewModelService,
@@ -95,6 +96,7 @@ export class SimulationDetailComponent
   guidedComparison = signal<GuidedCompareSummary | null>(null);
   guidedFollow = signal<GuidedFollowSummary | null>(null);
   pendingDirectorConfirmation = signal<DirectorConfirmationSummary | null>(null);
+  boardEventEntries = signal<BoardEventEntry[]>([]);
   chatInput = signal('');
   chatBusy = signal(false);
   chatError = signal<string | null>(null);
@@ -166,6 +168,22 @@ export class SimulationDetailComponent
         ];
       })
       .slice(-8);
+  });
+  boardEventMarkers = computed<BoardEventMarkerViewModel[]>(() => {
+    const now = Date.now();
+    const markerById = new Map(this.boardMarkers().map((marker) => [marker.id, marker]));
+    return this.boardEventEntries()
+      .filter((entry) => entry.expiresAtMs > now)
+      .map((entry) => {
+        const anchor = markerById.get(entry.anchorHumanId);
+        return {
+          eventId: entry.eventId,
+          leftPct: anchor?.leftPct ?? 50,
+          topPct: anchor?.topPct ?? 50,
+          tone: entry.tone,
+          label: entry.label,
+        };
+      });
   });
 
   selectedHuman = computed(() => {
@@ -332,6 +350,13 @@ export class SimulationDetailComponent
     this.selectedInventionId.set(null);
   }
 
+  selectEventById(eventId: number): void {
+    const event = this.events().find((item) => item.id === eventId);
+    if (event) {
+      this.selectEvent(event);
+    }
+  }
+
   clearSelection(): void {
     this.selectedHumanId.set(null);
     this.selectedInventionId.set(null);
@@ -448,6 +473,7 @@ export class SimulationDetailComponent
         this.inventions.set(timeline.inventions);
         this.totalEvents.set(timeline.eventCount);
         this.totalInventions.set(timeline.inventionCount);
+        this.syncBoardEventEntries(timeline.events);
         this.historyLoading.set(false);
       },
       error: (error) => {
@@ -661,6 +687,35 @@ export class SimulationDetailComponent
   onCancelDirectorIntervention(): void {
     this.pendingDirectorConfirmation.set(null);
   }
+
+  private syncBoardEventEntries(events: EventOutput[]): void {
+    const now = Date.now();
+    const existing = this.boardEventEntries().filter((entry) => entry.expiresAtMs > now);
+    const knownIds = new Set(existing.map((entry) => entry.eventId));
+    const fresh = events
+      .slice(-16)
+      .filter((event) => !knownIds.has(event.id))
+      .flatMap((event) => {
+        const anchor = event.actorIds?.[0];
+        if (typeof anchor !== 'number') {
+          return [];
+        }
+        const isInteraction =
+          event.eventType === 'HUMANS_COLLIDED' ||
+          event.eventType === 'DIALOGUE_EXCHANGED';
+        return [
+          {
+            eventId: event.id,
+            anchorHumanId: anchor,
+            expiresAtMs: now + 5000,
+            tone: isInteraction ? ('interaction' as const) : ('milestone' as const),
+            label: this.formatEnumLabel(event.eventType),
+          },
+        ];
+      });
+
+    this.boardEventEntries.set([...existing, ...fresh].slice(-20));
+  }
 }
 
 type ChatEntry = {
@@ -732,4 +787,12 @@ type DirectorInterventionSummary = {
   commandType: string;
   humanIds: number[];
   executedTick?: number;
+};
+
+type BoardEventEntry = {
+  eventId: number;
+  anchorHumanId: number;
+  expiresAtMs: number;
+  tone: 'milestone' | 'interaction';
+  label: string;
 };

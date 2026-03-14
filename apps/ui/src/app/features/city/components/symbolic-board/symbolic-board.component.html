@@ -25,6 +25,20 @@
     </div>
   }
 
+  @for (eventMarker of eventMarkers; track eventMarker.eventId) {
+    <button
+      type="button"
+      class="event-marker"
+      [class.event-marker--milestone]="eventMarker.tone === 'milestone'"
+      [style.left.%]="eventMarker.leftPct"
+      [style.top.%]="eventMarker.topPct"
+      (click)="onEventMarkerClick(eventMarker.eventId)"
+      [attr.aria-label]="'Event marker ' + eventMarker.label"
+    >
+      <span>●</span>
+    </button>
+  }
+
   @for (marker of markers; track trackByMarkerId($index, marker)) {
     <button
       type="button"

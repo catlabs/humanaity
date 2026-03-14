@@ -32,6 +32,14 @@ export type BoardInteractionViewModel = {
   kind: 'collision' | 'dialogue';
 };
 
+export type BoardEventMarkerViewModel = {
+  eventId: number;
+  leftPct: number;
+  topPct: number;
+  tone: 'milestone' | 'interaction';
+  label: string;
+};
+
 @Injectable({
   providedIn: 'root',
 })

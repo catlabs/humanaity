@@ -3,10 +3,10 @@
 ## Execution status
 
 - Current phase: Sprint 13 planned
-- Active chunk: `Task 3b` - event markers and selection synchronization
-- Next chunk: `Task 4a` - validation and closeout
+- Active chunk: `Task 4a` - validation and closeout
+- Next chunk: none
 - Blocked items: depends on Sprint 12 board MVP completion
-- Last completed chunk: `Task 3a` - fixed places and interaction overlays (2026-03-14)
+- Last completed chunk: `Task 3b` - event markers and selection synchronization (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -14,7 +14,7 @@
 | Task 2a | done | Audited board semantics against existing snapshot/timeline contracts; `humans[]`, `recentEvents[].{eventType,actorIds,tick,createdAt}`, and `recentInventions[]` already cover Sprint 13 overlays, so no backend API change is required. |
 | Task 2b | done | No contract delta from Task 2a; generated API clients intentionally left unchanged. |
 | Task 3a | done | Extended the symbolic board with fixed place anchors and bounded interaction line overlays derived from recent backend timeline events. |
-| Task 3b | planned | Add transient event markers and board/context synchronization. |
+| Task 3b | done | Added transient board event markers with bounded lifetime and synchronized board marker/event selection with existing context panel state. |
 | Task 4a | planned | Validate that overlays remain deterministic-safe and do not invent canonical state. |
 
 ## Sprint intent

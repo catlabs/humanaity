@@ -277,9 +277,11 @@
             [markers]="boardMarkers()"
             [places]="boardPlaces()"
             [interactions]="boardInteractions()"
+            [eventMarkers]="boardEventMarkers()"
             [selectedHumanId]="selectedHumanId()"
             [trackedHumanId]="trackedHumanId()"
             (markerSelected)="selectHumanById($event)"
+            (eventMarkerSelected)="selectEventById($event)"
           ></app-symbolic-board>
           @if (showWorldOverlay()) {
             <div class="world-overlay">
