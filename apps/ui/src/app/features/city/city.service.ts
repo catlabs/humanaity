@@ -1,5 +1,4 @@
-import {inject, Injectable, Inject, Optional} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
+import {inject, Injectable} from '@angular/core';
 import {Observable, interval} from 'rxjs';
 import {switchMap, startWith, map} from 'rxjs/operators';
 import {
@@ -12,8 +11,7 @@ import {
   CityOutput,
   HumanOutput,
   CityOverviewOutput,
-  SimulationSnapshotOutput,
-  BASE_PATH
+  SimulationSnapshotOutput
 } from '@api';
 import {parseApiResponse} from '@core';
 
@@ -24,8 +22,6 @@ export class CityService {
   private citiesService = inject(CitiesService);
   private humansService = inject(HumansService);
   private simulationsService = inject(SimulationsService);
-  private httpClient = inject(HttpClient);
-  @Optional() @Inject(BASE_PATH) private basePath?: string;
 
   getCities(): Observable<CityOutput[]> {
     return this.citiesService.getAllCities().pipe(
@@ -57,11 +53,7 @@ export class CityService {
   }
 
   getMyCities(): Observable<CityOutput[]> {
-    // Use HttpClient directly since the generated service might not have this endpoint yet
-    // We'll call /api/cities/mine directly using the same basePath as other services
-    const basePath = this.basePath || 'http://localhost:8080';
-    const url = `${basePath}/api/cities/mine`;
-    return this.httpClient.get<unknown>(url).pipe(
+    return this.citiesService.getMyCities().pipe(
       switchMap(parseApiResponse<CityOutput[]>)
     );
   }

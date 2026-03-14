@@ -23,6 +23,9 @@ import {
 import { authInterceptor, ThemeService } from '@core';
 import { provideApi } from '@api';
 
+const runtimeApiBaseUrl =
+  (globalThis as { __HUMANAITY_API_BASE_URL__?: string }).__HUMANAITY_API_BASE_URL__ ?? '';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -33,7 +36,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideClientHydration(withEventReplay()),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
-    provideApi('http://localhost:8080'),
+    provideApi(runtimeApiBaseUrl),
     provideAnimations(),
     {
       provide: MAT_ICON_DEFAULT_OPTIONS,
