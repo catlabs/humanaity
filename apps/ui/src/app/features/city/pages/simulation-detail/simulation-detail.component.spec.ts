@@ -237,6 +237,61 @@ describe('SimulationDetailComponent', () => {
     expect(text).toContain('Follow window');
   });
 
+  it('requires explicit confirmation for director interventions and sends token on confirm', () => {
+    cityService.sendAgentChat.and.returnValues(
+      of({
+        conversationId: 'conv-director-1',
+        message: 'Director command requested.',
+        commandClass: 'DIRECTOR',
+        executedActions: [{ type: 'INTERVENTION_CONFIRMATION_REQUIRED', status: 'PENDING', summary: '' }],
+        referencedEntities: { cityId: 7, humanIds: [12, 34] },
+        uiEffects: [],
+        structuredData: {
+          directorConfirmation: {
+            interventionId: 77,
+            commandType: 'DIRECTOR_MEET_HUMANS',
+            confirmationToken: 'token-abc',
+            expiresAt: '2026-03-14T14:30:00Z',
+            humanIds: [12, 34],
+          },
+        },
+      } as any),
+      of({
+        conversationId: 'conv-director-1',
+        message: 'Intervention executed.',
+        commandClass: 'DIRECTOR',
+        executedActions: [{ type: 'INTERVENTION_EXECUTED', status: 'COMPLETED', summary: '' }],
+        referencedEntities: { cityId: 7, humanIds: [12, 34] },
+        uiEffects: [{ type: 'REFRESH_SNAPSHOT' }],
+        structuredData: {
+          directorIntervention: {
+            id: 77,
+            status: 'EXECUTED',
+            commandType: 'DIRECTOR_MEET_HUMANS',
+            humanIds: [12, 34],
+            executedTick: 9,
+          },
+        },
+      } as any)
+    );
+
+    const component = fixture.componentInstance;
+    component.onChatInput('director make 12 and 34 meet');
+    component.onSendChat();
+    fixture.detectChanges();
+
+    expect(component.pendingDirectorConfirmation()).not.toBeNull();
+    expect((fixture.nativeElement.textContent as string)).toContain('Director intervention pending');
+
+    component.onConfirmDirectorIntervention();
+    fixture.detectChanges();
+
+    expect(cityService.sendAgentChat.calls.count()).toBe(2);
+    const secondCall = cityService.sendAgentChat.calls.argsFor(1)[1] as any;
+    expect(secondCall.confirmIntervention).toBeTrue();
+    expect(secondCall.confirmationToken).toBe('token-abc');
+  });
+
   it('renders backend enrichment fields for selected invention and event', () => {
     const component = fixture.componentInstance;
     component.selectInvention(component.inventions()[0]);

@@ -353,6 +353,16 @@
   margin-top: map.get($spacing-scale, 1);
 }
 
+.guided-panel--director {
+  border-color: color-mix(in srgb, #ef4444 40%, var(--mat-sys-outline-variant));
+  background: color-mix(in srgb, #ef4444 8%, var(--mat-sys-surface));
+}
+
+.director-actions {
+  @include hai-row(2);
+  margin-top: map.get($spacing-scale, 2);
+}
+
 .chat-entry {
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: $radius-sm;
@@ -362,6 +372,11 @@
 
 .chat-entry--user {
   background: color-mix(in srgb, var(--mat-sys-primary) 10%, var(--mat-sys-surface));
+}
+
+.chat-entry--director {
+  border-color: color-mix(in srgb, #ef4444 45%, var(--mat-sys-outline-variant));
+  background: color-mix(in srgb, #ef4444 8%, var(--mat-sys-surface));
 }
 
 .chat-entry-role {

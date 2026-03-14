@@ -20,6 +20,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import {
+  AgentChatRequestInput,
   AgentChatResponseOutput,
   AgentUiEffectOutput,
   CityOutput,
@@ -95,6 +96,7 @@ export class SimulationDetailComponent
   guidedFocus = signal<GuidedHumanSummary | null>(null);
   guidedComparison = signal<GuidedCompareSummary | null>(null);
   guidedFollow = signal<GuidedFollowSummary | null>(null);
+  pendingDirectorConfirmation = signal<DirectorConfirmationSummary | null>(null);
   chatInput = signal('');
   chatBusy = signal(false);
   chatError = signal<string | null>(null);
@@ -251,6 +253,7 @@ export class SimulationDetailComponent
         role: 'user',
         content: message,
         timestamp: new Date().toISOString(),
+        commandClass: null,
       },
     ]);
 
@@ -523,6 +526,7 @@ export class SimulationDetailComponent
         role: 'agent',
         content: response.message?.trim() || 'No response message returned.',
         timestamp: new Date().toISOString(),
+        commandClass: response.commandClass ?? null,
       },
     ]);
 
@@ -585,6 +589,13 @@ export class SimulationDetailComponent
       this.selectedEventId.set(null);
       this.selectedInventionId.set(null);
     }
+
+    if (structuredData.directorConfirmation) {
+      this.pendingDirectorConfirmation.set(structuredData.directorConfirmation);
+    }
+    if (structuredData.directorIntervention?.status === 'EXECUTED') {
+      this.pendingDirectorConfirmation.set(null);
+    }
   }
 
   private readStructuredData(
@@ -597,12 +608,61 @@ export class SimulationDetailComponent
     }
     return maybeStructured;
   }
+
+  onConfirmDirectorIntervention(): void {
+    const pending = this.pendingDirectorConfirmation();
+    const cityId = this.requireCityId();
+    if (!pending || !cityId || this.chatBusy()) {
+      return;
+    }
+
+    this.chatBusy.set(true);
+    this.chatError.set(null);
+    const message = `director confirm meet humans`;
+    this.chatEntries.update((entries) => [
+      ...entries,
+      {
+        role: 'user',
+        content: `Confirm intervention ${pending.commandType}`,
+        timestamp: new Date().toISOString(),
+        commandClass: 'DIRECTOR',
+      },
+    ]);
+
+    this.cityService
+      .sendAgentChat(
+        cityId,
+        {
+          message,
+          conversationId: this.chatConversationId() ?? undefined,
+          selectedHumanId: pending.humanIds?.[0],
+          confirmationToken: pending.confirmationToken,
+          confirmIntervention: true,
+        } as AgentChatRequestInput
+      )
+      .subscribe({
+        next: (response) => {
+          this.chatBusy.set(false);
+          this.applyChatResponse(response);
+        },
+        error: (error) => {
+          this.chatBusy.set(false);
+          this.chatError.set('Director confirmation failed.');
+          console.error('Director confirmation failed:', error);
+        },
+      });
+  }
+
+  onCancelDirectorIntervention(): void {
+    this.pendingDirectorConfirmation.set(null);
+  }
 }
 
 type ChatEntry = {
   role: 'user' | 'agent';
   content: string;
   timestamp: string;
+  commandClass: string | null;
 };
 
 type GuidedHumanSummary = {
@@ -645,8 +705,26 @@ type GuidedChatStructuredData = {
   focusHuman?: GuidedHumanSummary;
   compareHumans?: GuidedCompareSummary;
   followHuman?: GuidedFollowSummary;
+  directorConfirmation?: DirectorConfirmationSummary;
+  directorIntervention?: DirectorInterventionSummary;
 };
 
 type AgentChatResponseWithStructuredData = AgentChatResponseOutput & {
   structuredData?: GuidedChatStructuredData;
+};
+
+type DirectorConfirmationSummary = {
+  interventionId: number;
+  commandType: string;
+  confirmationToken: string;
+  expiresAt: string;
+  humanIds: number[];
+};
+
+type DirectorInterventionSummary = {
+  id: number;
+  status: string;
+  commandType: string;
+  humanIds: number[];
+  executedTick?: number;
 };

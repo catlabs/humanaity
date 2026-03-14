@@ -347,9 +347,29 @@
             </div>
           }
 
+          @if (pendingDirectorConfirmation(); as pending) {
+            <div class="guided-panel guided-panel--director">
+              <div class="guided-panel-title">Director intervention pending</div>
+              <div class="guided-follow-summary">
+                {{ pending.commandType }} · Humans {{ pending.humanIds.join(", ") }}
+              </div>
+              <div class="guided-follow-meta">
+                Expires {{ pending.expiresAt | date: "short" }}
+              </div>
+              <div class="director-actions">
+                <button mat-flat-button color="warn" type="button" (click)="onConfirmDirectorIntervention()" [disabled]="chatBusy()">
+                  Confirm intervention
+                </button>
+                <button mat-stroked-button type="button" (click)="onCancelDirectorIntervention()" [disabled]="chatBusy()">
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          }
+
           <div class="chat-log">
             @for (entry of chatEntries(); track entry.timestamp + entry.content) {
-              <div class="chat-entry" [class.chat-entry--user]="entry.role === 'user'">
+              <div class="chat-entry" [class.chat-entry--user]="entry.role === 'user'" [class.chat-entry--director]="entry.commandClass === 'DIRECTOR'">
                 <div class="chat-entry-role">{{ entry.role === "user" ? "You" : "Agent" }}</div>
                 <div class="chat-entry-content">{{ entry.content }}</div>
               </div>
