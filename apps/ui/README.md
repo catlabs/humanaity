@@ -52,7 +52,8 @@ All routes under `/cities` and `/admin` are protected by the auth guard.
 
 ## Backend Integration
 
-The app is configured to call the backend at `http://localhost:8080` via `provideApi()` in `src/app/app.config.ts`.
+The app uses the generated API client via `provideApi()` in `src/app/app.config.ts`.
+The runtime backend URL defaults to same-origin (`''`) and can be overridden by setting `globalThis.__HUMANAITY_API_BASE_URL__`.
 
 Generated API code lives in `src/app/api/`:
 
@@ -66,7 +67,7 @@ Feature services wrap the generated client where app-specific behavior is needed
 ### Prerequisites
 
 - Node.js and npm
-- The backend running locally on `http://localhost:8080`
+- A running backend API (default local target for generation examples: `http://localhost:8080`)
 
 ### Install dependencies
 
@@ -99,7 +100,13 @@ If the backend API changes, regenerate the frontend client with:
 npm run api:generate
 ```
 
-This pulls `http://localhost:8080/v3/api-docs` and updates `src/app/api/`.
+This pulls `${HUMANAITY_API_BASE_URL:-http://localhost:8080}/v3/api-docs` and updates `src/app/api/`.
+
+To target a non-local backend for generation:
+
+```bash
+HUMANAITY_API_BASE_URL="https://your-backend.example.com" npm run api:generate
+```
 
 ## SSR Build
 

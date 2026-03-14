@@ -15,7 +15,7 @@ npm install
 
 ## API contract generation
 
-`humanaity-mcp` generates backend-owned schema types with `openapi-typescript` from the live Humanaity backend OpenAPI spec at `http://localhost:8080/v3/api-docs`.
+`humanaity-mcp` generates backend-owned schema types with `openapi-typescript` from the live Humanaity backend OpenAPI spec at `${HUMANAITY_API_BASE_URL:-http://localhost:8080}/v3/api-docs`.
 
 This repository does not use `openapi-generator-cli` for MCP contract generation. The generated output lives in `src/generated/api-types.ts` and should be treated as generated-only.
 
@@ -35,7 +35,7 @@ npm run api:generate:check
 
 ## CI reproducibility strategy (decision)
 
-Current decision: keep live-spec generation (`http://localhost:8080/v3/api-docs`) as the default workflow for now, and do not commit a spec snapshot yet.
+Current decision: keep live-spec generation (`${HUMANAITY_API_BASE_URL:-http://localhost:8080}/v3/api-docs`) as the default workflow for now, and do not commit a spec snapshot yet.
 
 Rationale:
 
@@ -62,7 +62,7 @@ Recommended migration path if/when this becomes necessary:
 Use this when backend DTOs, endpoint signatures, or OpenAPI annotations change:
 
 1. Update backend contracts in `apps/backend` (DTOs/controllers/OpenAPI annotations).
-2. Ensure the backend is running locally and exposing `http://localhost:8080/v3/api-docs`.
+2. Ensure the backend is running and exposing `${HUMANAITY_API_BASE_URL:-http://localhost:8080}/v3/api-docs`.
 3. In `apps/mcp`, regenerate generated schema types:
 
    ```bash

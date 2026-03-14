@@ -4,9 +4,9 @@
 
 - Current phase: Sprint 6 ready for implementation
 - Active chunk: none
-- Next chunk: `Task 3b` - MCP and client environment alignment
+- Next chunk: `Task 4a` - OIDC readiness note
 - Blocked items: none
-- Last completed chunk: `Task 3a` - UI API base-path cleanup and touched test stabilization (2026-03-14)
+- Last completed chunk: `Task 3b` - MCP and client environment alignment (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -14,7 +14,7 @@
 | Task 2a | done | Enforced owner-only city update/delete with explicit `401`/`403`/`404` behavior and added focused API authorization tests. |
 | Task 2b | done | Added Flyway baseline migration, split backend config into common/local/dev profiles, and moved default JPA mode to `validate`. |
 | Task 3a | done | Removed hardcoded UI backend URL usage from runtime paths (`provideApi` + `getMyCities`), but local Angular test/build validation is blocked by a Node allocator crash in this environment. |
-| Task 3b | planned | Align contract-generation workflow and MCP/client environment handling with the hardened backend/UI setup. |
+| Task 3b | done | Aligned UI and MCP contract-generation workflows to `HUMANAITY_API_BASE_URL`-driven endpoints and updated setup docs to avoid hardcoded localhost-only assumptions. |
 | Task 4a | planned | Document OIDC/Keycloak readiness decisions, client boundaries, and deferred integration work. |
 | Task 4b | planned | Run targeted validation, record residual risks, and close the sprint. |
 

@@ -8,7 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:humanaity-ui": "node dist/humanaity-ui/server/server.mjs",
-    "api:generate": "openapi-generator-cli generate -g typescript-angular -i http://localhost:8080/v3/api-docs -o src/app/api --additional-properties=ngVersion=20.0.0,providedInRoot=true,serviceSuffix=Service"
+    "api:generate": "openapi-generator-cli generate -g typescript-angular -i \"${HUMANAITY_API_BASE_URL:-http://localhost:8080}/v3/api-docs\" -o src/app/api --additional-properties=ngVersion=20.0.0,providedInRoot=true,serviceSuffix=Service"
   },
   "prettier": {
     "overrides": [
