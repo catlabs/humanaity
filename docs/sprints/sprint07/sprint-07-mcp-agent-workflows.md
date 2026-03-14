@@ -2,11 +2,11 @@
 
 ## Execution status
 
-- Current phase: Sprint 7 implementation in progress
-- Active chunk: `Task 4a` - build, smoke validation, and closeout
-- Next chunk: `Task 4a` - closeout execution
-- Blocked items: none
-- Last completed chunk: `Task 3a` - README and demo-flow documentation (2026-03-14)
+- Current phase: Sprint 7 completed
+- Active chunk: none
+- Next chunk: none
+- Blocked items: local backend unavailable at `http://localhost:8080` during Task 4a smoke run
+- Last completed chunk: `Task 4a` - build, smoke validation, and sprint closeout (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -14,7 +14,7 @@
 | Task 2a | done | Normalized Sprint 7 read-path tool outputs through shared JSON success/error helpers in `simulation-tools.ts`. |
 | Task 2b | done | Added `simulation_event_explain` and `simulation_changes_summary` tools with bounded-window semantics and deterministic source linkage. |
 | Task 3a | done | Updated MCP README with Sprint 7 demo flow and usage guidance for new explanation/summary tools. |
-| Task 4a | in_progress | Build and focused smoke validation in progress; sprint closeout pending validation notes and residual-risk capture. |
+| Task 4a | done | `npm run build` passed in `apps/mcp`; focused MCP smoke reached the new tools but backend calls failed with `fetch failed` because local backend was unreachable in this environment. |
 
 ## Sprint intent
 
@@ -285,6 +285,15 @@ Make the Sprint 7 path easy to demo, review, and smoke-test from repo context al
 - response normalization can sprawl if applied to the entire MCP server instead of the Sprint 7 workflow path
 - smoke validation depends on a working local backend plus credentials, so validation notes must distinguish real product gaps from environment-only blockers
 - a summary tool can become vague or overly narrative if it is not kept bounded to explicit source ticks and counts
+
+## Validation notes (Task 4a)
+
+- `apps/mcp`: `npm run build` succeeded on 2026-03-14.
+- Focused smoke sequence executed through MCP client with Sprint 7 tools:
+  - attempted `cities_mine`, `city_create`, `simulation_step`, `simulation_changes_summary`, and `simulation_event_explain`
+  - tool responses returned `ok: false` with `error: "fetch failed"` when calling backend APIs
+- Interpretation: Sprint 7 MCP wiring compiles and tools are registered, but end-to-end smoke could not validate backend-backed outputs because `HUMANAITY_API_BASE_URL` (`http://localhost:8080`) was unreachable in this runtime session.
+- Deferred follow-on validation: rerun the same smoke flow with a running backend and valid auth credentials to confirm non-error payloads for `simulation_changes_summary` and `simulation_event_explain`.
 
 ## Handoff to next sprint
 
