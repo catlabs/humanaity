@@ -3,16 +3,16 @@
 ## Execution status
 
 - Current phase: Sprint 8 planned
-- Active chunk: `Task 2b` - safe MVP command executors
-- Next chunk: `Task 3a` - simulation-page chat panel
+- Active chunk: `Task 3a` - simulation-page chat panel
+- Next chunk: `Task 3b` - UI effects and refresh loop
 - Blocked items: none
-- Last completed chunk: `Task 2a` - backend agent API and orchestration skeleton (2026-03-14)
+- Last completed chunk: `Task 2b` - safe MVP command executors (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Locked Sprint 8 safe-command/effect boundaries in the orchestration spec to prevent guided/director scope creep. |
 | Task 2a | done | Added `/api/agent/cities/{cityId}/chat` endpoint, stable request/response DTOs, ownership enforcement, and skeleton contract test. |
-| Task 2b | planned | Implement the safe MVP command executors for step, snapshot, recent summary, event explanation, and latest inventions. |
+| Task 2b | done | Implemented bounded safe command execution (step, snapshot, summary, explain event, recent inventions) with user-facing messages and backend-owned `uiEffects`. |
 | Task 3a | planned | Add a lightweight chat panel to the authoritative simulation page without redesigning the whole page yet. |
 | Task 3b | planned | Wire backend `uiEffects` and refresh behavior into the frontend simulation loop. |
 | Task 4a | planned | Add focused validation, update sprint status, and record residual risks. |

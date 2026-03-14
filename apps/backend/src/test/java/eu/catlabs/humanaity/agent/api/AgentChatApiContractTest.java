@@ -7,6 +7,10 @@ import eu.catlabs.humanaity.auth.infrastructure.persistence.UserRepository;
 import eu.catlabs.humanaity.auth.infrastructure.security.JwtService;
 import eu.catlabs.humanaity.city.domain.City;
 import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
+import eu.catlabs.humanaity.event.infrastructure.persistence.EventRepository;
+import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
+import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,10 +43,22 @@ class AgentChatApiContractTest {
     @Autowired
     private CityRepository cityRepository;
     @Autowired
+    private SimulationRunRepository simulationRunRepository;
+    @Autowired
+    private EventRepository eventRepository;
+    @Autowired
+    private InventionRepository inventionRepository;
+    @Autowired
+    private HumanRepository humanRepository;
+    @Autowired
     private JwtService jwtService;
 
     @BeforeEach
     void cleanDatabase() {
+        inventionRepository.deleteAll();
+        eventRepository.deleteAll();
+        simulationRunRepository.deleteAll();
+        humanRepository.deleteAll();
         cityRepository.deleteAll();
         userRepository.deleteAll();
     }
@@ -85,13 +101,15 @@ class AgentChatApiContractTest {
 
         JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
         assertThat(payload.get("commandClass").asText()).isEqualTo("SAFE_MVP");
-        assertThat(payload.get("message").asText()).contains("recognized");
+        assertThat(payload.get("message").asText()).contains("Advanced the city");
         assertThat(payload.get("conversationId").asText()).isNotBlank();
         assertThat(payload.get("referencedEntities").get("cityId").asLong()).isEqualTo(city.getId());
         assertThat(payload.get("executedActions").isArray()).isTrue();
         assertThat(payload.get("executedActions").size()).isEqualTo(1);
         assertThat(payload.get("executedActions").get(0).get("type").asText()).isEqualTo("STEP_SIMULATION");
+        assertThat(payload.get("executedActions").get(0).get("status").asText()).isEqualTo("COMPLETED");
         assertThat(payload.get("uiEffects").isArray()).isTrue();
+        assertThat(payload.get("uiEffects").size()).isGreaterThanOrEqualTo(1);
     }
 
     @Test
@@ -104,6 +122,24 @@ class AgentChatApiContractTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(request("  ")))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void chatRejectsOutOfScopeRequestWithinSafeBoundaryMessage() throws Exception {
+        User owner = persistUser("owner-agent-unsupported@example.com");
+        City city = persistCity("OwnedCity", owner);
+
+        MvcResult result = mockMvc.perform(post("/api/agent/cities/{cityId}/chat", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("delete the whole city forever")))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(payload.get("executedActions").get(0).get("type").asText()).isEqualTo("UNSUPPORTED_REQUEST");
+        assertThat(payload.get("executedActions").get(0).get("status").asText()).isEqualTo("REJECTED");
+        assertThat(payload.get("message").asText()).contains("safe Sprint 8 commands");
     }
 
     private User persistUser(String email) {
