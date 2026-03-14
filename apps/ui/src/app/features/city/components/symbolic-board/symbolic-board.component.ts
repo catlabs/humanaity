@@ -1,6 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { BoardMarkerViewModel } from '../../services/board-view-model.service';
+import {
+  BoardInteractionViewModel,
+  BoardMarkerViewModel,
+  BoardPlaceViewModel,
+} from '../../services/board-view-model.service';
 
 @Component({
   selector: 'app-symbolic-board',
@@ -11,6 +15,8 @@ import { BoardMarkerViewModel } from '../../services/board-view-model.service';
 })
 export class SymbolicBoardComponent {
   @Input() markers: BoardMarkerViewModel[] = [];
+  @Input() places: BoardPlaceViewModel[] = [];
+  @Input() interactions: BoardInteractionViewModel[] = [];
   @Input() selectedHumanId: number | null = null;
   @Input() trackedHumanId: number | null = null;
   @Output() markerSelected = new EventEmitter<number>();

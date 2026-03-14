@@ -18,6 +18,64 @@
   background-size: 7.5% 7.5%;
 }
 
+.interaction-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.interaction {
+  stroke-width: 0.45;
+  stroke-linecap: round;
+  stroke-dasharray: 1.8 1.2;
+  animation: interaction-pulse 1200ms ease-in-out infinite;
+}
+
+.interaction--collision {
+  stroke: rgb(249 115 22 / 85%);
+}
+
+.interaction--dialogue {
+  stroke: rgb(59 130 246 / 78%);
+}
+
+@keyframes interaction-pulse {
+  0% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+.place-anchor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.place-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: block;
+  background: rgb(71 85 105 / 85%);
+  border: 1px solid rgb(15 23 42 / 65%);
+}
+
+.place-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: rgb(15 23 42 / 70%);
+  white-space: nowrap;
+}
+
 .marker {
   position: absolute;
   transform: translate(-50%, -50%);

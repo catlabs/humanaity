@@ -1,6 +1,30 @@
 <div class="board-shell" role="img" aria-label="Symbolic simulation board">
   <div class="board-grid"></div>
 
+  <svg class="interaction-layer" viewBox="0 0 100 100" preserveAspectRatio="none">
+    @for (interaction of interactions; track interaction.key) {
+      <line
+        [attr.x1]="interaction.fromLeftPct"
+        [attr.y1]="interaction.fromTopPct"
+        [attr.x2]="interaction.toLeftPct"
+        [attr.y2]="interaction.toTopPct"
+        [attr.class]="'interaction interaction--' + interaction.kind"
+      ></line>
+    }
+  </svg>
+
+  @for (place of places; track place.id) {
+    <div
+      class="place-anchor"
+      [style.left.%]="place.leftPct"
+      [style.top.%]="place.topPct"
+      [attr.aria-label]="place.label"
+    >
+      <span class="place-dot"></span>
+      <span class="place-label">{{ place.label }}</span>
+    </div>
+  }
+
   @for (marker of markers; track trackByMarkerId($index, marker)) {
     <button
       type="button"

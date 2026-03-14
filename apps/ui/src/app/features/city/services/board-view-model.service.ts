@@ -16,6 +16,22 @@ export type BoardViewModel = {
   population: number;
 };
 
+export type BoardPlaceViewModel = {
+  id: string;
+  label: string;
+  leftPct: number;
+  topPct: number;
+};
+
+export type BoardInteractionViewModel = {
+  key: string;
+  fromLeftPct: number;
+  fromTopPct: number;
+  toLeftPct: number;
+  toTopPct: number;
+  kind: 'collision' | 'dialogue';
+};
+
 @Injectable({
   providedIn: 'root',
 })

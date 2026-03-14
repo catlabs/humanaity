@@ -275,6 +275,8 @@
           <app-symbolic-board
             class="world-board"
             [markers]="boardMarkers()"
+            [places]="boardPlaces()"
+            [interactions]="boardInteractions()"
             [selectedHumanId]="selectedHumanId()"
             [trackedHumanId]="trackedHumanId()"
             (markerSelected)="selectHumanById($event)"

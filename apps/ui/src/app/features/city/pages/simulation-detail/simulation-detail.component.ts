@@ -30,7 +30,11 @@ import { Observable, Subscription, interval } from 'rxjs';
 import { CityService } from '../../city.service';
 import { SymbolicBoardComponent } from '../../components/symbolic-board/symbolic-board.component';
 import { AgentChatEffectsService } from '../../services/agent-chat-effects.service';
-import { BoardViewModelService } from '../../services/board-view-model.service';
+import {
+  BoardInteractionViewModel,
+  BoardPlaceViewModel,
+  BoardViewModelService,
+} from '../../services/board-view-model.service';
 
 @Component({
   selector: 'app-simulation-detail',
@@ -123,6 +127,46 @@ export class SimulationDetailComponent
   boardMarkers = computed(() =>
     this.boardViewModelService.fromHumans(this.humans()).markers
   );
+  boardPlaces = computed<BoardPlaceViewModel[]>(() => [
+    { id: 'archive', label: 'Archive', leftPct: 15, topPct: 18 },
+    { id: 'commons', label: 'Commons', leftPct: 52, topPct: 47 },
+    { id: 'workshop', label: 'Workshop', leftPct: 79, topPct: 26 },
+    { id: 'forum', label: 'Forum', leftPct: 68, topPct: 74 },
+  ]);
+  boardInteractions = computed<BoardInteractionViewModel[]>(() => {
+    const markerById = new Map(this.boardMarkers().map((marker) => [marker.id, marker]));
+    return this.events()
+      .slice(-14)
+      .flatMap((event) => {
+        if (
+          event.eventType !== 'HUMANS_COLLIDED' &&
+          event.eventType !== 'DIALOGUE_EXCHANGED'
+        ) {
+          return [];
+        }
+        const [fromId, toId] = event.actorIds ?? [];
+        if (typeof fromId !== 'number' || typeof toId !== 'number') {
+          return [];
+        }
+        const from = markerById.get(fromId);
+        const to = markerById.get(toId);
+        if (!from || !to) {
+          return [];
+        }
+        return [
+          {
+            key: `${event.id}:${fromId}:${toId}`,
+            fromLeftPct: from.leftPct,
+            fromTopPct: from.topPct,
+            toLeftPct: to.leftPct,
+            toTopPct: to.topPct,
+            kind:
+              event.eventType === 'HUMANS_COLLIDED' ? ('collision' as const) : ('dialogue' as const),
+          },
+        ];
+      })
+      .slice(-8);
+  });
 
   selectedHuman = computed(() => {
     const id = this.selectedHumanId();
