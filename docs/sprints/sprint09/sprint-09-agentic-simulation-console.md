@@ -3,14 +3,14 @@
 ## Execution status
 
 - Current phase: Sprint 9 planned
-- Active chunk: `Task 1a` - console layout boundary lock
-- Next chunk: `Task 2a` - simulation page shell consolidation
+- Active chunk: `Task 2a` - simulation page shell consolidation
+- Next chunk: `Task 2b` - UI effect stabilization
 - Blocked items: depends on Sprint 8 orchestration loop
-- Last completed chunk: none
+- Last completed chunk: `Task 1a` - console layout boundary lock (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | planned | Lock the console-first UI boundary and Sprint 9 non-goals. |
+| Task 1a | done | Locked a console-first boundary: map + chat are primary, supporting panels are secondary, and no new command classes are introduced in Sprint 9. |
 | Task 2a | planned | Refactor the authoritative simulation page toward a map + chat + lightweight context layout. |
 | Task 2b | planned | Promote backend `uiEffects` into stable frontend focus/highlight/selection behavior. |
 | Task 3a | planned | Simplify history/info surfaces so they support the console instead of competing with it. |
@@ -62,6 +62,13 @@ Sprint 9 should make the city simulation page clearly feel like the main product
 ### Decision 2: chat becomes the dominant interaction surface
 
 The UI should bias user action toward the chat panel for commands and explanations, while keeping direct controls only where they remain obviously useful.
+
+Console-first definition for Sprint 9:
+
+- map remains the primary visual surface
+- chat remains the primary command-and-explanation surface
+- history/inspector surfaces are intentionally lighter than map/chat
+- no new command classes, no guided/director semantics, no backend orchestration expansion
 
 ### Decision 3: context panels should support, not compete
 
