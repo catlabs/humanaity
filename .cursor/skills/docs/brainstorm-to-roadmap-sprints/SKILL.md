@@ -37,6 +37,20 @@ Depending on the input, this skill may create or update:
 - one prompt pack per sprint, named `sprint-XX-prompt-pack.md`
 - one or more spec files under `docs/specs/` when semantics need to be locked before implementation
 
+## Default execution behavior
+
+When the user explicitly asks to use this skill for a planning task, default to producing **repo artifacts**, not just an in-chat summary.
+
+Unless the user explicitly asks for chat-only brainstorming output, the expected behavior is:
+
+- reconcile the brainstorm with `docs/roadmap.md`
+- update `docs/roadmap.md` when roadmap alignment changes
+- create the next sprint doc(s) under `docs/sprints/` when the work is implementation-ready enough to slice
+- create spec files when semantic locking is required before implementation
+- create prompt packs when the user asks for delegable execution packs or when they are clearly needed for the next implementation step
+
+If you choose not to update docs, state why explicitly. Do not silently stop at a prose plan when the request is clearly asking for roadmap/sprint planning artifacts.
+
 ## Source Of Truth Order
 
 Read these before planning:
@@ -161,6 +175,8 @@ Use this section order:
 
 The execution status block should stay compact and scan-friendly.
 
+If the user asked for planning artifacts in the repo, create the sprint doc files during this step rather than only describing them in chat.
+
 ### 8. Write the prompt pack
 
 Create one prompt pack per sprint.
@@ -187,6 +203,8 @@ Before finishing:
 - ensure prompt packs match the sprint task IDs exactly
 - ensure specs are referenced from the sprint when required
 - ensure deferred ideas are called out instead of silently dropped
+
+If the user invoked this skill directly, the final response should briefly summarize which roadmap and sprint artifacts were created or updated.
 
 ## Artifact Decision Rules
 
