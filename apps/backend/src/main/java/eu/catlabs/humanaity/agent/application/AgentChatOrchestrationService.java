@@ -12,6 +12,8 @@ import eu.catlabs.humanaity.event.domain.Event;
 import eu.catlabs.humanaity.event.infrastructure.persistence.EventRepository;
 import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionRepository;
+import eu.catlabs.humanaity.human.domain.Human;
+import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
 import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
@@ -23,7 +25,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,19 +43,22 @@ public class AgentChatOrchestrationService {
     private final SimulationReadModelQueryService simulationReadModelQueryService;
     private final EventRepository eventRepository;
     private final InventionRepository inventionRepository;
+    private final HumanRepository humanRepository;
 
     public AgentChatOrchestrationService(
             CityRepository cityRepository,
             SimulationApplicationService simulationApplicationService,
             SimulationReadModelQueryService simulationReadModelQueryService,
             EventRepository eventRepository,
-            InventionRepository inventionRepository
+            InventionRepository inventionRepository,
+            HumanRepository humanRepository
     ) {
         this.cityRepository = cityRepository;
         this.simulationApplicationService = simulationApplicationService;
         this.simulationReadModelQueryService = simulationReadModelQueryService;
         this.eventRepository = eventRepository;
         this.inventionRepository = inventionRepository;
+        this.humanRepository = humanRepository;
     }
 
     public AgentChatResponseOutput orchestrate(Long cityId, User currentUser, AgentChatRequestInput input) {
@@ -79,6 +86,18 @@ public class AgentChatOrchestrationService {
             case "summary" -> executeSummary(cityId, response);
             case "explain_event" -> executeExplainEvent(cityId, input, normalizedMessage, response);
             case "recent_inventions" -> executeRecentInventions(cityId, response);
+            case "focus_human" -> {
+                response.setCommandClass("GUIDED");
+                executeFocusHuman(cityId, input, normalizedMessage, response);
+            }
+            case "compare_humans" -> {
+                response.setCommandClass("GUIDED");
+                executeCompareHumans(cityId, input, normalizedMessage, response);
+            }
+            case "follow_human" -> {
+                response.setCommandClass("GUIDED");
+                executeFollowHuman(cityId, input, normalizedMessage, response);
+            }
             default -> {
                 response.getExecutedActions().add(new AgentActionOutput(
                         "UNSUPPORTED_REQUEST",
@@ -236,6 +255,105 @@ public class AgentChatOrchestrationService {
         response.setMessage("Recent inventions (" + recent.size() + "): " + names);
     }
 
+    private void executeFocusHuman(
+            Long cityId,
+            AgentChatRequestInput input,
+            String normalizedMessage,
+            AgentChatResponseOutput response
+    ) {
+        Human target = resolveTargetHuman(cityId, input, normalizedMessage);
+
+        response.getExecutedActions().add(new AgentActionOutput(
+                "FOCUS_HUMAN",
+                "COMPLETED",
+                "Focused on human " + target.getId()
+        ));
+        response.getReferencedEntities().setHumanIds(List.of(target.getId()));
+
+        AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
+        focus.setHumanId(target.getId());
+        response.getUiEffects().add(focus);
+        response.setStructuredData(Map.of("focusHuman", toHumanSummary(target)));
+        response.setMessage("Focused on " + target.getName() + " (human " + target.getId() + ").");
+    }
+
+    private void executeCompareHumans(
+            Long cityId,
+            AgentChatRequestInput input,
+            String normalizedMessage,
+            AgentChatResponseOutput response
+    ) {
+        List<Human> humans = humanRepository.findByCityIdOrderByIdAsc(cityId);
+        if (humans.size() < 2) {
+            response.getExecutedActions().add(new AgentActionOutput(
+                    "COMPARE_HUMANS",
+                    "REJECTED",
+                    "At least two humans are required to compare"
+            ));
+            response.setMessage("I need at least two humans in this city to compare.");
+            return;
+        }
+
+        List<Long> ids = extractNumbers(normalizedMessage);
+        Human left = resolveHumanByIdOrDefault(humans, input.getSelectedHumanId(), ids, 0);
+        Human right = resolveHumanByIdOrDefault(humans, null, ids, 1);
+        if (left.getId().equals(right.getId())) {
+            right = humans.stream().filter(h -> !h.getId().equals(left.getId())).findFirst().orElse(right);
+        }
+
+        response.getExecutedActions().add(new AgentActionOutput(
+                "COMPARE_HUMANS",
+                "COMPLETED",
+                "Compared humans " + left.getId() + " and " + right.getId()
+        ));
+        response.getReferencedEntities().setHumanIds(List.of(left.getId(), right.getId()));
+
+        AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
+        focus.setHumanId(left.getId());
+        response.getUiEffects().add(focus);
+        response.setStructuredData(Map.of(
+                "compareHumans", Map.of(
+                        "left", toHumanSummary(left),
+                        "right", toHumanSummary(right)
+                )
+        ));
+        response.setMessage("Compared " + left.getName() + " and " + right.getName()
+                + ". Busy states: " + left.isBusy() + " vs " + right.isBusy() + ".");
+    }
+
+    private void executeFollowHuman(
+            Long cityId,
+            AgentChatRequestInput input,
+            String normalizedMessage,
+            AgentChatResponseOutput response
+    ) {
+        Human target = resolveTargetHuman(cityId, input, normalizedMessage);
+        int followTicks = Math.max(1, Math.min(extractRequestedStepCount(normalizedMessage), 20));
+        SimulationRun run = simulationApplicationService.step(cityId, followTicks);
+
+        response.getExecutedActions().add(new AgentActionOutput(
+                "FOLLOW_HUMAN",
+                "COMPLETED",
+                "Followed human " + target.getId() + " for " + followTicks + " tick(s)"
+        ));
+        response.getReferencedEntities().setHumanIds(List.of(target.getId()));
+
+        AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
+        focus.setHumanId(target.getId());
+        response.getUiEffects().add(focus);
+        response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
+        response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_TIMELINE"));
+        response.setStructuredData(Map.of(
+                "followHuman", Map.of(
+                        "human", toHumanSummary(target),
+                        "ticks", followTicks,
+                        "resultTick", run.getTick()
+                )
+        ));
+        response.setMessage("Followed " + target.getName() + " for " + followTicks
+                + " tick(s). Simulation is now at tick " + run.getTick() + ".");
+    }
+
     private void validateInput(AgentChatRequestInput input) {
         if (input == null || input.getMessage() == null || input.getMessage().trim().isEmpty()) {
             throw new IllegalArgumentException("message is required");
@@ -286,6 +404,15 @@ public class AgentChatOrchestrationService {
     }
 
     private String classifyIntent(String normalizedMessage) {
+        if (containsAny(normalizedMessage, "compare", "versus", " vs ")) {
+            return "compare_humans";
+        }
+        if (containsAny(normalizedMessage, "follow", "track")) {
+            return "follow_human";
+        }
+        if (containsAny(normalizedMessage, "focus", "inspect")) {
+            return "focus_human";
+        }
         if (containsAny(normalizedMessage, "step", "advance", "ticks")) {
             return "step";
         }
@@ -319,12 +446,62 @@ public class AgentChatOrchestrationService {
                 .orElse(1);
     }
 
-    private java.util.Optional<Long> extractFirstNumber(String message) {
+    private Optional<Long> extractFirstNumber(String message) {
         Matcher matcher = NUMBER_PATTERN.matcher(message);
         if (!matcher.find()) {
-            return java.util.Optional.empty();
+            return Optional.empty();
         }
-        return java.util.Optional.of(Long.parseLong(matcher.group(1)));
+        return Optional.of(Long.parseLong(matcher.group(1)));
+    }
+
+    private List<Long> extractNumbers(String message) {
+        Matcher matcher = NUMBER_PATTERN.matcher(message);
+        List<Long> numbers = new ArrayList<>();
+        while (matcher.find()) {
+            numbers.add(Long.parseLong(matcher.group(1)));
+        }
+        return numbers;
+    }
+
+    private Human resolveTargetHuman(Long cityId, AgentChatRequestInput input, String normalizedMessage) {
+        List<Human> humans = humanRepository.findByCityIdOrderByIdAsc(cityId);
+        if (humans.isEmpty()) {
+            throw new IllegalArgumentException("No humans found for this city");
+        }
+        List<Long> ids = extractNumbers(normalizedMessage);
+        return resolveHumanByIdOrDefault(humans, input.getSelectedHumanId(), ids, 0);
+    }
+
+    private Human resolveHumanByIdOrDefault(
+            List<Human> humans,
+            Long preferredId,
+            List<Long> parsedIds,
+            int parsedIndex
+    ) {
+        if (preferredId != null) {
+            Human preferred = humans.stream().filter(h -> h.getId().equals(preferredId)).findFirst().orElse(null);
+            if (preferred != null) {
+                return preferred;
+            }
+        }
+        if (parsedIds.size() > parsedIndex) {
+            Long parsedId = parsedIds.get(parsedIndex);
+            Human parsed = humans.stream().filter(h -> h.getId().equals(parsedId)).findFirst().orElse(null);
+            if (parsed != null) {
+                return parsed;
+            }
+        }
+        return humans.get(0);
+    }
+
+    private Map<String, Object> toHumanSummary(Human human) {
+        return Map.of(
+                "id", human.getId(),
+                "name", human.getName(),
+                "busy", human.isBusy(),
+                "x", human.getX() == null ? 0.0 : human.getX(),
+                "y", human.getY() == null ? 0.0 : human.getY()
+        );
     }
 
     private <T> List<T> takeLast(List<T> input, int max) {

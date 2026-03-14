@@ -8,6 +8,7 @@ import eu.catlabs.humanaity.auth.infrastructure.security.JwtService;
 import eu.catlabs.humanaity.city.domain.City;
 import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
 import eu.catlabs.humanaity.event.infrastructure.persistence.EventRepository;
+import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
@@ -142,6 +143,50 @@ class AgentChatApiContractTest {
         assertThat(payload.get("message").asText()).contains("safe Sprint 8 commands");
     }
 
+    @Test
+    void chatSupportsGuidedFocusCommandWithStableEffectAndStructuredData() throws Exception {
+        User owner = persistUser("owner-agent-guided-focus@example.com");
+        City city = persistCity("GuidedCity", owner);
+        Human target = persistHuman(city, "Mira", 0.3, 0.6);
+
+        MvcResult result = mockMvc.perform(post("/api/agent/cities/{cityId}/chat", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("focus human " + target.getId())))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(payload.get("commandClass").asText()).isEqualTo("GUIDED");
+        assertThat(payload.get("executedActions").get(0).get("type").asText()).isEqualTo("FOCUS_HUMAN");
+        assertThat(payload.get("uiEffects").get(0).get("type").asText()).isEqualTo("FOCUS_HUMAN");
+        assertThat(payload.get("uiEffects").get(0).get("humanId").asLong()).isEqualTo(target.getId());
+        assertThat(payload.get("structuredData").has("focusHuman")).isTrue();
+    }
+
+    @Test
+    void chatSupportsGuidedCompareCommandWithStructuredPairOutput() throws Exception {
+        User owner = persistUser("owner-agent-guided-compare@example.com");
+        City city = persistCity("GuidedCity", owner);
+        Human left = persistHuman(city, "Ada", 0.2, 0.4);
+        Human right = persistHuman(city, "Ben", 0.8, 0.7);
+
+        MvcResult result = mockMvc.perform(post("/api/agent/cities/{cityId}/chat", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("compare humans " + left.getId() + " and " + right.getId())))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(payload.get("commandClass").asText()).isEqualTo("GUIDED");
+        assertThat(payload.get("executedActions").get(0).get("type").asText()).isEqualTo("COMPARE_HUMANS");
+        assertThat(payload.get("referencedEntities").get("humanIds").size()).isEqualTo(2);
+        assertThat(payload.get("structuredData").has("compareHumans")).isTrue();
+        assertThat(payload.get("structuredData").get("compareHumans").has("left")).isTrue();
+        assertThat(payload.get("structuredData").get("compareHumans").has("right")).isTrue();
+    }
+
     private User persistUser(String email) {
         User user = new User();
         user.setEmail(email);
@@ -155,6 +200,16 @@ class AgentChatApiContractTest {
         city.setName(name);
         city.setOwner(owner);
         return cityRepository.save(city);
+    }
+
+    private Human persistHuman(City city, String name, double x, double y) {
+        Human human = new Human();
+        human.setCity(city);
+        human.setName(name);
+        human.setBusy(false);
+        human.setX(x);
+        human.setY(y);
+        return humanRepository.save(human);
     }
 
     private String bearerFor(User user) {

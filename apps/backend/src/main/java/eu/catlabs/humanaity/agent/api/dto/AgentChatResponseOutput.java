@@ -2,6 +2,7 @@ package eu.catlabs.humanaity.agent.api.dto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class AgentChatResponseOutput {
 
@@ -11,6 +12,7 @@ public class AgentChatResponseOutput {
     private List<AgentActionOutput> executedActions = new ArrayList<>();
     private AgentReferencedEntitiesOutput referencedEntities = new AgentReferencedEntitiesOutput();
     private List<AgentUiEffectOutput> uiEffects = new ArrayList<>();
+    private Map<String, Object> structuredData;
 
     public String getConversationId() {
         return conversationId;
@@ -58,5 +60,13 @@ public class AgentChatResponseOutput {
 
     public void setUiEffects(List<AgentUiEffectOutput> uiEffects) {
         this.uiEffects = uiEffects;
+    }
+
+    public Map<String, Object> getStructuredData() {
+        return structuredData;
+    }
+
+    public void setStructuredData(Map<String, Object> structuredData) {
+        this.structuredData = structuredData;
     }
 }
