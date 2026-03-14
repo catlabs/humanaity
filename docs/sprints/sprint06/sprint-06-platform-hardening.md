@@ -4,9 +4,9 @@
 
 - Current phase: Sprint 6 ready for implementation
 - Active chunk: none
-- Next chunk: `Task 4a` - OIDC readiness note
+- Next chunk: `Task 4b` - validation and sprint closeout
 - Blocked items: none
-- Last completed chunk: `Task 3b` - MCP and client environment alignment (2026-03-14)
+- Last completed chunk: `Task 4a` - OIDC readiness note (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -15,7 +15,7 @@
 | Task 2b | done | Added Flyway baseline migration, split backend config into common/local/dev profiles, and moved default JPA mode to `validate`. |
 | Task 3a | done | Removed hardcoded UI backend URL usage from runtime paths (`provideApi` + `getMyCities`), but local Angular test/build validation is blocked by a Node allocator crash in this environment. |
 | Task 3b | done | Aligned UI and MCP contract-generation workflows to `HUMANAITY_API_BASE_URL`-driven endpoints and updated setup docs to avoid hardcoded localhost-only assumptions. |
-| Task 4a | planned | Document OIDC/Keycloak readiness decisions, client boundaries, and deferred integration work. |
+| Task 4a | done | Added a concrete OIDC readiness model for UI/backend/MCP clients, scope-role mapping, token-validation direction, and explicit deferred integration items. |
 | Task 4b | planned | Run targeted validation, record residual risks, and close the sprint. |
 
 ## Sprint intent
@@ -133,6 +133,44 @@ The preferred policy for this sprint is:
 - `404 Not Found` only when the city truly does not exist
 
 If implementation constraints force a different policy, the sprint doc should be updated in the same chunk that makes that choice.
+
+### OIDC readiness note (Task 4a)
+
+This sprint does not integrate an identity provider yet. It locks the target shape for the next auth-focused implementation slice.
+
+Target client boundaries:
+
+- `apps/ui`: public OIDC client using Authorization Code + PKCE for end-user sessions
+- `apps/backend`: resource server validating JWT access tokens via issuer + JWKS (instead of app-local secret validation in final state)
+- `apps/mcp`: dual-mode client
+  - delegated mode: accepts caller access token and forwards it
+  - service mode: confidential client credential flow for non-user automation where allowed
+
+Target scope model:
+
+- `humanaity.read`: read city, simulation, and history surfaces
+- `humanaity.write`: mutate city and simulation state
+- `humanaity.admin`: admin-only operations when present
+
+Target role model:
+
+- `ROLE_USER`: baseline mapped to `humanaity.read` plus owned-resource write paths
+- `ROLE_ADMIN`: elevated operations and cross-city administrative actions
+- optional `ROLE_AGENT`: explicitly scoped service identity for MCP automation flows (future, only if needed)
+
+Backend authorization direction:
+
+- move from app-local token assumptions to issuer/JWKS validation
+- map token roles/scopes to Spring Security authorities
+- keep ownership checks in application/domain boundaries even after OIDC migration
+
+Deferred to later sprint/sub-epic:
+
+- Keycloak realm/client provisioning and environment rollout
+- frontend login/refresh/logout migration to OIDC endpoints
+- backend resource-server migration from local JWT secret to external issuer config
+- MCP confidential-client token acquisition and refresh lifecycle implementation
+- end-to-end OIDC smoke validation across UI, backend, and MCP
 
 ## Deliverables
 
