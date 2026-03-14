@@ -3,14 +3,14 @@
 ## Execution status
 
 - Current phase: Sprint 11 planned
-- Active chunk: `Task 1a` - intervention policy and contract lock
-- Next chunk: `Task 2a` - intervention model and orchestration path
+- Active chunk: `Task 2a` - intervention model and orchestration path
+- Next chunk: `Task 2b` - first director command implementation
 - Blocked items: depends on Sprint 10 guided workflow completion
-- Last completed chunk: none
+- Last completed chunk: `Task 1a` - intervention policy and contract lock (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | planned | Lock the intervention policy, confirmation model, and visible labeling rules. |
+| Task 1a | done | Locked first-command boundary (`DIRECTOR_MEET_HUMANS`), two-step confirmation semantics, and explicit provenance/labeling requirements. |
 | Task 2a | planned | Add the backend intervention model, orchestration path, and provenance handling. |
 | Task 2b | planned | Implement one narrow first director command with explicit confirmation and policy checks. |
 | Task 3a | planned | Add console confirmation and intervention-labeling behavior. |
@@ -70,6 +70,12 @@ Sprint 11 must treat director commands as explicit user-authored simulation inpu
 
 The first intervention flow should require explicit confirmation semantics before execution.
 
+Sprint 11 confirmation contract:
+
+- first request returns a `DIRECTOR_CONFIRMATION_REQUIRED` response with a generated `confirmationToken` and a short expiry window
+- execution is allowed only when the follow-up request includes an explicit confirmation phrase and the matching token
+- expired/missing tokens must fail closed with a refusal response and no simulation mutation
+
 ### Decision 3: provenance must be visible
 
 The system should be able to say:
@@ -77,11 +83,22 @@ The system should be able to say:
 - this happened autonomously
 - this happened because the user issued an intervention
 
+Sprint 11 provenance contract:
+
+- every executed intervention must persist `cityId`, `tick`, `commandType`, actor ids, initiating `userId`, and `confirmationToken` reference
+- responses for executed interventions must include explicit `commandClass=DIRECTOR`, `INTERVENTION_EXECUTED` action labeling, and stable intervention id for traceability
+
 ### Decision 4: one narrow first command
 
 Choose one first director command, such as "make these two humans meet", and implement it well.
 
 Do not bundle several intervention types into Sprint 11.
+
+Sprint 11 locked first command:
+
+- command id: `DIRECTOR_MEET_HUMANS`
+- intent shape: make two specific human ids meet in the next deterministic tick window
+- policy bounds: same city only, distinct ids required, max two actors, no open-ended scripting
 
 ## Deliverables
 

@@ -187,6 +187,16 @@ Rules:
 - record provenance and make intervention status visible in UI/history
 - never blur them with autonomous world behavior
 
+Sprint 11 locked boundary:
+
+- only one director command is in scope: `DIRECTOR_MEET_HUMANS`
+- request must identify two distinct human ids in the same city
+- orchestration must run a two-step flow:
+  - first call returns `DIRECTOR_CONFIRMATION_REQUIRED` with a short-lived `confirmationToken`
+  - second call must include explicit confirmation plus token to execute
+- execution must persist provenance fields (`cityId`, `tick`, `commandType`, actor ids, `userId`, confirmation token reference)
+- any invalid or expired confirmation must fail closed without mutating simulation state
+
 ## Response Contract Rule
 
 The orchestration endpoint must return a UI-friendly contract rather than raw tool traces.
@@ -234,6 +244,12 @@ Recommended response shape:
 - lists what the orchestration layer actually did
 - must distinguish read actions from simulation mutations
 - director actions must be labeled explicitly as interventions
+
+Director labeling rule:
+
+- confirmation-needed response uses action type `INTERVENTION_CONFIRMATION_REQUIRED`
+- executed response uses action type `INTERVENTION_EXECUTED`
+- refused confirmation/token responses use action type `INTERVENTION_REJECTED`
 
 ### `referencedEntities`
 
