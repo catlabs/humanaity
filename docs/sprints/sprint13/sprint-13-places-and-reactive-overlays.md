@@ -3,15 +3,15 @@
 ## Execution status
 
 - Current phase: Sprint 13 planned
-- Active chunk: `Task 2a` - board read-model gap closure
-- Next chunk: `Task 2b` - generated client regeneration (if contract changes)
+- Active chunk: `Task 2b` - generated client regeneration (if contract changes)
+- Next chunk: `Task 3a` - fixed places and interaction overlays
 - Blocked items: depends on Sprint 12 board MVP completion
-- Last completed chunk: `Task 1a` - place and overlay semantics lock (2026-03-14)
+- Last completed chunk: `Task 2a` - board read-model gap closure (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Locked place anchors as non-canonical frontend presentation, fixed interaction/event overlay lifetimes, and explicit rule that overlays cannot invent world meaning. |
-| Task 2a | planned | Add only the minimal backend/read-model support needed for place or interaction meaning. |
+| Task 2a | done | Audited board semantics against existing snapshot/timeline contracts; `humans[]`, `recentEvents[].{eventType,actorIds,tick,createdAt}`, and `recentInventions[]` already cover Sprint 13 overlays, so no backend API change is required. |
 | Task 2b | planned | Regenerate generated API clients if the contract changes. |
 | Task 3a | planned | Render fixed places and add interaction overlays on the board. |
 | Task 3b | planned | Add transient event markers and board/context synchronization. |
