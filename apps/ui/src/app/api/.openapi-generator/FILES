@@ -2,6 +2,7 @@
 README.md
 api.base.service.ts
 api.module.ts
+api/agentChat.service.ts
 api/api.ts
 api/authController.service.ts
 api/cities.service.ts
@@ -11,6 +12,11 @@ configuration.ts
 encoder.ts
 git_push.sh
 index.ts
+model/agentActionOutput.ts
+model/agentChatRequestInput.ts
+model/agentChatResponseOutput.ts
+model/agentReferencedEntitiesOutput.ts
+model/agentUiEffectOutput.ts
 model/authRequest.ts
 model/cityInput.ts
 model/cityOutput.ts

@@ -300,3 +300,64 @@
   margin-top: map.get($spacing-scale, 2);
   color: var(--mat-sys-on-surface);
 }
+
+.chat-shell {
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-low);
+  padding: map.get($spacing-scale, 3) map.get($spacing-scale, 4);
+  @include hai-col(2);
+}
+
+.chat-header {
+  @include hai-row(2);
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-log {
+  max-height: 11rem;
+  overflow: auto;
+  @include hai-col(2);
+}
+
+.chat-entry {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  padding: map.get($spacing-scale, 2) map.get($spacing-scale, 3);
+  background: var(--mat-sys-surface);
+}
+
+.chat-entry--user {
+  background: color-mix(in srgb, var(--mat-sys-primary) 10%, var(--mat-sys-surface));
+}
+
+.chat-entry-role {
+  @include hai-meta;
+}
+
+.chat-entry-content {
+  @include hai-body-small;
+  margin-top: map.get($spacing-scale, 1);
+}
+
+.chat-composer {
+  @include hai-row(2);
+  align-items: flex-end;
+}
+
+.chat-input {
+  flex: 1 1 auto;
+  resize: vertical;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  padding: map.get($spacing-scale, 2);
+  font: inherit;
+}
+
+.chat-error {
+  margin: 0;
+  border-radius: $radius-sm;
+  border: 1px solid color-mix(in srgb, #ef4444 35%, transparent);
+}

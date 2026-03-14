@@ -317,6 +317,53 @@
             <span>Recent</span><strong>{{ recentEventCount() }}e / {{ recentInventionCount() }}i</strong>
           </div>
         </div>
+
+        <div class="chat-shell">
+          <div class="chat-header">
+            <div class="world-title">Agent Chat</div>
+            @if (chatBusy()) {
+              <mat-spinner diameter="16"></mat-spinner>
+            }
+          </div>
+
+          @if (chatError()) {
+            <div class="state-banner state-banner--error chat-error">
+              <mat-icon>error</mat-icon>
+              <span>{{ chatError() }}</span>
+            </div>
+          }
+
+          <div class="chat-log">
+            @for (entry of chatEntries(); track entry.timestamp + entry.content) {
+              <div class="chat-entry" [class.chat-entry--user]="entry.role === 'user'">
+                <div class="chat-entry-role">{{ entry.role === "user" ? "You" : "Agent" }}</div>
+                <div class="chat-entry-content">{{ entry.content }}</div>
+              </div>
+            } @empty {
+              <div class="empty">Ask for a step, snapshot, summary, event explanation, or recent inventions.</div>
+            }
+          </div>
+
+          <div class="chat-composer">
+            <textarea
+              class="chat-input"
+              rows="2"
+              [value]="chatInput()"
+              (input)="onChatInput($any($event.target).value)"
+              [disabled]="chatBusy()"
+              placeholder="Example: Advance city by 3 steps"
+            ></textarea>
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              (click)="onSendChat()"
+              [disabled]="!canSendChat()"
+            >
+              Send
+            </button>
+          </div>
+        </div>
       </div>
     </mat-drawer-content>
   </mat-drawer-container>

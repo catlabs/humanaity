@@ -20,6 +20,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import {
+  AgentChatResponseOutput,
   CityOutput,
   EventOutput,
   HumanOutput,
@@ -87,6 +88,11 @@ export class SimulationDetailComponent
   selectedHumanId = signal<number | null>(null);
   selectedInventionId = signal<number | null>(null);
   selectedEventId = signal<number | null>(null);
+  chatInput = signal('');
+  chatBusy = signal(false);
+  chatError = signal<string | null>(null);
+  chatConversationId = signal<string | null>(null);
+  chatEntries = signal<ChatEntry[]>([]);
 
   snapshotLoading = signal(true);
   historyLoading = signal(true);
@@ -153,6 +159,9 @@ export class SimulationDetailComponent
   noRunYet = computed(() => !this.snapshotLoading() && !this.hasRun());
   hasHumans = computed(() => this.populationTotal() > 0);
   showWorldOverlay = computed(() => this.noRunYet() || !this.hasHumans());
+  canSendChat = computed(
+    () => !this.chatBusy() && this.chatInput().trim().length > 0
+  );
 
   ngOnInit(): void {
     this.refreshAll();
@@ -200,6 +209,50 @@ export class SimulationDetailComponent
       return;
     }
     this.refreshAll();
+  }
+
+  onChatInput(value: string): void {
+    this.chatInput.set(value);
+  }
+
+  onSendChat(): void {
+    const cityId = this.requireCityId();
+    const message = this.chatInput().trim();
+    if (!cityId || !message || this.chatBusy()) {
+      return;
+    }
+
+    this.chatBusy.set(true);
+    this.chatError.set(null);
+    this.chatInput.set('');
+    this.chatEntries.update((entries) => [
+      ...entries,
+      {
+        role: 'user',
+        content: message,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+
+    this.cityService
+      .sendAgentChat(cityId, {
+        message,
+        conversationId: this.chatConversationId() ?? undefined,
+        selectedHumanId: this.selectedHumanId() ?? undefined,
+        selectedEventId: this.selectedEventId() ?? undefined,
+        selectedInventionId: this.selectedInventionId() ?? undefined,
+      })
+      .subscribe({
+        next: (response) => {
+          this.chatBusy.set(false);
+          this.applyChatResponse(response);
+        },
+        error: (error) => {
+          this.chatBusy.set(false);
+          this.chatError.set('Agent request failed.');
+          console.error('Agent chat request failed:', error);
+        },
+      });
   }
 
   selectHuman(human: SimulationSnapshotOutput['humans'][number]): void {
@@ -433,4 +486,25 @@ export class SimulationDetailComponent
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ');
   }
+
+  private applyChatResponse(response: AgentChatResponseOutput): void {
+    if (response.conversationId) {
+      this.chatConversationId.set(response.conversationId);
+    }
+
+    this.chatEntries.update((entries) => [
+      ...entries,
+      {
+        role: 'agent',
+        content: response.message?.trim() || 'No response message returned.',
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+  }
 }
+
+type ChatEntry = {
+  role: 'user' | 'agent';
+  content: string;
+  timestamp: string;
+};

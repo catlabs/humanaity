@@ -2,6 +2,9 @@ import {inject, Injectable} from '@angular/core';
 import {Observable, interval} from 'rxjs';
 import {switchMap, startWith, map} from 'rxjs/operators';
 import {
+  AgentChatRequestInput,
+  AgentChatResponseOutput,
+  AgentChatService,
   CitiesService,
   EventOutput,
   HumansService,
@@ -19,6 +22,7 @@ import {parseApiResponse} from '@core';
   providedIn: 'root'
 })
 export class CityService {
+  private agentChatService = inject(AgentChatService);
   private citiesService = inject(CitiesService);
   private humansService = inject(HumansService);
   private simulationsService = inject(SimulationsService);
@@ -122,8 +126,17 @@ export class CityService {
     );
   }
 
-  deleteCity(id: string): Observable<void> {
-    return this.citiesService.deleteCity(id).pipe(
+  sendAgentChat(
+    cityId: number,
+    request: AgentChatRequestInput
+  ): Observable<AgentChatResponseOutput> {
+    return this.agentChatService.chat(cityId, request).pipe(
+      switchMap(parseApiResponse<AgentChatResponseOutput>)
+    );
+  }
+
+  deleteCity(id: number | string): Observable<void> {
+    return this.citiesService.deleteCity(Number(id)).pipe(
       map(() => void 0)
     );
   }

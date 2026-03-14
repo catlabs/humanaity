@@ -90,6 +90,7 @@ describe('SimulationDetailComponent', () => {
       'startSimulation',
       'stopSimulation',
       'stepSimulation',
+      'sendAgentChat',
     ]);
 
     cityService.getSimulationSnapshot.and.returnValue(of(snapshot));
@@ -97,6 +98,16 @@ describe('SimulationDetailComponent', () => {
     cityService.startSimulation.and.returnValue(of(void 0));
     cityService.stopSimulation.and.returnValue(of(void 0));
     cityService.stepSimulation.and.returnValue(of(void 0));
+    cityService.sendAgentChat.and.returnValue(
+      of({
+        conversationId: 'conv-1',
+        message: 'Advanced the city by 3 step(s). Current tick is 3.',
+        commandClass: 'SAFE_MVP',
+        executedActions: [],
+        referencedEntities: { cityId: 7 },
+        uiEffects: [],
+      } as any)
+    );
 
     await TestBed.configureTestingModule({
       imports: [SimulationDetailComponent],
@@ -137,6 +148,22 @@ describe('SimulationDetailComponent', () => {
   it('steps simulation through backend service', () => {
     fixture.componentInstance.onStep();
     expect(cityService.stepSimulation).toHaveBeenCalledWith(7);
+  });
+
+  it('submits chat requests and renders the backend reply', () => {
+    const component = fixture.componentInstance;
+    component.onChatInput('advance by 3 steps');
+    component.onSendChat();
+    fixture.detectChanges();
+
+    expect(cityService.sendAgentChat).toHaveBeenCalledWith(
+      7,
+      jasmine.objectContaining({ message: 'advance by 3 steps' })
+    );
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Agent Chat');
+    expect(text).toContain('Advanced the city by 3 step(s). Current tick is 3.');
   });
 
   it('renders backend enrichment fields for selected invention and event', () => {
