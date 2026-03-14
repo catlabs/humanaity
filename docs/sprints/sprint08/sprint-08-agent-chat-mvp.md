@@ -3,15 +3,15 @@
 ## Execution status
 
 - Current phase: Sprint 8 planned
-- Active chunk: `Task 2a` - backend agent API and orchestration skeleton
-- Next chunk: `Task 2b` - safe MVP command executors
+- Active chunk: `Task 2b` - safe MVP command executors
+- Next chunk: `Task 3a` - simulation-page chat panel
 - Blocked items: none
-- Last completed chunk: `Task 1a` - orchestration spec lock (2026-03-14)
+- Last completed chunk: `Task 2a` - backend agent API and orchestration skeleton (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Locked Sprint 8 safe-command/effect boundaries in the orchestration spec to prevent guided/director scope creep. |
-| Task 2a | planned | Add a backend-owned city-scoped agent chat endpoint, DTOs, and orchestration service skeleton. |
+| Task 2a | done | Added `/api/agent/cities/{cityId}/chat` endpoint, stable request/response DTOs, ownership enforcement, and skeleton contract test. |
 | Task 2b | planned | Implement the safe MVP command executors for step, snapshot, recent summary, event explanation, and latest inventions. |
 | Task 3a | planned | Add a lightweight chat panel to the authoritative simulation page without redesigning the whole page yet. |
 | Task 3b | planned | Wire backend `uiEffects` and refresh behavior into the frontend simulation loop. |
