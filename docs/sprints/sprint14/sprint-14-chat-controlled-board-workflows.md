@@ -3,16 +3,16 @@
 ## Execution status
 
 - Current phase: Sprint 14 planned
-- Active chunk: `Task 2b` - frontend board effect resolver alignment
-- Next chunk: `Task 3a` - safe and guided board reactions
+- Active chunk: `Task 3a` - safe and guided board reactions
+- Next chunk: `Task 3b` - intervention board visualization
 - Blocked items: depends on Sprint 13 board overlays; intervention-related work also depends on Sprint 11 completion
-- Last completed chunk: `Task 2a` - backend board-effect support (2026-03-14)
+- Last completed chunk: `Task 2b` - frontend board effect resolver alignment (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Locked board reaction expectations by command class: SAFE (refresh + optional highlight), GUIDED (focus/track markers), DIRECTOR (explicit intervention styling and confirmation-gated reaction). |
 | Task 2a | done | Added minimal backend board-oriented effect hints (`TRACK_HUMAN`, `MARK_EVENT`, `BOARD_INTERVENTION_PENDING`, `BOARD_INTERVENTION_EXECUTED`) with updated contract tests. |
-| Task 2b | planned | Align the frontend effect resolver with the new board-oriented effect contract. |
+| Task 2b | done | Extended `AgentChatEffectsService` and simulation effect handling for board-aware tracking, event marking, and intervention pending/executed effect states. |
 | Task 3a | planned | Make safe commands and guided workflows visibly react on the board. |
 | Task 3b | planned | Integrate intervention visualization if Sprint 11 has landed; otherwise keep this slice blocked and explicit. |
 | Task 4a | planned | Validate the end-to-end “chat drives board” product story and document residual gaps. |

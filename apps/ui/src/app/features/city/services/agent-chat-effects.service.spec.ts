@@ -12,13 +12,17 @@ describe('AgentChatEffectsService', () => {
     const effects: AgentUiEffectOutput[] = [
       { type: 'REFRESH_SNAPSHOT' },
       { type: 'REFRESH_TIMELINE' },
-      { type: 'HIGHLIGHT_EVENT', eventId: 42 },
+      { type: 'MARK_EVENT', eventId: 42 },
+      { type: 'TRACK_HUMAN', humanId: 7 },
+      { type: 'BOARD_INTERVENTION_PENDING', humanId: 7 },
     ];
 
     const resolved = service.resolve(effects);
     expect(resolved.refreshSnapshot).toBeTrue();
     expect(resolved.refreshTimeline).toBeTrue();
     expect(resolved.selectedEventId).toBe(42);
+    expect(resolved.trackedHumanId).toBe(7);
+    expect(resolved.directorInterventionState).toBe('pending');
     expect(resolved.selectedHumanId).toBeNull();
     expect(resolved.selectedInventionId).toBeNull();
   });

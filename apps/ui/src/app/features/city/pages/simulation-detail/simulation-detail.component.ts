@@ -572,7 +572,9 @@ export class SimulationDetailComponent
       this.selectedHumanId.set(resolution.selectedHumanId);
       this.selectedEventId.set(null);
       this.selectedInventionId.set(null);
-      this.trackedHumanId.set(resolution.selectedHumanId);
+    }
+    if (resolution.trackedHumanId !== null) {
+      this.trackedHumanId.set(resolution.trackedHumanId);
     }
     if (resolution.selectedEventId !== null) {
       this.selectedEventId.set(resolution.selectedEventId);
@@ -590,6 +592,9 @@ export class SimulationDetailComponent
     }
     if (resolution.refreshTimeline) {
       this.refreshHistory(false);
+    }
+    if (resolution.directorInterventionState === 'executed') {
+      this.pendingDirectorConfirmation.set(null);
     }
   }
 
