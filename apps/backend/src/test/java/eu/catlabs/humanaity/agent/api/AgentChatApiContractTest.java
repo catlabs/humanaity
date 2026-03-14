@@ -187,6 +187,34 @@ class AgentChatApiContractTest {
         assertThat(payload.get("structuredData").get("compareHumans").has("right")).isTrue();
     }
 
+    @Test
+    void chatSupportsGuidedFollowCommandWithBoundedWindowDataAndEffects() throws Exception {
+        User owner = persistUser("owner-agent-guided-follow@example.com");
+        City city = persistCity("GuidedCity", owner);
+        Human target = persistHuman(city, "Noor", 0.6, 0.3);
+        persistHuman(city, "Ira", 0.2, 0.7);
+
+        MvcResult result = mockMvc.perform(post("/api/agent/cities/{cityId}/chat", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("follow human " + target.getId() + " for 200 ticks")))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
+        JsonNode followHuman = payload.path("structuredData").path("followHuman");
+
+        assertThat(payload.get("commandClass").asText()).isEqualTo("GUIDED");
+        assertThat(payload.get("executedActions").get(0).get("type").asText()).isEqualTo("FOLLOW_HUMAN");
+        assertThat(followHuman.path("ticks").asInt()).isEqualTo(20);
+        assertThat(followHuman.path("fromTick").asLong()).isPositive();
+        assertThat(followHuman.path("resultTick").asLong()).isGreaterThanOrEqualTo(followHuman.path("fromTick").asLong());
+        assertThat(followHuman.path("eventWindow").isArray()).isTrue();
+        assertThat(followHuman.path("inventionWindow").isArray()).isTrue();
+        assertThat(payload.path("uiEffects").toString()).contains("REFRESH_TIMELINE");
+        assertThat(payload.path("uiEffects").toString()).contains("FOCUS_HUMAN");
+    }
+
     private User persistUser(String email) {
         User user = new User();
         user.setEmail(email);

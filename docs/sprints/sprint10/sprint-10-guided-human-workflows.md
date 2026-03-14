@@ -3,16 +3,16 @@
 ## Execution status
 
 - Current phase: Sprint 10 planned
-- Active chunk: `Task 2b` - narrow read-model and effect helpers
-- Next chunk: `Task 3a` - console integration for guided workflows
+- Active chunk: `Task 3a` - console integration for guided workflows
+- Next chunk: `Task 4a` - validate guided workflows and close Sprint 10
 - Blocked items: depends on Sprint 9 console stabilization
-- Last completed chunk: `Task 2a` - backend guided workflow support (2026-03-14)
+- Last completed chunk: `Task 2b` - narrow read-model and effect helpers (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Locked guided-command semantics as observation-first only (focus, compare, bounded follow) and explicitly excluded intervention behavior. |
 | Task 2a | done | Added backend orchestration support for guided `focus`, `compare`, and bounded `follow` commands with city-scoped policy checks. |
-| Task 2b | planned | Add any narrow read-model helpers and response effects needed for guided workflows. |
+| Task 2b | done | Added follow-window read-model helpers and bounded structured response/effect shaping for guided `follow` usability. |
 | Task 3a | planned | Integrate guided workflow UI behavior on the simulation console. |
 | Task 4a | planned | Validate guided workflows and close the sprint. |
 

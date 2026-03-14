@@ -11,4 +11,10 @@ public interface InventionRepository extends JpaRepository<Invention, Long> {
     boolean existsByCityIdAndInventionKey(Long cityId, String inventionKey);
 
     List<Invention> findByCityIdOrderByTickCreatedAscInventionKeyAscIdAsc(Long cityId);
+
+    List<Invention> findByCityIdAndTickCreatedBetweenOrderByTickCreatedAscInventionKeyAscIdAsc(
+            Long cityId,
+            Long fromTick,
+            Long toTick
+    );
 }

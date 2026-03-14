@@ -37,6 +37,7 @@ public class AgentChatOrchestrationService {
 
     private static final int MAX_SAFE_STEPS = 50;
     private static final Pattern NUMBER_PATTERN = Pattern.compile("(\\d+)");
+    private static final Pattern FOLLOW_TICKS_PATTERN = Pattern.compile("\\bfor\\s+(\\d+)\\b");
 
     private final CityRepository cityRepository;
     private final SimulationApplicationService simulationApplicationService;
@@ -328,8 +329,20 @@ public class AgentChatOrchestrationService {
             AgentChatResponseOutput response
     ) {
         Human target = resolveTargetHuman(cityId, input, normalizedMessage);
-        int followTicks = Math.max(1, Math.min(extractRequestedStepCount(normalizedMessage), 20));
+        int followTicks = Math.max(1, Math.min(extractRequestedFollowTickCount(normalizedMessage), 20));
         SimulationRun run = simulationApplicationService.step(cityId, followTicks);
+        long fromTick = Math.max(1L, run.getTick() - followTicks + 1);
+        List<Event> followEvents = eventRepository.findHumanEventsInTickWindow(
+                cityId,
+                target.getId(),
+                fromTick,
+                run.getTick()
+        );
+        List<Invention> followInventions = inventionRepository.findByCityIdAndTickCreatedBetweenOrderByTickCreatedAscInventionKeyAscIdAsc(
+                cityId,
+                fromTick,
+                run.getTick()
+        );
 
         response.getExecutedActions().add(new AgentActionOutput(
                 "FOLLOW_HUMAN",
@@ -337,17 +350,36 @@ public class AgentChatOrchestrationService {
                 "Followed human " + target.getId() + " for " + followTicks + " tick(s)"
         ));
         response.getReferencedEntities().setHumanIds(List.of(target.getId()));
+        response.getReferencedEntities().setEventIds(takeLast(followEvents, 5).stream().map(Event::getId).toList());
+        response.getReferencedEntities().setInventionIds(takeLast(followInventions, 5).stream().map(Invention::getId).toList());
 
         AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
         focus.setHumanId(target.getId());
         response.getUiEffects().add(focus);
         response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
-        response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_TIMELINE"));
+        AgentUiEffectOutput refreshTimeline = new AgentUiEffectOutput("REFRESH_TIMELINE");
+        refreshTimeline.setFromTick(fromTick);
+        response.getUiEffects().add(refreshTimeline);
+        if (!followEvents.isEmpty()) {
+            Event latestEvent = followEvents.get(followEvents.size() - 1);
+            AgentUiEffectOutput highlightEvent = new AgentUiEffectOutput("HIGHLIGHT_EVENT");
+            highlightEvent.setEventId(latestEvent.getId());
+            response.getUiEffects().add(highlightEvent);
+        }
+        if (!followInventions.isEmpty()) {
+            Invention latestInvention = followInventions.get(followInventions.size() - 1);
+            AgentUiEffectOutput highlightInvention = new AgentUiEffectOutput("HIGHLIGHT_INVENTION");
+            highlightInvention.setInventionId(latestInvention.getId());
+            response.getUiEffects().add(highlightInvention);
+        }
         response.setStructuredData(Map.of(
                 "followHuman", Map.of(
                         "human", toHumanSummary(target),
                         "ticks", followTicks,
-                        "resultTick", run.getTick()
+                        "fromTick", fromTick,
+                        "resultTick", run.getTick(),
+                        "eventWindow", takeLast(followEvents, 8).stream().map(this::toFollowEventSummary).toList(),
+                        "inventionWindow", takeLast(followInventions, 8).stream().map(this::toFollowInventionSummary).toList()
                 )
         ));
         response.setMessage("Followed " + target.getName() + " for " + followTicks
@@ -446,6 +478,18 @@ public class AgentChatOrchestrationService {
                 .orElse(1);
     }
 
+    private int extractRequestedFollowTickCount(String message) {
+        Matcher matcher = FOLLOW_TICKS_PATTERN.matcher(message);
+        if (matcher.find()) {
+            return Math.toIntExact(Math.min(Long.parseLong(matcher.group(1)), Integer.MAX_VALUE));
+        }
+        List<Long> numbers = extractNumbers(message);
+        if (numbers.size() >= 2) {
+            return Math.toIntExact(Math.min(numbers.get(numbers.size() - 1), Integer.MAX_VALUE));
+        }
+        return numbers.isEmpty() ? 1 : Math.toIntExact(Math.min(numbers.get(0), Integer.MAX_VALUE));
+    }
+
     private Optional<Long> extractFirstNumber(String message) {
         Matcher matcher = NUMBER_PATTERN.matcher(message);
         if (!matcher.find()) {
@@ -501,6 +545,24 @@ public class AgentChatOrchestrationService {
                 "busy", human.isBusy(),
                 "x", human.getX() == null ? 0.0 : human.getX(),
                 "y", human.getY() == null ? 0.0 : human.getY()
+        );
+    }
+
+    private Map<String, Object> toFollowEventSummary(Event event) {
+        return Map.of(
+                "id", event.getId(),
+                "tick", event.getTick(),
+                "type", event.getEventType().name(),
+                "year", event.getYear()
+        );
+    }
+
+    private Map<String, Object> toFollowInventionSummary(Invention invention) {
+        return Map.of(
+                "id", invention.getId(),
+                "tickCreated", invention.getTickCreated(),
+                "title", invention.getTitle(),
+                "category", invention.getCategory().name()
         );
     }
 
