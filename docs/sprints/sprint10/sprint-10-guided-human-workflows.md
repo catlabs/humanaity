@@ -2,11 +2,11 @@
 
 ## Execution status
 
-- Current phase: Sprint 10 planned
-- Active chunk: `Task 4a` - validate guided workflows and close Sprint 10
-- Next chunk: none
+- Current phase: Sprint 10 complete
+- Active chunk: none
+- Next chunk: Sprint 11 `Task 1a` - intervention policy and contract lock
 - Blocked items: depends on Sprint 9 console stabilization
-- Last completed chunk: `Task 3a` - console integration for guided workflows (2026-03-14)
+- Last completed chunk: `Task 4a` - validation and closeout (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -14,7 +14,7 @@
 | Task 2a | done | Added backend orchestration support for guided `focus`, `compare`, and bounded `follow` commands with city-scoped policy checks. |
 | Task 2b | done | Added follow-window read-model helpers and bounded structured response/effect shaping for guided `follow` usability. |
 | Task 3a | done | Added guided compare/follow console context rendering with tracked-human behavior driven by backend effects and structured data. |
-| Task 4a | planned | Validate guided workflows and close the sprint. |
+| Task 4a | done | Validation passed for backend guided API contract and UI type checks; `npm run build` terminated in this environment (exit `-1`) and is tracked as residual risk. |
 
 ## Sprint intent
 
