@@ -2,11 +2,11 @@
 
 ## Execution status
 
-- Current phase: Sprint 13 planned
-- Active chunk: `Task 4a` - validation and closeout
-- Next chunk: none
+- Current phase: Sprint 13 complete
+- Active chunk: none
+- Next chunk: Sprint 14 `Task 1a` - chat-to-board effect contract lock
 - Blocked items: depends on Sprint 12 board MVP completion
-- Last completed chunk: `Task 3b` - event markers and selection synchronization (2026-03-14)
+- Last completed chunk: `Task 4a` - validation and closeout (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -15,7 +15,7 @@
 | Task 2b | done | No contract delta from Task 2a; generated API clients intentionally left unchanged. |
 | Task 3a | done | Extended the symbolic board with fixed place anchors and bounded interaction line overlays derived from recent backend timeline events. |
 | Task 3b | done | Added transient board event markers with bounded lifetime and synchronized board marker/event selection with existing context panel state. |
-| Task 4a | planned | Validate that overlays remain deterministic-safe and do not invent canonical state. |
+| Task 4a | done | UI type checks passed and overlay behavior remains backend-driven; `npm run build` terminated with exit `-1` in this environment and is tracked as residual delivery risk. |
 
 ## Sprint intent
 
