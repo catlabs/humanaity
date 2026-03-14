@@ -63,12 +63,12 @@
 }
 
 .drawer--left {
-  width: 17.5rem; // 280px (proto)
+  width: 14rem;
   max-width: 90vw;
 }
 
 .drawer--right {
-  width: 25rem; // 400px (proto)
+  width: 18rem;
   max-width: 90vw;
 }
 
@@ -76,7 +76,7 @@
   display: flex;
   flex: 1 1 0%;
   min-height: 0;
-  padding: 0;
+  padding: map.get($spacing-scale, 2);
 }
 
 .panel {
@@ -177,6 +177,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  gap: map.get($spacing-scale, 2);
 }
 
 .world-header {
@@ -191,10 +192,12 @@
 
 .world-body {
   flex: 1 1 0%;
-  min-height: 0;
+  min-height: 22rem;
   position: relative;
   overflow: hidden;
   background: var(--mat-sys-surface);
+  border-radius: $radius-sm;
+  border: 1px solid var(--mat-sys-outline-variant);
 }
 
 .world-canvas {
@@ -302,10 +305,12 @@
 }
 
 .chat-shell {
-  border-top: 1px solid var(--mat-sys-outline-variant);
-  background: var(--mat-sys-surface-container-low);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  background: var(--mat-sys-surface-container-lowest);
   padding: map.get($spacing-scale, 3) map.get($spacing-scale, 4);
   @include hai-col(2);
+  max-height: 16rem;
 }
 
 .chat-header {
@@ -315,7 +320,8 @@
 }
 
 .chat-log {
-  max-height: 11rem;
+  flex: 1 1 auto;
+  min-height: 6rem;
   overflow: auto;
   @include hai-col(2);
 }
