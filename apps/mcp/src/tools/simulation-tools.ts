@@ -4,8 +4,41 @@ import type { BackendClient } from "../backend-client.js";
 import type { SimulationRunOutput } from "../contracts.js";
 import { toToolError } from "../errors.js";
 
+interface ToolSuccessPayload {
+  ok: true;
+  [key: string]: unknown;
+}
+
+interface ToolErrorPayload {
+  ok: false;
+  error: string;
+  details?: unknown;
+  [key: string]: unknown;
+}
+
 function summarizeSimulationRun(run: SimulationRunOutput): string {
   return `run #${run.id} city=${run.cityId} status=${run.status} running=${run.running} tick=${run.tick}`;
+}
+
+function toolSuccess(payload: ToolSuccessPayload) {
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }],
+    structuredContent: payload,
+  };
+}
+
+function toolFailure(error: unknown) {
+  const normalized = toToolError(error);
+  const payload: ToolErrorPayload = {
+    ok: false,
+    error: normalized.message,
+    details: normalized.details,
+  };
+  return {
+    isError: true as const,
+    content: [{ type: "text" as const, text: normalized.message }],
+    structuredContent: payload,
+  };
 }
 
 export function registerSimulationTools(server: McpServer, backendClient: BackendClient): void {
@@ -49,21 +82,14 @@ export function registerSimulationTools(server: McpServer, backendClient: Backen
     async ({ cityId, accessToken }) => {
       try {
         const run = await backendClient.simulationLoad(cityId, accessToken);
-        return {
-          content: [{ type: "text", text: `Simulation run loaded: ${summarizeSimulationRun(run)}.` }],
-          structuredContent: { ok: true, run },
-        };
+        return toolSuccess({
+          ok: true,
+          cityId,
+          summary: summarizeSimulationRun(run),
+          run,
+        });
       } catch (error: unknown) {
-        const normalized = toToolError(error);
-        return {
-          isError: true,
-          content: [{ type: "text", text: normalized.message }],
-          structuredContent: {
-            ok: false,
-            error: normalized.message,
-            details: normalized.details,
-          },
-        };
+        return toolFailure(error);
       }
     },
   );
@@ -250,21 +276,13 @@ export function registerSimulationTools(server: McpServer, backendClient: Backen
     async ({ cityId, accessToken }) => {
       try {
         const status = await backendClient.simulationStatus(cityId, accessToken);
-        return {
-          content: [{ type: "text", text: `Simulation running: ${status.running}` }],
-          structuredContent: { ok: true, cityId, ...status },
-        };
+        return toolSuccess({
+          ok: true,
+          cityId,
+          ...status,
+        });
       } catch (error: unknown) {
-        const normalized = toToolError(error);
-        return {
-          isError: true,
-          content: [{ type: "text", text: normalized.message }],
-          structuredContent: {
-            ok: false,
-            error: normalized.message,
-            details: normalized.details,
-          },
-        };
+        return toolFailure(error);
       }
     },
   );
@@ -286,46 +304,17 @@ export function registerSimulationTools(server: McpServer, backendClient: Backen
           { fromTick, toTick, limit },
           accessToken,
         );
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                {
-                  ok: true,
-                  cityId,
-                  fromTick,
-                  toTick,
-                  limit,
-                  count: events.length,
-                  events,
-                },
-                null,
-                2,
-              ),
-            },
-          ],
-          structuredContent: {
-            ok: true,
-            cityId,
-            fromTick,
-            toTick,
-            limit,
-            count: events.length,
-            events,
-          },
-        };
+        return toolSuccess({
+          ok: true,
+          cityId,
+          fromTick,
+          toTick,
+          limit,
+          count: events.length,
+          events,
+        });
       } catch (error: unknown) {
-        const normalized = toToolError(error);
-        return {
-          isError: true,
-          content: [{ type: "text", text: normalized.message }],
-          structuredContent: {
-            ok: false,
-            error: normalized.message,
-            details: normalized.details,
-          },
-        };
+        return toolFailure(error);
       }
     },
   );
@@ -347,46 +336,17 @@ export function registerSimulationTools(server: McpServer, backendClient: Backen
           { fromTick, toTick, limit },
           accessToken,
         );
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                {
-                  ok: true,
-                  cityId,
-                  fromTick,
-                  toTick,
-                  limit,
-                  count: inventions.length,
-                  inventions,
-                },
-                null,
-                2,
-              ),
-            },
-          ],
-          structuredContent: {
-            ok: true,
-            cityId,
-            fromTick,
-            toTick,
-            limit,
-            count: inventions.length,
-            inventions,
-          },
-        };
+        return toolSuccess({
+          ok: true,
+          cityId,
+          fromTick,
+          toTick,
+          limit,
+          count: inventions.length,
+          inventions,
+        });
       } catch (error: unknown) {
-        const normalized = toToolError(error);
-        return {
-          isError: true,
-          content: [{ type: "text", text: normalized.message }],
-          structuredContent: {
-            ok: false,
-            error: normalized.message,
-            details: normalized.details,
-          },
-        };
+        return toolFailure(error);
       }
     },
   );
@@ -408,44 +368,16 @@ export function registerSimulationTools(server: McpServer, backendClient: Backen
           { fromTick, toTick, limit },
           accessToken,
         );
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                {
-                  ok: true,
-                  cityId,
-                  fromTick,
-                  toTick,
-                  limit,
-                  timeline,
-                },
-                null,
-                2,
-              ),
-            },
-          ],
-          structuredContent: {
-            ok: true,
-            cityId,
-            fromTick,
-            toTick,
-            limit,
-            timeline,
-          },
-        };
+        return toolSuccess({
+          ok: true,
+          cityId,
+          fromTick,
+          toTick,
+          limit,
+          timeline,
+        });
       } catch (error: unknown) {
-        const normalized = toToolError(error);
-        return {
-          isError: true,
-          content: [{ type: "text", text: normalized.message }],
-          structuredContent: {
-            ok: false,
-            error: normalized.message,
-            details: normalized.details,
-          },
-        };
+        return toolFailure(error);
       }
     },
   );
@@ -459,26 +391,13 @@ export function registerSimulationTools(server: McpServer, backendClient: Backen
     async ({ accessToken }) => {
       try {
         const overviews = await backendClient.simulationOverview(accessToken);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({ ok: true, count: overviews.length, overviews }, null, 2),
-            },
-          ],
-          structuredContent: { ok: true, count: overviews.length, overviews },
-        };
+        return toolSuccess({
+          ok: true,
+          count: overviews.length,
+          overviews,
+        });
       } catch (error: unknown) {
-        const normalized = toToolError(error);
-        return {
-          isError: true,
-          content: [{ type: "text", text: normalized.message }],
-          structuredContent: {
-            ok: false,
-            error: normalized.message,
-            details: normalized.details,
-          },
-        };
+        return toolFailure(error);
       }
     },
   );
@@ -493,26 +412,13 @@ export function registerSimulationTools(server: McpServer, backendClient: Backen
     async ({ cityId, accessToken }) => {
       try {
         const snapshot = await backendClient.simulationSnapshot(cityId, accessToken);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({ ok: true, cityId, snapshot }, null, 2),
-            },
-          ],
-          structuredContent: { ok: true, cityId, snapshot },
-        };
+        return toolSuccess({
+          ok: true,
+          cityId,
+          snapshot,
+        });
       } catch (error: unknown) {
-        const normalized = toToolError(error);
-        return {
-          isError: true,
-          content: [{ type: "text", text: normalized.message }],
-          structuredContent: {
-            ok: false,
-            error: normalized.message,
-            details: normalized.details,
-          },
-        };
+        return toolFailure(error);
       }
     },
   );
