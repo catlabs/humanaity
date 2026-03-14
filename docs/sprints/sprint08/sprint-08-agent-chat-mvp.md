@@ -2,11 +2,11 @@
 
 ## Execution status
 
-- Current phase: Sprint 8 planned
-- Active chunk: `Task 4a` - validation and sprint closeout
-- Next chunk: none
+- Current phase: Sprint 8 complete
+- Active chunk: none
+- Next chunk: Sprint 9 `Task 1a` - console-first boundary lock
 - Blocked items: none
-- Last completed chunk: `Task 3b` - UI effects and refresh loop (2026-03-14)
+- Last completed chunk: `Task 4a` - validation and sprint closeout (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -15,7 +15,7 @@
 | Task 2b | done | Implemented bounded safe command execution (step, snapshot, summary, explain event, recent inventions) with user-facing messages and backend-owned `uiEffects`. |
 | Task 3a | done | Added a lightweight in-page Agent Chat panel wired to backend orchestration with conversation continuity and response rendering. |
 | Task 3b | done | Applied backend `uiEffects` to trigger snapshot/timeline refresh and stable focus/highlight selection behavior. |
-| Task 4a | planned | Add focused validation, update sprint status, and record residual risks. |
+| Task 4a | done | Validated backend orchestration and frontend type-check boundaries, then recorded residual UI runtime risk and Sprint 9 handoff. |
 
 ## Sprint intent
 
@@ -248,6 +248,17 @@ Prove the new chat loop works at the touched boundary and record anything intent
 - UI integration could become a redesign sprint unless the first pass stays lightweight
 - response contracts can get muddy if raw tool internals leak into frontend-visible payloads
 - safe command parsing should remain explicit and bounded rather than pretending to support arbitrary free-form control
+
+## Validation notes (Task 4a)
+
+- Backend validation passed: `bash ./mvnw -q -Dtest=AgentChatApiContractTest,SimulationReadModelApiContractTest,SimulationHistoryApiContractTest test`
+- Frontend validation passed at compile boundary: `npx tsc -p tsconfig.app.json --noEmit` and `npx tsc -p tsconfig.spec.json --noEmit`
+- Environment note: `npm run build` crashes in this execution environment with a Node allocator error before completion; no production bundle artifact was produced in this run.
+
+## Residual risks carried to Sprint 9
+
+- Run a full Angular build on a stable local runtime (outside the current constrained environment) to confirm no builder/runtime regression.
+- Expand UI-level interaction tests for chat effect application beyond type-check coverage.
 
 ## Handoff to next sprint
 
