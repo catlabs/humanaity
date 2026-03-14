@@ -2,11 +2,11 @@
 
 ## Execution status
 
-- Current phase: Sprint 9 planned
-- Active chunk: `Task 4a` - validation and closeout
-- Next chunk: none
+- Current phase: Sprint 9 complete
+- Active chunk: none
+- Next chunk: Sprint 10 `Task 1a` - guided semantics lock
 - Blocked items: depends on Sprint 8 orchestration loop
-- Last completed chunk: `Task 3a` - supporting-panel simplification (2026-03-14)
+- Last completed chunk: `Task 4a` - validation and closeout (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -14,7 +14,7 @@
 | Task 2a | done | Consolidated the simulation shell around a stronger central console hierarchy (map + chat prominence, reduced side-panel weight). |
 | Task 2b | done | Centralized `uiEffects` interpretation in a dedicated frontend service so refresh/focus/highlight behavior is applied consistently. |
 | Task 3a | done | Simplified supporting context surfaces by reducing panel density and showing bounded recent history/invention lists. |
-| Task 4a | planned | Validate the consolidated console flow and close the sprint. |
+| Task 4a | done | Validated Sprint 8 chat-path compatibility on the consolidated console and recorded residual UI/runtime risks before Sprint 10. |
 
 ## Sprint intent
 
@@ -207,6 +207,17 @@ Confirm the consolidated console remains functional and document any remaining U
 - Sprint 9 can drift into aesthetic churn if hierarchy and outcome are not kept concrete
 - reducing panel weight without losing useful information will need discipline
 - if Sprint 8 contracts are unstable, Sprint 9 can accidentally absorb backend work it should not own
+
+## Validation notes (Task 4a)
+
+- Backend compatibility check passed: `bash ./mvnw -q -Dtest=AgentChatApiContractTest test`
+- Frontend compile checks passed: `npx tsc -p tsconfig.app.json --noEmit` and `npx tsc -p tsconfig.spec.json --noEmit`
+- Sprint 8 chat request/reply flow remains intact on the consolidated Sprint 9 console shell.
+
+## Residual risks carried to Sprint 10
+
+- Full Angular bundle build remains environment-sensitive in this execution context, so runtime smoke on a stable local build host is still required.
+- UI coverage still emphasizes compile/test boundaries over full browser interaction automation.
 
 ## Handoff to next sprint
 
