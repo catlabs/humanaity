@@ -3,14 +3,14 @@
 ## Execution status
 
 - Current phase: Sprint 12 planned
-- Active chunk: `Task 1a` - board semantics and scope lock
-- Next chunk: `Task 2a` - board contract audit and view-model plan
+- Active chunk: `Task 2a` - board contract audit and view-model plan
+- Next chunk: `Task 2b` - board view-model mapping rules
 - Blocked items: depends on Sprint 11 completion for full sequencing, but most of the sprint can proceed on top of Sprint 10 plus Sprint 9 console work
-- Last completed chunk: none
+- Last completed chunk: `Task 1a` - board semantics and scope lock (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | planned | Lock the symbolic board boundary and first-sprint semantics before implementation starts. |
+| Task 1a | done | Locked Sprint 12 as a board-observatory MVP: normalized human markers only, CSS movement transitions only, and no place/overlay/game-engine semantics. |
 | Task 2a | planned | Audit current snapshot contracts and identify only the minimal board-specific gaps. |
 | Task 2b | planned | Define the frontend board view model and state mapping rules. |
 | Task 3a | planned | Implement the first Angular board component and move the simulation page toward a board-first layout. |
@@ -60,6 +60,13 @@ At the end of Sprint 12, the simulation detail page should show a symbolic board
 ### Decision 1: symbolic board first
 
 Sprint 12 should prioritize a clean symbolic board over realism. The UI must read like an observatory console, not a map editor or game scene.
+
+Sprint 12 hard boundary:
+
+- humans are rendered as symbolic markers only
+- movement is shown only through position interpolation/transition
+- no fixed place semantics, no interaction lines, no event markers in this sprint
+- no second rendering runtime beside the Angular board surface
 
 ### Decision 2: frontend derivation is acceptable when semantics are purely visual
 
