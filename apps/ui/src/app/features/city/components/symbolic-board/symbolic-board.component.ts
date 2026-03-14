@@ -19,6 +19,8 @@ export class SymbolicBoardComponent {
   @Input() places: BoardPlaceViewModel[] = [];
   @Input() interactions: BoardInteractionViewModel[] = [];
   @Input() eventMarkers: BoardEventMarkerViewModel[] = [];
+  @Input() pulseNonce = 0;
+  @Input() highlightedEventId: number | null = null;
   @Input() selectedHumanId: number | null = null;
   @Input() trackedHumanId: number | null = null;
   @Output() markerSelected = new EventEmitter<number>();

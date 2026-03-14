@@ -278,6 +278,8 @@
             [places]="boardPlaces()"
             [interactions]="boardInteractions()"
             [eventMarkers]="boardEventMarkers()"
+            [pulseNonce]="boardPulseNonce()"
+            [highlightedEventId]="selectedEventId()"
             [selectedHumanId]="selectedHumanId()"
             [trackedHumanId]="trackedHumanId()"
             (markerSelected)="selectHumanById($event)"
@@ -312,6 +314,11 @@
           <div class="pill">
             <span>Recent</span><strong>{{ recentEventCount() }}e / {{ recentInventionCount() }}i</strong>
           </div>
+          @if (lastBoardReaction(); as reaction) {
+            <div class="pill">
+              <span>Board</span><strong>{{ reaction }}</strong>
+            </div>
+          }
         </div>
 
         <div class="chat-shell">

@@ -1,4 +1,4 @@
-<div class="board-shell" role="img" aria-label="Symbolic simulation board">
+<div class="board-shell" [class.board-shell--pulse]="pulseNonce % 2 === 1" role="img" aria-label="Symbolic simulation board">
   <div class="board-grid"></div>
 
   <svg class="interaction-layer" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -30,6 +30,7 @@
       type="button"
       class="event-marker"
       [class.event-marker--milestone]="eventMarker.tone === 'milestone'"
+      [class.event-marker--selected]="highlightedEventId === eventMarker.eventId"
       [style.left.%]="eventMarker.leftPct"
       [style.top.%]="eventMarker.topPct"
       (click)="onEventMarkerClick(eventMarker.eventId)"

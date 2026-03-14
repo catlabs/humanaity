@@ -9,6 +9,22 @@
     linear-gradient(180deg, rgb(15 23 42 / 5%), transparent 65%);
 }
 
+.board-shell--pulse {
+  animation: board-pulse 520ms ease-out;
+}
+
+@keyframes board-pulse {
+  0% {
+    box-shadow: inset 0 0 0 0 rgb(59 130 246 / 0%);
+  }
+  25% {
+    box-shadow: inset 0 0 0 8px rgb(59 130 246 / 20%);
+  }
+  100% {
+    box-shadow: inset 0 0 0 0 rgb(59 130 246 / 0%);
+  }
+}
+
 .board-grid {
   position: absolute;
   inset: 0;
@@ -92,6 +108,10 @@
 .event-marker--milestone {
   color: rgb(251 191 36 / 95%);
   text-shadow: 0 0 8px rgb(251 191 36 / 42%);
+}
+
+.event-marker--selected {
+  transform: translate(-50%, -50%) scale(1.2);
 }
 
 @keyframes marker-blink {

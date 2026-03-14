@@ -97,6 +97,8 @@ export class SimulationDetailComponent
   guidedFollow = signal<GuidedFollowSummary | null>(null);
   pendingDirectorConfirmation = signal<DirectorConfirmationSummary | null>(null);
   boardEventEntries = signal<BoardEventEntry[]>([]);
+  boardPulseNonce = signal(0);
+  lastBoardReaction = signal<string | null>(null);
   chatInput = signal('');
   chatBusy = signal(false);
   chatError = signal<string | null>(null);
@@ -572,9 +574,11 @@ export class SimulationDetailComponent
       this.selectedHumanId.set(resolution.selectedHumanId);
       this.selectedEventId.set(null);
       this.selectedInventionId.set(null);
+      this.lastBoardReaction.set(`Focused human ${resolution.selectedHumanId}`);
     }
     if (resolution.trackedHumanId !== null) {
       this.trackedHumanId.set(resolution.trackedHumanId);
+      this.lastBoardReaction.set(`Tracking human ${resolution.trackedHumanId}`);
     }
     if (resolution.selectedEventId !== null) {
       this.selectedEventId.set(resolution.selectedEventId);
@@ -588,13 +592,20 @@ export class SimulationDetailComponent
     }
 
     if (resolution.refreshSnapshot) {
+      this.boardPulseNonce.update((value) => value + 1);
+      this.lastBoardReaction.set('Board refreshed from latest snapshot');
       this.refreshSnapshot(false);
     }
     if (resolution.refreshTimeline) {
+      this.boardPulseNonce.update((value) => value + 1);
       this.refreshHistory(false);
+    }
+    if (resolution.selectedEventId !== null) {
+      this.lastBoardReaction.set(`Marked event ${resolution.selectedEventId}`);
     }
     if (resolution.directorInterventionState === 'executed') {
       this.pendingDirectorConfirmation.set(null);
+      this.lastBoardReaction.set('Intervention executed and reflected on board');
     }
   }
 
