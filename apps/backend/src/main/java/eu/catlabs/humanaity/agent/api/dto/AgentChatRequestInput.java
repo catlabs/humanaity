@@ -7,6 +7,8 @@ public class AgentChatRequestInput {
     private Long selectedHumanId;
     private Long selectedEventId;
     private Long selectedInventionId;
+    private String confirmationToken;
+    private Boolean confirmIntervention;
 
     public String getMessage() {
         return message;
@@ -46,5 +48,21 @@ public class AgentChatRequestInput {
 
     public void setSelectedInventionId(Long selectedInventionId) {
         this.selectedInventionId = selectedInventionId;
+    }
+
+    public String getConfirmationToken() {
+        return confirmationToken;
+    }
+
+    public void setConfirmationToken(String confirmationToken) {
+        this.confirmationToken = confirmationToken;
+    }
+
+    public Boolean getConfirmIntervention() {
+        return confirmIntervention;
+    }
+
+    public void setConfirmIntervention(Boolean confirmIntervention) {
+        this.confirmIntervention = confirmIntervention;
     }
 }

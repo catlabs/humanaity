@@ -14,9 +14,12 @@ import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionRepository;
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
+import eu.catlabs.humanaity.simulation.domain.DirectorIntervention;
+import eu.catlabs.humanaity.simulation.domain.DirectorInterventionStatus;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
 import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.DirectorInterventionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -36,6 +39,7 @@ import java.util.regex.Pattern;
 public class AgentChatOrchestrationService {
 
     private static final int MAX_SAFE_STEPS = 50;
+    private static final int MAX_DIRECTOR_CONFIRMATION_SECONDS = 300;
     private static final Pattern NUMBER_PATTERN = Pattern.compile("(\\d+)");
     private static final Pattern FOLLOW_TICKS_PATTERN = Pattern.compile("\\bfor\\s+(\\d+)\\b");
 
@@ -45,6 +49,7 @@ public class AgentChatOrchestrationService {
     private final EventRepository eventRepository;
     private final InventionRepository inventionRepository;
     private final HumanRepository humanRepository;
+    private final DirectorInterventionRepository directorInterventionRepository;
 
     public AgentChatOrchestrationService(
             CityRepository cityRepository,
@@ -52,7 +57,8 @@ public class AgentChatOrchestrationService {
             SimulationReadModelQueryService simulationReadModelQueryService,
             EventRepository eventRepository,
             InventionRepository inventionRepository,
-            HumanRepository humanRepository
+            HumanRepository humanRepository,
+            DirectorInterventionRepository directorInterventionRepository
     ) {
         this.cityRepository = cityRepository;
         this.simulationApplicationService = simulationApplicationService;
@@ -60,6 +66,7 @@ public class AgentChatOrchestrationService {
         this.eventRepository = eventRepository;
         this.inventionRepository = inventionRepository;
         this.humanRepository = humanRepository;
+        this.directorInterventionRepository = directorInterventionRepository;
     }
 
     public AgentChatResponseOutput orchestrate(Long cityId, User currentUser, AgentChatRequestInput input) {
@@ -98,6 +105,10 @@ public class AgentChatOrchestrationService {
             case "follow_human" -> {
                 response.setCommandClass("GUIDED");
                 executeFollowHuman(cityId, input, normalizedMessage, response);
+            }
+            case "director_meet_humans" -> {
+                response.setCommandClass("DIRECTOR");
+                executeDirectorMeetHumans(cityId, currentUser, input, normalizedMessage, response);
             }
             default -> {
                 response.getExecutedActions().add(new AgentActionOutput(
@@ -386,6 +397,124 @@ public class AgentChatOrchestrationService {
                 + " tick(s). Simulation is now at tick " + run.getTick() + ".");
     }
 
+    private void executeDirectorMeetHumans(
+            Long cityId,
+            User currentUser,
+            AgentChatRequestInput input,
+            String normalizedMessage,
+            AgentChatResponseOutput response
+    ) {
+        List<Human> humans = humanRepository.findByCityIdOrderByIdAsc(cityId);
+        if (humans.size() < 2) {
+            response.getExecutedActions().add(new AgentActionOutput(
+                    "INTERVENTION_REJECTED",
+                    "REJECTED",
+                    "Two humans are required for DIRECTOR_MEET_HUMANS"
+            ));
+            response.setMessage("I need at least two humans in this city for a meet intervention.");
+            return;
+        }
+
+        List<Long> ids = extractNumbers(normalizedMessage);
+        Human left = resolveHumanByIdOrDefault(humans, input.getSelectedHumanId(), ids, 0);
+        Human right = resolveHumanByIdOrDefault(humans, null, ids, 1);
+        if (left.getId().equals(right.getId())) {
+            right = humans.stream().filter(h -> !h.getId().equals(left.getId())).findFirst().orElse(right);
+        }
+
+        if (Boolean.TRUE.equals(input.getConfirmIntervention()) && input.getConfirmationToken() != null) {
+            DirectorIntervention pending = directorInterventionRepository
+                    .findByConfirmationTokenAndStatus(
+                            input.getConfirmationToken(),
+                            DirectorInterventionStatus.PENDING_CONFIRMATION
+                    )
+                    .orElse(null);
+            if (pending == null || !pending.getCityId().equals(cityId) || !pending.getInitiatedByUserId().equals(currentUser.getId())) {
+                response.getExecutedActions().add(new AgentActionOutput(
+                        "INTERVENTION_REJECTED",
+                        "REJECTED",
+                        "Missing or invalid confirmation token"
+                ));
+                response.setMessage("Intervention confirmation token is invalid or no longer available.");
+                return;
+            }
+            if (pending.getConfirmationExpiresAt().isBefore(java.time.Instant.now())) {
+                pending.setStatus(DirectorInterventionStatus.REJECTED);
+                pending.setSummary("Confirmation token expired before execution");
+                directorInterventionRepository.save(pending);
+                response.getExecutedActions().add(new AgentActionOutput(
+                        "INTERVENTION_REJECTED",
+                        "REJECTED",
+                        "Confirmation token expired"
+                ));
+                response.setMessage("Intervention confirmation expired. Request the command again.");
+                return;
+            }
+
+            pending.setStatus(DirectorInterventionStatus.CONFIRMED_PENDING_EXECUTION);
+            pending.setConfirmedAt(java.time.Instant.now());
+            pending.setSummary("Confirmation accepted for DIRECTOR_MEET_HUMANS");
+            directorInterventionRepository.save(pending);
+
+            response.getExecutedActions().add(new AgentActionOutput(
+                    "INTERVENTION_CONFIRMATION_ACCEPTED",
+                    "COMPLETED",
+                    "Director intervention confirmation accepted and queued for execution"
+            ));
+            response.setStructuredData(Map.of(
+                    "directorIntervention", Map.of(
+                            "id", pending.getId(),
+                            "status", pending.getStatus().name(),
+                            "commandType", pending.getCommandType(),
+                            "humanIds", pending.getActorHumanIds()
+                    )
+            ));
+            response.setMessage("Confirmation accepted for intervention #" + pending.getId()
+                    + ". Execution path is locked and will run in the next chunk.");
+            return;
+        }
+
+        java.time.Instant now = java.time.Instant.now();
+        DirectorIntervention pending = new DirectorIntervention();
+        pending.setCityId(cityId);
+        pending.setInitiatedByUserId(currentUser.getId());
+        pending.setCommandType("DIRECTOR_MEET_HUMANS");
+        pending.setStatus(DirectorInterventionStatus.PENDING_CONFIRMATION);
+        pending.setConfirmationToken(UUID.randomUUID().toString().replace("-", ""));
+        pending.setConfirmationExpiresAt(now.plusSeconds(MAX_DIRECTOR_CONFIRMATION_SECONDS));
+        pending.setActorHumanIds(List.of(left.getId(), right.getId()));
+        pending.setSummary("Awaiting explicit confirmation for DIRECTOR_MEET_HUMANS");
+        Long requestedTick = null;
+        try {
+            requestedTick = simulationApplicationService.loadRun(cityId).getTick();
+        } catch (RuntimeException ignored) {
+            // No simulation run exists yet; the intervention request is still auditable.
+        }
+        pending.setRequestedAtTick(requestedTick);
+        DirectorIntervention saved = directorInterventionRepository.save(pending);
+
+        response.getReferencedEntities().setHumanIds(List.of(left.getId(), right.getId()));
+        response.getExecutedActions().add(new AgentActionOutput(
+                "INTERVENTION_CONFIRMATION_REQUIRED",
+                "PENDING",
+                "Director intervention requires explicit confirmation token"
+        ));
+        AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
+        focus.setHumanId(left.getId());
+        response.getUiEffects().add(focus);
+        response.setStructuredData(Map.of(
+                "directorConfirmation", Map.of(
+                        "interventionId", saved.getId(),
+                        "commandType", saved.getCommandType(),
+                        "confirmationToken", saved.getConfirmationToken(),
+                        "expiresAt", saved.getConfirmationExpiresAt().toString(),
+                        "humanIds", saved.getActorHumanIds()
+                )
+        ));
+        response.setMessage("Director command requested: meet " + left.getName() + " and " + right.getName()
+                + ". Re-send with confirmIntervention=true and confirmationToken to proceed.");
+    }
+
     private void validateInput(AgentChatRequestInput input) {
         if (input == null || input.getMessage() == null || input.getMessage().trim().isEmpty()) {
             throw new IllegalArgumentException("message is required");
@@ -436,6 +565,9 @@ public class AgentChatOrchestrationService {
     }
 
     private String classifyIntent(String normalizedMessage) {
+        if (containsAny(normalizedMessage, "meet", "introduce", "director")) {
+            return "director_meet_humans";
+        }
         if (containsAny(normalizedMessage, "compare", "versus", " vs ")) {
             return "compare_humans";
         }

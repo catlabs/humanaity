@@ -215,6 +215,64 @@ class AgentChatApiContractTest {
         assertThat(payload.path("uiEffects").toString()).contains("FOCUS_HUMAN");
     }
 
+    @Test
+    void chatDirectorMeetHumansReturnsExplicitConfirmationRequirement() throws Exception {
+        User owner = persistUser("owner-agent-director-confirm@example.com");
+        City city = persistCity("DirectorCity", owner);
+        Human left = persistHuman(city, "Rin", 0.1, 0.2);
+        Human right = persistHuman(city, "Sol", 0.8, 0.9);
+
+        MvcResult result = mockMvc.perform(post("/api/agent/cities/{cityId}/chat", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("director: make humans " + left.getId() + " and " + right.getId() + " meet")))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
+        JsonNode confirmation = payload.path("structuredData").path("directorConfirmation");
+
+        assertThat(payload.get("commandClass").asText()).isEqualTo("DIRECTOR");
+        assertThat(payload.get("executedActions").get(0).get("type").asText())
+                .isEqualTo("INTERVENTION_CONFIRMATION_REQUIRED");
+        assertThat(confirmation.path("commandType").asText()).isEqualTo("DIRECTOR_MEET_HUMANS");
+        assertThat(confirmation.path("confirmationToken").asText()).isNotBlank();
+        assertThat(confirmation.path("humanIds").isArray()).isTrue();
+    }
+
+    @Test
+    void chatDirectorMeetHumansAcceptsValidConfirmationTokenAndPersistsConfirmedState() throws Exception {
+        User owner = persistUser("owner-agent-director-exec@example.com");
+        City city = persistCity("DirectorCity", owner);
+        Human left = persistHuman(city, "Lio", 0.2, 0.2);
+        Human right = persistHuman(city, "Nia", 0.7, 0.7);
+
+        MvcResult initial = mockMvc.perform(post("/api/agent/cities/{cityId}/chat", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("director make " + left.getId() + " meet " + right.getId())))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode initialPayload = objectMapper.readTree(initial.getResponse().getContentAsString());
+        String token = initialPayload.path("structuredData").path("directorConfirmation").path("confirmationToken").asText();
+
+        MvcResult confirmed = mockMvc.perform(post("/api/agent/cities/{cityId}/chat", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(confirmedDirectorRequest("confirm meet " + left.getId() + " " + right.getId(), token)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode payload = objectMapper.readTree(confirmed.getResponse().getContentAsString());
+        JsonNode intervention = payload.path("structuredData").path("directorIntervention");
+
+        assertThat(payload.get("commandClass").asText()).isEqualTo("DIRECTOR");
+        assertThat(payload.get("executedActions").get(0).get("type").asText())
+                .isEqualTo("INTERVENTION_CONFIRMATION_ACCEPTED");
+        assertThat(intervention.path("status").asText()).isEqualTo("CONFIRMED_PENDING_EXECUTION");
+        assertThat(intervention.path("commandType").asText()).isEqualTo("DIRECTOR_MEET_HUMANS");
+    }
+
     private User persistUser(String email) {
         User user = new User();
         user.setEmail(email);
@@ -245,7 +303,13 @@ class AgentChatApiContractTest {
     }
 
     private String request(String message) throws Exception {
-        return objectMapper.writeValueAsString(new AgentChatRequestPayload(message, null, null, null, null));
+        return objectMapper.writeValueAsString(new AgentChatRequestPayload(message, null, null, null, null, null, null));
+    }
+
+    private String confirmedDirectorRequest(String message, String confirmationToken) throws Exception {
+        return objectMapper.writeValueAsString(
+                new AgentChatRequestPayload(message, null, null, null, null, confirmationToken, true)
+        );
     }
 
     private record AgentChatRequestPayload(
@@ -253,7 +317,9 @@ class AgentChatApiContractTest {
             String conversationId,
             Long selectedHumanId,
             Long selectedEventId,
-            Long selectedInventionId
+            Long selectedInventionId,
+            String confirmationToken,
+            Boolean confirmIntervention
     ) {
     }
 }
