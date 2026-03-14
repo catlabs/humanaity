@@ -212,6 +212,7 @@ class AgentChatApiContractTest {
         assertThat(followHuman.path("eventWindow").isArray()).isTrue();
         assertThat(followHuman.path("inventionWindow").isArray()).isTrue();
         assertThat(payload.path("uiEffects").toString()).contains("REFRESH_TIMELINE");
+        assertThat(payload.path("uiEffects").toString()).contains("TRACK_HUMAN");
         assertThat(payload.path("uiEffects").toString()).contains("FOCUS_HUMAN");
     }
 
@@ -238,6 +239,7 @@ class AgentChatApiContractTest {
         assertThat(confirmation.path("commandType").asText()).isEqualTo("DIRECTOR_MEET_HUMANS");
         assertThat(confirmation.path("confirmationToken").asText()).isNotBlank();
         assertThat(confirmation.path("humanIds").isArray()).isTrue();
+        assertThat(payload.path("uiEffects").toString()).contains("BOARD_INTERVENTION_PENDING");
     }
 
     @Test
@@ -272,6 +274,7 @@ class AgentChatApiContractTest {
         assertThat(intervention.path("status").asText()).isEqualTo("EXECUTED");
         assertThat(intervention.path("commandType").asText()).isEqualTo("DIRECTOR_MEET_HUMANS");
         assertThat(intervention.path("executedTick").asLong()).isPositive();
+        assertThat(payload.path("uiEffects").toString()).contains("BOARD_INTERVENTION_EXECUTED");
         assertThat(payload.path("referencedEntities").path("humanIds").toString()).contains(left.getId().toString());
         assertThat(payload.path("referencedEntities").path("humanIds").toString()).contains(right.getId().toString());
     }

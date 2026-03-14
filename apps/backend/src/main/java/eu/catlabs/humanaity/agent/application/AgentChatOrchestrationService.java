@@ -225,9 +225,12 @@ public class AgentChatOrchestrationService {
 
         AgentUiEffectOutput highlight = new AgentUiEffectOutput("HIGHLIGHT_EVENT");
         highlight.setEventId(target.getId());
+        AgentUiEffectOutput boardMark = new AgentUiEffectOutput("MARK_EVENT");
+        boardMark.setEventId(target.getId());
         AgentUiEffectOutput panel = new AgentUiEffectOutput("SELECT_PANEL");
         panel.setPanel("events");
         response.getUiEffects().add(highlight);
+        response.getUiEffects().add(boardMark);
         response.getUiEffects().add(panel);
 
         String narrative = target.getEnrichedSnippet();
@@ -367,6 +370,9 @@ public class AgentChatOrchestrationService {
         AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
         focus.setHumanId(target.getId());
         response.getUiEffects().add(focus);
+        AgentUiEffectOutput track = new AgentUiEffectOutput("TRACK_HUMAN");
+        track.setHumanId(target.getId());
+        response.getUiEffects().add(track);
         response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
         AgentUiEffectOutput refreshTimeline = new AgentUiEffectOutput("REFRESH_TIMELINE");
         refreshTimeline.setFromTick(fromTick);
@@ -481,9 +487,12 @@ public class AgentChatOrchestrationService {
             response.getReferencedEntities().setHumanIds(List.of(actorA.getId(), actorB.getId()));
             AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
             focus.setHumanId(actorA.getId());
+            AgentUiEffectOutput directorExecuted = new AgentUiEffectOutput("BOARD_INTERVENTION_EXECUTED");
+            directorExecuted.setHumanId(actorA.getId());
             AgentUiEffectOutput refreshTimeline = new AgentUiEffectOutput("REFRESH_TIMELINE");
             refreshTimeline.setFromTick(Math.max(1L, run.getTick()));
             response.getUiEffects().add(focus);
+            response.getUiEffects().add(directorExecuted);
             response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
             response.getUiEffects().add(refreshTimeline);
             response.setStructuredData(Map.of(
@@ -527,7 +536,10 @@ public class AgentChatOrchestrationService {
         ));
         AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
         focus.setHumanId(left.getId());
+        AgentUiEffectOutput directorPending = new AgentUiEffectOutput("BOARD_INTERVENTION_PENDING");
+        directorPending.setHumanId(left.getId());
         response.getUiEffects().add(focus);
+        response.getUiEffects().add(directorPending);
         response.setStructuredData(Map.of(
                 "directorConfirmation", Map.of(
                         "interventionId", saved.getId(),

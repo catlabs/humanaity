@@ -3,15 +3,15 @@
 ## Execution status
 
 - Current phase: Sprint 14 planned
-- Active chunk: `Task 2a` - backend and frontend effect path alignment
-- Next chunk: `Task 2b` - frontend board effect resolver alignment
+- Active chunk: `Task 2b` - frontend board effect resolver alignment
+- Next chunk: `Task 3a` - safe and guided board reactions
 - Blocked items: depends on Sprint 13 board overlays; intervention-related work also depends on Sprint 11 completion
-- Last completed chunk: `Task 1a` - chat-to-board effect contract lock (2026-03-14)
+- Last completed chunk: `Task 2a` - backend board-effect support (2026-03-14)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Locked board reaction expectations by command class: SAFE (refresh + optional highlight), GUIDED (focus/track markers), DIRECTOR (explicit intervention styling and confirmation-gated reaction). |
-| Task 2a | planned | Extend backend effect shaping only where the board needs stable new semantics. |
+| Task 2a | done | Added minimal backend board-oriented effect hints (`TRACK_HUMAN`, `MARK_EVENT`, `BOARD_INTERVENTION_PENDING`, `BOARD_INTERVENTION_EXECUTED`) with updated contract tests. |
 | Task 2b | planned | Align the frontend effect resolver with the new board-oriented effect contract. |
 | Task 3a | planned | Make safe commands and guided workflows visibly react on the board. |
 | Task 3b | planned | Integrate intervention visualization if Sprint 11 has landed; otherwise keep this slice blocked and explicit. |
