@@ -9,6 +9,7 @@ export type AgentChatEffectResolution = {
   selectedEventId: number | null;
   selectedInventionId: number | null;
   directorInterventionState: 'pending' | 'executed' | null;
+  highlightedPlaceId: string | null;
   openEventsDrawer: boolean;
   drawerEventType: string | null;
   drawerEventIds: number[] | null;
@@ -27,6 +28,7 @@ export class AgentChatEffectsService {
       selectedEventId: null,
       selectedInventionId: null,
       directorInterventionState: null,
+      highlightedPlaceId: null,
       openEventsDrawer: false,
       drawerEventType: null,
       drawerEventIds: null,
@@ -88,6 +90,11 @@ export class AgentChatEffectsService {
           }
           if (typeof effect.eventType === 'string' && effect.eventType.length > 0) {
             resolution.drawerEventType = effect.eventType;
+          }
+          break;
+        case 'HIGHLIGHT_PLACE':
+          if (typeof effect.placeId === 'string' && effect.placeId.length > 0) {
+            resolution.highlightedPlaceId = effect.placeId;
           }
           break;
         default:

@@ -251,6 +251,9 @@ public class AgentChatOrchestrationService {
         AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
         focus.setHumanId(targetHuman.getId());
         response.getUiEffects().add(focus);
+        AgentUiEffectOutput highlightPlace = new AgentUiEffectOutput("HIGHLIGHT_PLACE");
+        highlightPlace.setPlaceId(targetPlace.id);
+        response.getUiEffects().add(highlightPlace);
         response.setMessage("Moved " + targetHuman.getName() + " to " + targetPlace.label + ".");
     }
 

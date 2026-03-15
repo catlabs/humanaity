@@ -61,6 +61,7 @@
           [markers]="boardMarkers()"
           [places]="boardPlaces()"
           [selectedHumanId]="selectedHumanId()"
+          [highlightedPlaceId]="highlightedPlaceId()"
           (markerSelected)="selectHumanById($event)"
         ></app-simulation-board>
         @if (showWorldOverlay()) {

@@ -16,6 +16,7 @@ export class SimulationBoardComponent {
   @Input() markers: BoardMarkerViewModel[] = [];
   @Input() places: BoardPlaceViewModel[] = [];
   @Input() selectedHumanId: number | null = null;
+  @Input() highlightedPlaceId: string | null = null;
   @Output() markerSelected = new EventEmitter<number>();
 
   trackByMarkerId(_: number, marker: BoardMarkerViewModel): number {

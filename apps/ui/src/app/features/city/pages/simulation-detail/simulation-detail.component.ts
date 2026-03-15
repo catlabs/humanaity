@@ -97,6 +97,7 @@ export class SimulationDetailComponent
   eventsDrawerOpen = signal(false);
   eventsDrawerType = signal<string | null>(null);
   eventsDrawerIds = signal<number[] | null>(null);
+  highlightedPlaceId = signal<string | null>(null);
 
   snapshotLoading = signal(true);
   historyLoading = signal(true);
@@ -596,6 +597,10 @@ export class SimulationDetailComponent
       this.eventsDrawerType.set(resolution.drawerEventType);
       this.eventsDrawerIds.set(resolution.drawerEventIds);
       this.lastBoardReaction.set('Opened events drawer from chat');
+    }
+    if (resolution.highlightedPlaceId !== null) {
+      this.highlightedPlaceId.set(resolution.highlightedPlaceId);
+      this.lastBoardReaction.set(`Highlighted place ${resolution.highlightedPlaceId}`);
     }
   }
 

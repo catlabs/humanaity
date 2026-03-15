@@ -33,6 +33,13 @@
   pointer-events: none;
 }
 
+.place--highlighted .place-icon {
+  box-shadow:
+    0 0 0 6px rgb(249 115 22 / 26%),
+    0 12px 30px rgb(15 23 42 / 16%);
+  border-color: rgb(249 115 22 / 45%);
+}
+
 .place-icon {
   display: grid;
   place-items: center;

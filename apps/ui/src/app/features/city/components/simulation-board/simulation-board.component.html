@@ -4,6 +4,7 @@
   @for (place of places; track place.id) {
     <div
       class="place"
+      [class.place--highlighted]="highlightedPlaceId === place.id"
       [style.left.%]="place.leftPct"
       [style.top.%]="place.topPct"
       [attr.aria-label]="place.label"
