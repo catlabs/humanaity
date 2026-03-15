@@ -2,15 +2,15 @@
 
 ## Execution status
 
-- Current phase: Not started
-- Active chunk: none
-- Next chunk: Task 1a
+- Current phase: In progress
+- Active chunk: Task 2a
+- Next chunk: none
 - Blocked items: none
-- Last completed chunk: none
+- Last completed chunk: Task 1a (2026-03-15)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | pending | PROXIMITY_GROUP: sustained proximity → DIALOGUE or DISCOVERY (SOCIAL). |
+| Task 1a | done | Added sustained proximity-group detection with deterministic connected components and per-group cooldown; emits DIALOGUE for pairs and SOCIAL_PRACTICE discovery for groups of 3+. |
 | Task 2a | pending | Visual markers per matrix; intervention badge. |
 
 ## Sprint intent

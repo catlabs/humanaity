@@ -49,6 +49,9 @@ public class SimulationApplicationService {
     private static final long REACHED_PLACE_COOLDOWN_TICKS = 5L;
     private static final int STAYED_AT_PLACE_THRESHOLD_TICKS = 3;
     private static final long STAYED_AT_PLACE_COOLDOWN_TICKS = 3L;
+    private static final double PROXIMITY_GROUP_DISTANCE_THRESHOLD = 0.12;
+    private static final int PROXIMITY_GROUP_SUSTAIN_TICKS = 2;
+    private static final long PROXIMITY_GROUP_COOLDOWN_TICKS = 4L;
     private static final long DISCOVERY_SEED_SALT = 0x9E3779B97F4A7C15L;
     private static final String[] INVENTION_TOPICS = {
             "Canal Irrigation",
@@ -62,6 +65,8 @@ public class SimulationApplicationService {
     private final Map<Long, ScheduledFuture<?>> runningTasks = new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<String, String> lastPlaceByHuman = new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<String, Integer> placeStreakByHuman = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<Long, java.util.Set<String>> previousProximityGroupsByCity = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, Integer> proximityGroupStreakByKey = new java.util.concurrent.ConcurrentHashMap<>();
     private final HumanRepository humanRepository;
     private final HumanApplicationService humanApplicationService;
     private final CityRepository cityRepository;
@@ -291,6 +296,7 @@ public class SimulationApplicationService {
     private void runSingleDeterministicTick(SimulationRun run) {
         if (run.getTick() == 0L) {
             resetPlaceStayState(run.getCity().getId());
+            resetProximityGroupState(run.getCity().getId());
         }
         List<Human> orderedHumans = new ArrayList<>(humanRepository.findByCityIdOrderByIdAsc(run.getCity().getId()));
         if (orderedHumans.isEmpty()) {
@@ -362,9 +368,17 @@ public class SimulationApplicationService {
         drafts.addAll(buildDialogueDrafts(run.getCity().getId(), tick, humans));
         drafts.addAll(buildReachedPlaceDrafts(run.getCity().getId(), tick, humans, previousPlaceByHuman));
         drafts.addAll(buildStayedAtPlaceDrafts(run.getCity().getId(), tick, humans));
+        List<EventDraft> proximityGroupDrafts = buildProximityGroupDrafts(run.getCity().getId(), tick, humans);
+        drafts.addAll(proximityGroupDrafts);
         List<EventDraft> collisionDiscoveries = buildCollisionDiscoveryDrafts(run.getCity().getId(), tick, humans);
         drafts.addAll(collisionDiscoveries);
-        drafts.addAll(buildDiscoveryDrafts(run.getSeed(), tick, humans, humansWithContextDiscovery(collisionDiscoveries)));
+        List<EventDraft> contextDiscoveries = new ArrayList<>(collisionDiscoveries);
+        for (EventDraft draft : proximityGroupDrafts) {
+            if (draft.eventType() == EventType.DISCOVERY_UNLOCKED) {
+                contextDiscoveries.add(draft);
+            }
+        }
+        drafts.addAll(buildDiscoveryDrafts(run.getSeed(), tick, humans, humansWithContextDiscovery(contextDiscoveries)));
         return drafts;
     }
 
@@ -715,6 +729,149 @@ public class SimulationApplicationService {
         return drafts;
     }
 
+    private List<EventDraft> buildProximityGroupDrafts(Long cityId, long tick, List<Human> humans) {
+        List<EventDraft> drafts = new ArrayList<>();
+        List<List<Human>> groups = buildProximityGroups(humans);
+        java.util.Set<String> previousGroups = previousProximityGroupsByCity
+                .getOrDefault(cityId, java.util.Collections.emptySet());
+        java.util.Set<String> currentGroups = new java.util.HashSet<>();
+
+        for (List<Human> group : groups) {
+            String groupKey = groupSignature(group);
+            currentGroups.add(groupKey);
+            String streakKey = proximityGroupStateKey(cityId, groupKey);
+            int streak = previousGroups.contains(groupKey)
+                    ? proximityGroupStreakByKey.getOrDefault(streakKey, 0) + 1
+                    : 1;
+            proximityGroupStreakByKey.put(streakKey, streak);
+            if (streak < PROXIMITY_GROUP_SUSTAIN_TICKS) {
+                continue;
+            }
+            if (hasRecentProximityGroupEvent(cityId, tick, groupKey)) {
+                continue;
+            }
+
+            if (group.size() >= 3) {
+                List<Long> actorIds = group.stream().map(Human::getId).toList();
+                String discoveryKey = "PROX_GROUP_DISC:" + groupKey + ":" + tick;
+                drafts.add(new EventDraft(
+                        EventType.DISCOVERY_UNLOCKED,
+                        actorIds,
+                        buildProximityGroupDiscoveryPayload(groupKey, actorIds, tick),
+                        discoveryImpact(actorIds.stream().mapToLong(Long::longValue).sum(), tick, 39),
+                        discoveryKey
+                ));
+            } else {
+                long actorA = Math.min(group.get(0).getId(), group.get(1).getId());
+                long actorB = Math.max(group.get(0).getId(), group.get(1).getId());
+                String dialogueKey = "PROX_GROUP_DIALOGUE:" + actorA + ":" + actorB + ":" + tick;
+                Map<String, String> payload = new HashMap<>();
+                payload.put("dialogueKey", dialogueKey);
+                payload.put("pair", actorA + "-" + actorB);
+                payload.put("groupKey", groupKey);
+                payload.put("trigger", "PROXIMITY_GROUP");
+                drafts.add(new EventDraft(
+                        EventType.DIALOGUE_EXCHANGED,
+                        List.of(actorA, actorB),
+                        payload,
+                        28,
+                        dialogueKey
+                ));
+            }
+        }
+
+        previousProximityGroupsByCity.put(cityId, currentGroups);
+        String prefix = cityId + ":";
+        proximityGroupStreakByKey.keySet().removeIf(key -> key.startsWith(prefix) && !currentGroups.contains(key.substring(prefix.length())));
+        return drafts;
+    }
+
+    private List<List<Human>> buildProximityGroups(List<Human> humans) {
+        int size = humans.size();
+        List<List<Integer>> adjacency = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            adjacency.add(new ArrayList<>());
+        }
+        for (int i = 0; i < size; i++) {
+            for (int j = i + 1; j < size; j++) {
+                if (distance(humans.get(i), humans.get(j)) <= PROXIMITY_GROUP_DISTANCE_THRESHOLD) {
+                    adjacency.get(i).add(j);
+                    adjacency.get(j).add(i);
+                }
+            }
+        }
+
+        boolean[] visited = new boolean[size];
+        List<List<Human>> groups = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            if (visited[i]) {
+                continue;
+            }
+            List<Human> component = new ArrayList<>();
+            ArrayList<Integer> stack = new ArrayList<>();
+            stack.add(i);
+            visited[i] = true;
+            while (!stack.isEmpty()) {
+                int node = stack.remove(stack.size() - 1);
+                component.add(humans.get(node));
+                for (int neighbor : adjacency.get(node)) {
+                    if (!visited[neighbor]) {
+                        visited[neighbor] = true;
+                        stack.add(neighbor);
+                    }
+                }
+            }
+            if (component.size() >= 2) {
+                component.sort(Comparator.comparing(Human::getId));
+                groups.add(component);
+            }
+        }
+        return groups;
+    }
+
+    private String groupSignature(List<Human> group) {
+        return group.stream()
+                .map(Human::getId)
+                .sorted()
+                .map(String::valueOf)
+                .reduce((left, right) -> left + "-" + right)
+                .orElse("");
+    }
+
+    private boolean hasRecentProximityGroupEvent(Long cityId, long tick, String groupKey) {
+        long blockedFromTick = Math.max(0L, tick - PROXIMITY_GROUP_COOLDOWN_TICKS + 1L);
+        boolean discoveryRecentlyEmitted = eventApplicationService.listCityEventsByType(cityId, EventType.DISCOVERY_UNLOCKED).stream()
+                .filter(event -> event.getTick() >= blockedFromTick && event.getTick() < tick)
+                .filter(event -> event.getPayload() != null)
+                .anyMatch(event -> "PROXIMITY_GROUP".equals(event.getPayload().get("trigger"))
+                        && groupKey.equals(event.getPayload().get("groupKey")));
+        if (discoveryRecentlyEmitted) {
+            return true;
+        }
+
+        return eventApplicationService.listCityEventsByType(cityId, EventType.DIALOGUE_EXCHANGED).stream()
+                .filter(event -> event.getTick() >= blockedFromTick && event.getTick() < tick)
+                .filter(event -> event.getPayload() != null)
+                .anyMatch(event -> "PROXIMITY_GROUP".equals(event.getPayload().get("trigger"))
+                        && groupKey.equals(event.getPayload().get("groupKey")));
+    }
+
+    private Map<String, String> buildProximityGroupDiscoveryPayload(String groupKey, List<Long> actorIds, long tick) {
+        String inventionKey = "DISCOVERY:proximity-group:" + groupKey + ":" + tick;
+        String title = "Group social practice insight";
+        String summary = "Tick " + tick + ": group " + actorIds + " unlocked social practice insight.";
+        Map<String, String> payload = new HashMap<>();
+        payload.put("discoveryKey", inventionKey);
+        payload.put("inventionKey", inventionKey);
+        payload.put("inventionCategory", InventionCategory.SOCIAL_PRACTICE.name());
+        payload.put("title", title);
+        payload.put("summary", summary);
+        payload.put("impactScore", String.valueOf(discoveryImpact(actorIds.stream().mapToLong(Long::longValue).sum(), tick, 43)));
+        payload.put("trigger", "PROXIMITY_GROUP");
+        payload.put("groupKey", groupKey);
+        return payload;
+    }
+
     private boolean hasRecentReachedPlaceDiscovery(Long cityId, Long humanId, String placeId, long tick) {
         long blockedFromTick = Math.max(0L, tick - REACHED_PLACE_COOLDOWN_TICKS + 1L);
         return eventApplicationService.listCityEventsByType(cityId, EventType.DISCOVERY_UNLOCKED).stream()
@@ -841,6 +998,16 @@ public class SimulationApplicationService {
         String prefix = cityId + ":";
         lastPlaceByHuman.keySet().removeIf(key -> key.startsWith(prefix));
         placeStreakByHuman.keySet().removeIf(key -> key.startsWith(prefix));
+    }
+
+    private String proximityGroupStateKey(Long cityId, String groupKey) {
+        return cityId + ":" + groupKey;
+    }
+
+    private void resetProximityGroupState(Long cityId) {
+        previousProximityGroupsByCity.remove(cityId);
+        String prefix = cityId + ":";
+        proximityGroupStreakByKey.keySet().removeIf(key -> key.startsWith(prefix));
     }
 
     public record TimelineHistory(
