@@ -400,11 +400,7 @@ public class SimulationApplicationService {
 
             int topicIndex = discoveryRandom.nextInt(INVENTION_TOPICS.length);
             String inventionKey = "INV-" + topicIndex;
-            String inventionCategory = switch (topicIndex % 3) {
-                case 0 -> "TECHNIQUE";
-                case 1 -> "SOCIAL_PRACTICE";
-                default -> "KNOWLEDGE";
-            };
+            InventionCategory category = resolveFallbackDiscoveryCategory(human);
             String discoveryKey = "DISC-" + human.getId() + "-" + tick + "-" + topicIndex;
             int impactScore = 20 + discoveryRandom.nextInt(81);
             String title = INVENTION_TOPICS[topicIndex];
@@ -413,10 +409,11 @@ public class SimulationApplicationService {
             Map<String, String> payload = new HashMap<>();
             payload.put("discoveryKey", discoveryKey);
             payload.put("inventionKey", inventionKey);
-            payload.put("inventionCategory", inventionCategory);
+            payload.put("inventionCategory", category.name());
             payload.put("title", title);
             payload.put("summary", summary);
             payload.put("impactScore", String.valueOf(impactScore));
+            payload.put("trigger", "FALLBACK_PROFILE");
 
             drafts.add(new EventDraft(
                     EventType.DISCOVERY_UNLOCKED,
@@ -569,6 +566,15 @@ public class SimulationApplicationService {
         return Optional.of(InventionCategory.KNOWLEDGE);
     }
 
+    private InventionCategory resolveFallbackDiscoveryCategory(Human human) {
+        Optional<SimulationPlaceRegistry.SimulationPlace> place =
+                resolvePlaceForPosition(human.getX(), human.getY());
+        if (place.isPresent()) {
+            return place.get().category();
+        }
+        return traitToCategory(dominantTrait(human));
+    }
+
     private Trait dominantTrait(Human human) {
         double creativity = normalizedTrait(human.getCreativity());
         double intellect = normalizedTrait(human.getIntellect());
@@ -589,6 +595,14 @@ public class SimulationApplicationService {
             dominant = Trait.PRACTICALITY;
         }
         return dominant;
+    }
+
+    private InventionCategory traitToCategory(Trait trait) {
+        return switch (trait) {
+            case SOCIABILITY -> InventionCategory.SOCIAL_PRACTICE;
+            case PRACTICALITY, CREATIVITY -> InventionCategory.TECHNIQUE;
+            case INTELLECT -> InventionCategory.KNOWLEDGE;
+        };
     }
 
     private double normalizedTrait(Double value) {
