@@ -9,6 +9,9 @@ export type AgentChatEffectResolution = {
   selectedEventId: number | null;
   selectedInventionId: number | null;
   directorInterventionState: 'pending' | 'executed' | null;
+  openEventsDrawer: boolean;
+  drawerEventType: string | null;
+  drawerEventIds: number[] | null;
 };
 
 @Injectable({
@@ -24,6 +27,9 @@ export class AgentChatEffectsService {
       selectedEventId: null,
       selectedInventionId: null,
       directorInterventionState: null,
+      openEventsDrawer: false,
+      drawerEventType: null,
+      drawerEventIds: null,
     };
 
     for (const effect of effects) {
@@ -72,6 +78,16 @@ export class AgentChatEffectsService {
           resolution.directorInterventionState = 'executed';
           if (typeof effect.humanId === 'number') {
             resolution.trackedHumanId = effect.humanId;
+          }
+          break;
+        case 'OPEN_EVENTS_DRAWER':
+          resolution.openEventsDrawer = true;
+          if (Array.isArray(effect.eventIds)) {
+            resolution.drawerEventIds = effect.eventIds
+              .filter((id): id is number => typeof id === 'number');
+          }
+          if (typeof effect.eventType === 'string' && effect.eventType.length > 0) {
+            resolution.drawerEventType = effect.eventType;
           }
           break;
         default:

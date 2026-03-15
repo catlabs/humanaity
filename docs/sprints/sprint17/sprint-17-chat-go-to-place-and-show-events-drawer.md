@@ -3,16 +3,16 @@
 ## Execution status
 
 - Current phase: In progress
-- Active chunk: Task 3a
-- Next chunk: Task 4a
+- Active chunk: Task 4a
+- Next chunk: none
 - Blocked items: none
-- Last completed chunk: Task 2a (2026-03-15)
+- Last completed chunk: Task 3a (2026-03-15)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Added MOVE_HUMAN_TO_PLACE intent classification, backend place registry aligned with board coordinates, name-based human resolution, and deterministic position updates with refresh/focus effects. |
 | Task 2a | done | Added SHOW_EVENTS_BY_TYPE intent resolution, event-type querying through EventApplicationService, OPEN_EVENTS_DRAWER uiEffect payload (eventType + eventIds), and AgentUiEffectOutput/API model extension for drawer/place-aware effects. |
-| Task 3a | pending | Frontend: Events drawer for OPEN_EVENTS_DRAWER. |
+| Task 3a | done | Added OPEN_EVENTS_DRAWER effect handling and a simulation-detail events drawer filtered by eventType/eventIds with click-to-select event behavior. |
 | Task 4a | pending | Frontend: Place highlight + focus when chat moves human. |
 
 ## Sprint intent

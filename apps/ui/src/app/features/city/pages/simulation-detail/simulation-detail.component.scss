@@ -263,6 +263,87 @@
   color: #f59e0b;
 }
 
+.events-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(15 23 42 / 35%);
+  z-index: 80;
+}
+
+.events-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(28rem, 92vw);
+  height: 100%;
+  z-index: 81;
+  border-left: 1px solid var(--mat-sys-outline-variant);
+  display: flex;
+  flex-direction: column;
+}
+
+.events-drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: map.get($spacing-scale, 2);
+  padding: map.get($spacing-scale, 4);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.events-drawer-title {
+  @include hai-item-title;
+}
+
+.events-drawer-subtitle {
+  @include hai-meta;
+  margin-top: map.get($spacing-scale, 1);
+}
+
+.events-drawer-close {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
+
+.events-drawer-list {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: map.get($spacing-scale, 3);
+  display: flex;
+  flex-direction: column;
+  gap: map.get($spacing-scale, 2);
+}
+
+.drawer-event-item {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  background: var(--mat-sys-surface);
+  text-align: left;
+  padding: map.get($spacing-scale, 3);
+  cursor: pointer;
+}
+
+.drawer-event-title {
+  font-weight: 600;
+  color: var(--mat-sys-on-surface);
+}
+
+.drawer-event-meta {
+  font-size: 0.8rem;
+  margin-top: map.get($spacing-scale, 1);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.drawer-event-snippet {
+  margin-top: map.get($spacing-scale, 2);
+  font-size: 0.85rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
 @media (max-width: 900px) {
   .status-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

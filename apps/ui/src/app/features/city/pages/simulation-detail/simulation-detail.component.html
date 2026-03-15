@@ -150,4 +150,37 @@
       </div>
     </section>
   </div>
+
+  @if (eventsDrawerOpen()) {
+    <div class="events-drawer-backdrop" (click)="closeEventsDrawer()"></div>
+    <aside class="events-drawer app-surface-bg" aria-label="Events drawer">
+      <div class="events-drawer-header">
+        <div>
+          <div class="events-drawer-title">Events</div>
+          @if (eventsDrawerType(); as eventType) {
+            <div class="events-drawer-subtitle">{{ eventTypeLabel(eventType) }}</div>
+          }
+        </div>
+        <button type="button" class="events-drawer-close" (click)="closeEventsDrawer()">
+          Close
+        </button>
+      </div>
+
+      <div class="events-drawer-list">
+        @for (event of drawerEvents(); track event.id) {
+          <button type="button" class="drawer-event-item" (click)="selectEvent(event)">
+            <div class="drawer-event-title">{{ eventTitle(event) }}</div>
+            <div class="drawer-event-meta">
+              Tick {{ event.tick }} · Year {{ event.year }}
+            </div>
+            @if (eventNarrative(event); as narrative) {
+              <div class="drawer-event-snippet">{{ narrative }}</div>
+            }
+          </button>
+        } @empty {
+          <div class="empty">No events for this filter.</div>
+        }
+      </div>
+    </aside>
+  }
 </div>

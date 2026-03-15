@@ -94,6 +94,9 @@ export class SimulationDetailComponent
   chatError = signal<string | null>(null);
   chatConversationId = signal<string | null>(null);
   chatEntries = signal<ChatEntry[]>([]);
+  eventsDrawerOpen = signal(false);
+  eventsDrawerType = signal<string | null>(null);
+  eventsDrawerIds = signal<number[] | null>(null);
 
   snapshotLoading = signal(true);
   historyLoading = signal(true);
@@ -172,6 +175,18 @@ export class SimulationDetailComponent
   displayedEvents = computed(() =>
     this.events().slice(-20).reverse()
   );
+  drawerEvents = computed(() => {
+    const allEvents = this.events();
+    const eventIds = this.eventsDrawerIds();
+    const eventType = this.eventsDrawerType();
+    const byIds = Array.isArray(eventIds) && eventIds.length > 0
+      ? allEvents.filter((event) => eventIds.includes(event.id))
+      : allEvents;
+    const byType = eventType
+      ? byIds.filter((event) => event.eventType === eventType)
+      : byIds;
+    return byType.slice(-80).reverse();
+  });
 
   eraLabel = computed(() => this.formatEnumLabel(this.currentEra()));
   phaseLabel = computed(() => this.formatEnumLabel(this.worldPhase()));
@@ -322,6 +337,10 @@ export class SimulationDetailComponent
     this.trackedHumanId.set(null);
   }
 
+  closeEventsDrawer(): void {
+    this.eventsDrawerOpen.set(false);
+  }
+
   humanState(human: SimulationSnapshotOutput['humans'][number]): string {
     return human.busy ? 'resting' : 'active';
   }
@@ -347,6 +366,10 @@ export class SimulationDetailComponent
 
   eventTitle(event: EventOutput): string {
     return this.formatEnumLabel(event.eventType);
+  }
+
+  eventTypeLabel(value: string): string {
+    return this.formatEnumLabel(value);
   }
 
   eventDescription(event: EventOutput): string {
@@ -567,6 +590,12 @@ export class SimulationDetailComponent
     if (resolution.directorInterventionState === 'pending') {
       this.directorBoardState.set('pending');
       this.lastBoardReaction.set('Intervention pending explicit confirmation');
+    }
+    if (resolution.openEventsDrawer) {
+      this.eventsDrawerOpen.set(true);
+      this.eventsDrawerType.set(resolution.drawerEventType);
+      this.eventsDrawerIds.set(resolution.drawerEventIds);
+      this.lastBoardReaction.set('Opened events drawer from chat');
     }
   }
 
