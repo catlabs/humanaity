@@ -3,15 +3,15 @@
 ## Execution status
 
 - Current phase: In progress
-- Active chunk: Task 2a
-- Next chunk: Task 3a
+- Active chunk: Task 3a
+- Next chunk: none
 - Blocked items: none
-- Last completed chunk: Task 1a (2026-03-15)
+- Last completed chunk: Task 2a (2026-03-15)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Verified backend updates both x/y per tick and frontend board mapping uses y->topPct with deterministic clamping; no movement fix required in this chunk. |
-| Task 2a | pending | Add recent-discussion state and buildDialogueDrafts. |
+| Task 2a | done | Added deterministic dialogue-from-collision drafts with pair-level recent-dialogue suppression (3-tick window) and wired DIALOGUE_EXCHANGED emission into step draft generation. |
 | Task 3a | pending | Confirm DIALOGUE_EXCHANGED in timeline and board. |
 
 ## Sprint intent

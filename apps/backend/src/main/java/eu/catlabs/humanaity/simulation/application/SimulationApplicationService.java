@@ -44,6 +44,7 @@ public class SimulationApplicationService {
     private static final Logger logger = LoggerFactory.getLogger(SimulationApplicationService.class);
     private static final int MAX_STEPS_PER_REQUEST = 10_000;
     private static final double COLLISION_DISTANCE_THRESHOLD = 0.08;
+    private static final long RECENT_DIALOGUE_WINDOW_TICKS = 3L;
     private static final long DISCOVERY_SEED_SALT = 0x9E3779B97F4A7C15L;
     private static final String[] INVENTION_TOPICS = {
             "Canal Irrigation",
@@ -336,6 +337,7 @@ public class SimulationApplicationService {
                 .toList();
         List<EventDraft> drafts = new ArrayList<>();
         drafts.addAll(buildCollisionDrafts(tick, humans));
+        drafts.addAll(buildDialogueDrafts(run.getCity().getId(), tick, humans));
         drafts.addAll(buildDiscoveryDrafts(run.getSeed(), tick, humans));
         return drafts;
     }
@@ -404,6 +406,57 @@ public class SimulationApplicationService {
             ));
         }
         return drafts;
+    }
+
+    private List<EventDraft> buildDialogueDrafts(Long cityId, long tick, List<Human> humans) {
+        List<EventDraft> drafts = new ArrayList<>();
+        for (int i = 0; i < humans.size(); i++) {
+            Human left = humans.get(i);
+            for (int j = i + 1; j < humans.size(); j++) {
+                Human right = humans.get(j);
+                if (distance(left, right) > COLLISION_DISTANCE_THRESHOLD) {
+                    continue;
+                }
+                if (left.isBusy() || right.isBusy()) {
+                    continue;
+                }
+                long actorA = Math.min(left.getId(), right.getId());
+                long actorB = Math.max(left.getId(), right.getId());
+                if (hasRecentDialogueForPair(cityId, tick, actorA, actorB)) {
+                    continue;
+                }
+
+                String dialogueKey = "DIALOGUE_EXCHANGED:" + actorA + ":" + actorB + ":" + tick;
+                Map<String, String> payload = new HashMap<>();
+                payload.put("dialogueKey", dialogueKey);
+                payload.put("pair", actorA + "-" + actorB);
+
+                drafts.add(new EventDraft(
+                        EventType.DIALOGUE_EXCHANGED,
+                        List.of(actorA, actorB),
+                        payload,
+                        30,
+                        dialogueKey
+                ));
+            }
+        }
+        return drafts;
+    }
+
+    private boolean hasRecentDialogueForPair(Long cityId, long tick, long actorA, long actorB) {
+        long fromTick = Math.max(0L, tick - RECENT_DIALOGUE_WINDOW_TICKS);
+        return eventApplicationService.listCityEventsByType(cityId, EventType.DIALOGUE_EXCHANGED).stream()
+                .filter(event -> event.getTick() >= fromTick && event.getTick() < tick)
+                .anyMatch(event -> matchesPair(event.getActorIds(), actorA, actorB));
+    }
+
+    private boolean matchesPair(List<Long> actorIds, long actorA, long actorB) {
+        if (actorIds == null || actorIds.size() != 2) {
+            return false;
+        }
+        long first = Math.min(actorIds.get(0), actorIds.get(1));
+        long second = Math.max(actorIds.get(0), actorIds.get(1));
+        return first == actorA && second == actorB;
     }
 
     private void emitMilestoneEvents(Long cityId, List<Invention> inventions) {
