@@ -19,6 +19,7 @@ import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.simulation.domain.DirectorIntervention;
 import eu.catlabs.humanaity.simulation.domain.DirectorInterventionStatus;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
+import eu.catlabs.humanaity.simulation.application.SimulationPlaceRegistry;
 import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.DirectorInterventionRepository;
@@ -45,6 +46,7 @@ public class AgentChatOrchestrationService {
     private static final int MAX_DIRECTOR_CONFIRMATION_SECONDS = 300;
     private static final Pattern NUMBER_PATTERN = Pattern.compile("(\\d+)");
     private static final Pattern FOLLOW_TICKS_PATTERN = Pattern.compile("\\bfor\\s+(\\d+)\\b");
+    private static final Map<String, List<String>> PLACE_KEYWORDS = createPlaceKeywords();
     private static final Map<String, PlaceTarget> PLACE_REGISTRY = createPlaceRegistry();
 
     private final CityRepository cityRepository;
@@ -844,12 +846,30 @@ public class AgentChatOrchestrationService {
 
     private static Map<String, PlaceTarget> createPlaceRegistry() {
         Map<String, PlaceTarget> places = new LinkedHashMap<>();
-        places.put("forest", new PlaceTarget("forest", "forest", 0.14, 0.18, List.of("forest", "woods")));
-        places.put("river", new PlaceTarget("river", "river", 0.82, 0.22, List.of("river", "water")));
-        places.put("church", new PlaceTarget("church", "church", 0.52, 0.30, List.of("church", "temple")));
-        places.put("campfire", new PlaceTarget("campfire", "campfire", 0.34, 0.72, List.of("campfire", "fire")));
-        places.put("house", new PlaceTarget("house", "house", 0.72, 0.74, List.of("house", "home")));
+        for (SimulationPlaceRegistry.SimulationPlace place : SimulationPlaceRegistry.all()) {
+            List<String> keywords = PLACE_KEYWORDS.getOrDefault(place.id(), List.of(place.id()));
+            places.put(
+                    place.id(),
+                    new PlaceTarget(
+                            place.id(),
+                            place.id(),
+                            place.x(),
+                            place.y(),
+                            keywords
+                    )
+            );
+        }
         return places;
+    }
+
+    private static Map<String, List<String>> createPlaceKeywords() {
+        Map<String, List<String>> keywords = new LinkedHashMap<>();
+        keywords.put("forest", List.of("forest", "woods"));
+        keywords.put("river", List.of("river", "water"));
+        keywords.put("church", List.of("church", "temple"));
+        keywords.put("campfire", List.of("campfire", "fire"));
+        keywords.put("house", List.of("house", "home"));
+        return keywords;
     }
 
     private Human resolveHumanByIdOrDefault(

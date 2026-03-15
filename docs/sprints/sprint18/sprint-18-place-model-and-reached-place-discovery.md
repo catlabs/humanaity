@@ -2,17 +2,17 @@
 
 ## Execution status
 
-- Current phase: In progress
-- Active chunk: Task 3a
+- Current phase: Completed
+- Active chunk: none
 - Next chunk: none
 - Blocked items: none
-- Last completed chunk: Task 2a (2026-03-15)
+- Last completed chunk: Task 3a (2026-03-15)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Added backend place registry with normalized ids/coords/radius and context categories aligned to board places (forest, river, church, campfire, house). |
 | Task 2a | done | Added at-place transition detection and REACHED_PLACE discovery emission with place/category payload and persisted-history cooldown to preserve determinism. |
-| Task 3a | pending | Align backend places with FE; category from place. |
+| Task 3a | done | Removed duplicate backend place coordinates in agent move flow; orchestration now reads SimulationPlaceRegistry (single backend place source aligned with FE board place ids/coords). |
 
 ## Sprint intent
 
