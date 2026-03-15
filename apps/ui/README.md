@@ -53,7 +53,8 @@ All routes under `/cities` and `/admin` are protected by the auth guard.
 ## Backend Integration
 
 The app uses the generated API client via `provideApi()` in `src/app/app.config.ts`.
-The runtime backend URL defaults to same-origin (`''`) and can be overridden by setting `globalThis.__HUMANAITY_API_BASE_URL__`.
+The runtime backend URL can be overridden by setting `globalThis.__HUMANAITY_API_BASE_URL__`.
+Without that override, the browser uses `http://localhost:8080` when the UI runs on `localhost` or `127.0.0.1`, and falls back to same-origin in other environments.
 
 Generated API code lives in `src/app/api/`:
 
