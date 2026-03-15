@@ -69,6 +69,22 @@ Frontend code may apply a deterministic mapping layer only for:
 
 This derivation must not change canonical simulation meaning.
 
+## Sprint 15 Task 2a Contract Audit Outcome
+
+Audit result: no backend API change is required for Sprint 15.
+
+Contract evidence:
+
+- backend step updates clamp positions in-domain to `[0, 1]` (`SimulationApplicationService.updateHumanPosition`)
+- snapshot output passes `human.x` and `human.y` through directly (`SimulationController.toSnapshotOutput`)
+- generated UI contract keeps `x` and `y` optional numeric fields (`SimulationSnapshotHumanOutput`)
+
+Frontend mapping decision for Sprint 15:
+
+- keep deterministic `value * 100` percentage mapping with clamp-to-board bounds
+- keep deterministic index-based fallback when coordinates are missing or non-finite
+- do not introduce additional frontend-only state or inferred movement semantics
+
 ## Board Rendering Rules
 
 ### Humans
