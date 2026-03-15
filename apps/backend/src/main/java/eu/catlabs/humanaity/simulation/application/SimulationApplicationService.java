@@ -45,6 +45,7 @@ public class SimulationApplicationService {
     private static final int MAX_STEPS_PER_REQUEST = 10_000;
     private static final double COLLISION_DISTANCE_THRESHOLD = 0.08;
     private static final long RECENT_DIALOGUE_WINDOW_TICKS = 3L;
+    private static final long RECENT_COLLISION_DISCOVERY_WINDOW_TICKS = 6L;
     private static final long REACHED_PLACE_COOLDOWN_TICKS = 5L;
     private static final long DISCOVERY_SEED_SALT = 0x9E3779B97F4A7C15L;
     private static final String[] INVENTION_TOPICS = {
@@ -353,7 +354,9 @@ public class SimulationApplicationService {
         drafts.addAll(buildCollisionDrafts(tick, humans));
         drafts.addAll(buildDialogueDrafts(run.getCity().getId(), tick, humans));
         drafts.addAll(buildReachedPlaceDrafts(run.getCity().getId(), tick, humans, previousPlaceByHuman));
-        drafts.addAll(buildDiscoveryDrafts(run.getSeed(), tick, humans));
+        List<EventDraft> collisionDiscoveries = buildCollisionDiscoveryDrafts(run.getCity().getId(), tick, humans);
+        drafts.addAll(collisionDiscoveries);
+        drafts.addAll(buildDiscoveryDrafts(run.getSeed(), tick, humans, humansWithContextDiscovery(collisionDiscoveries)));
         return drafts;
     }
 
@@ -384,9 +387,12 @@ public class SimulationApplicationService {
         return drafts;
     }
 
-    private List<EventDraft> buildDiscoveryDrafts(long runSeed, long tick, List<Human> humans) {
+    private List<EventDraft> buildDiscoveryDrafts(long runSeed, long tick, List<Human> humans, java.util.Set<Long> excludedHumanIds) {
         List<EventDraft> drafts = new ArrayList<>();
         for (Human human : humans) {
+            if (excludedHumanIds.contains(human.getId())) {
+                continue;
+            }
             Random discoveryRandom = new Random(deriveDeterministicSeed(runSeed, tick, human.getId()) ^ DISCOVERY_SEED_SALT);
             if (discoveryRandom.nextInt(12) != 0) {
                 continue;
@@ -421,6 +427,14 @@ public class SimulationApplicationService {
             ));
         }
         return drafts;
+    }
+
+    private java.util.Set<Long> humansWithContextDiscovery(List<EventDraft> contextDiscoveries) {
+        java.util.Set<Long> humanIds = new java.util.HashSet<>();
+        for (EventDraft draft : contextDiscoveries) {
+            humanIds.addAll(draft.actorIds());
+        }
+        return humanIds;
     }
 
     private List<EventDraft> buildDialogueDrafts(Long cityId, long tick, List<Human> humans) {
@@ -472,6 +486,116 @@ public class SimulationApplicationService {
         long first = Math.min(actorIds.get(0), actorIds.get(1));
         long second = Math.max(actorIds.get(0), actorIds.get(1));
         return first == actorA && second == actorB;
+    }
+
+    private List<EventDraft> buildCollisionDiscoveryDrafts(Long cityId, long tick, List<Human> humans) {
+        List<EventDraft> drafts = new ArrayList<>();
+        for (int i = 0; i < humans.size(); i++) {
+            Human left = humans.get(i);
+            for (int j = i + 1; j < humans.size(); j++) {
+                Human right = humans.get(j);
+                if (distance(left, right) > COLLISION_DISTANCE_THRESHOLD) {
+                    continue;
+                }
+                Optional<InventionCategory> category = resolveCollisionDiscoveryCategory(left, right);
+                if (category.isEmpty()) {
+                    continue;
+                }
+
+                long actorA = Math.min(left.getId(), right.getId());
+                long actorB = Math.max(left.getId(), right.getId());
+                if (hasRecentCollisionDiscovery(cityId, tick, actorA, actorB)) {
+                    continue;
+                }
+
+                String discoveryKey = "COLLISION_DISC:" + actorA + ":" + actorB + ":" + tick;
+                Map<String, String> payload = buildCollisionDiscoveryPayload(category.get(), actorA, actorB, tick);
+                drafts.add(new EventDraft(
+                        EventType.DISCOVERY_UNLOCKED,
+                        List.of(actorA, actorB),
+                        payload,
+                        discoveryImpact(actorA + actorB, tick, 37),
+                        discoveryKey
+                ));
+            }
+        }
+        return drafts;
+    }
+
+    private boolean hasRecentCollisionDiscovery(Long cityId, long tick, long actorA, long actorB) {
+        long fromTick = Math.max(0L, tick - RECENT_COLLISION_DISCOVERY_WINDOW_TICKS);
+        return eventApplicationService.listCityEventsByType(cityId, EventType.DISCOVERY_UNLOCKED).stream()
+                .filter(event -> event.getTick() >= fromTick && event.getTick() < tick)
+                .filter(event -> event.getPayload() != null)
+                .filter(event -> "COLLISION_COMPLEMENTARY_TRAITS".equals(event.getPayload().get("trigger")))
+                .anyMatch(event -> matchesPair(event.getActorIds(), actorA, actorB));
+    }
+
+    private Map<String, String> buildCollisionDiscoveryPayload(
+            InventionCategory category,
+            long actorA,
+            long actorB,
+            long tick
+    ) {
+        String inventionKey = "DISCOVERY:collision:" + actorA + ":" + actorB + ":" + tick;
+        String title = "Complementary traits insight";
+        String summary = "Tick " + tick + ": humans " + actorA + " and " + actorB + " unlocked complementary traits insight.";
+        Map<String, String> payload = new HashMap<>();
+        payload.put("discoveryKey", inventionKey);
+        payload.put("inventionKey", inventionKey);
+        payload.put("inventionCategory", category.name());
+        payload.put("title", title);
+        payload.put("summary", summary);
+        payload.put("impactScore", String.valueOf(discoveryImpact(actorA + actorB, tick, 41)));
+        payload.put("trigger", "COLLISION_COMPLEMENTARY_TRAITS");
+        return payload;
+    }
+
+    private Optional<InventionCategory> resolveCollisionDiscoveryCategory(Human left, Human right) {
+        Trait dominantLeft = dominantTrait(left);
+        Trait dominantRight = dominantTrait(right);
+        if (dominantLeft == dominantRight) {
+            return Optional.empty();
+        }
+        if (dominantLeft == Trait.SOCIABILITY || dominantRight == Trait.SOCIABILITY) {
+            return Optional.of(InventionCategory.SOCIAL_PRACTICE);
+        }
+        if ((dominantLeft == Trait.CREATIVITY && dominantRight == Trait.PRACTICALITY)
+                || (dominantLeft == Trait.PRACTICALITY && dominantRight == Trait.CREATIVITY)
+                || (dominantLeft == Trait.PRACTICALITY && dominantRight == Trait.INTELLECT)
+                || (dominantLeft == Trait.INTELLECT && dominantRight == Trait.PRACTICALITY)) {
+            return Optional.of(InventionCategory.TECHNIQUE);
+        }
+        return Optional.of(InventionCategory.KNOWLEDGE);
+    }
+
+    private Trait dominantTrait(Human human) {
+        double creativity = normalizedTrait(human.getCreativity());
+        double intellect = normalizedTrait(human.getIntellect());
+        double sociability = normalizedTrait(human.getSociability());
+        double practicality = normalizedTrait(human.getPracticality());
+
+        Trait dominant = Trait.CREATIVITY;
+        double maxValue = creativity;
+        if (intellect > maxValue) {
+            dominant = Trait.INTELLECT;
+            maxValue = intellect;
+        }
+        if (sociability > maxValue) {
+            dominant = Trait.SOCIABILITY;
+            maxValue = sociability;
+        }
+        if (practicality > maxValue) {
+            dominant = Trait.PRACTICALITY;
+        }
+        return dominant;
+    }
+
+    private double normalizedTrait(Double value) {
+        if (value == null || !Double.isFinite(value)) {
+            return 0.5;
+        }
+        return Math.max(0D, Math.min(1D, value));
     }
 
     private List<EventDraft> buildReachedPlaceDrafts(
@@ -625,5 +749,12 @@ public class SimulationApplicationService {
             List<Event> events,
             List<Invention> inventions
     ) {
+    }
+
+    private enum Trait {
+        CREATIVITY,
+        INTELLECT,
+        SOCIABILITY,
+        PRACTICALITY
     }
 }

@@ -2,15 +2,15 @@
 
 ## Execution status
 
-- Current phase: Not started
-- Active chunk: none
-- Next chunk: Task 1a
+- Current phase: In progress
+- Active chunk: Task 2a
+- Next chunk: Task 3a
 - Blocked items: none
-- Last completed chunk: none
+- Last completed chunk: Task 1a (2026-03-15)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | pending | Collision + complementary traits → DISCOVERY_UNLOCKED with category. |
+| Task 1a | done | Added collision complementary-trait discovery path with deterministic category mapping and per-pair cooldown; random discovery now skips humans that already received context discovery this tick. |
 | Task 2a | pending | Discovery category from context everywhere (refactor). |
 | Task 3a | pending | STAYED_AT_PLACE (N ticks) discovery. |
 
