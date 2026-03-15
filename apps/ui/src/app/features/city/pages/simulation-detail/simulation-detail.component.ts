@@ -177,9 +177,7 @@ export class SimulationDetailComponent
   phaseLabel = computed(() => this.formatEnumLabel(this.worldPhase()));
   canStart = computed(() => !this.controlBusy() && !this.isRunning());
   canPause = computed(() => !this.controlBusy() && this.isRunning());
-  canStep = computed(
-    () => !this.controlBusy() && this.hasRun() && !this.isRunning()
-  );
+  canStep = computed(() => !this.controlBusy() && !this.isRunning());
   noRunYet = computed(() => !this.snapshotLoading() && !this.hasRun());
   hasHumans = computed(() => this.populationTotal() > 0);
   showWorldOverlay = computed(() => this.noRunYet() || !this.hasHumans());

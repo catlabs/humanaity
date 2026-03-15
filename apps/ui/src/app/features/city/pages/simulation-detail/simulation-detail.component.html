@@ -14,14 +14,6 @@
       <mat-icon>refresh</mat-icon>
       Refresh
     </button>
-    <button mat-flat-button color="primary" type="button" (click)="onStart()" [disabled]="!canStart()">
-      <mat-icon>play_arrow</mat-icon>
-      {{ hasRun() ? "Resume" : "Start" }}
-    </button>
-    <button mat-stroked-button type="button" (click)="onPause()" [disabled]="!canPause()">
-      <mat-icon>pause</mat-icon>
-      Pause
-    </button>
     <button mat-stroked-button type="button" (click)="onStep()" [disabled]="!canStep()">
       <mat-icon>skip_next</mat-icon>
       Step
@@ -43,390 +35,87 @@
   @if (noRunYet()) {
     <div class="state-banner">
       <mat-icon>info</mat-icon>
-      <span>No simulation run yet. Start or step to begin.</span>
+      <span>No simulation run yet. Step to begin.</span>
     </div>
   }
 
-  <mat-drawer-container
-    class="drawer-container app-drawer-content-transparent"
-    autosize
-  >
-    <mat-drawer
-      position="start"
-      mode="side"
-      opened
-      class="drawer drawer--left app-surface-bg app-drawer-flat"
-    >
-      <div class="panel">
-        <div class="panel-header">
-          <div class="panel-title">
-            <mat-icon>tune</mat-icon>
-            Controls and Humans
+  <div class="content">
+    <section class="board-panel app-surface-bg">
+      <div class="board-header">
+        <div>
+          <div class="board-title">Simulation Board</div>
+          <div class="board-subtitle">
+            Real backend snapshot positions rendered as symbolic markers.
           </div>
-          @if (controlBusy()) {
-            <mat-spinner diameter="18"></mat-spinner>
-          }
         </div>
-
-        <div class="panel-section panel-section--compact">
-          <div class="section-title">State</div>
-          <table class="stats">
-            <tbody>
-              <tr>
-                <td>Status</td>
-                <td class="stats-value">{{ isRunning() ? "Running" : "Paused" }}</td>
-              </tr>
-              <tr>
-                <td>Population</td>
-                <td class="stats-value">{{ populationTotal() }}</td>
-              </tr>
-              <tr>
-                <td>Busy</td>
-                <td class="stats-value">{{ populationBusy() }}</td>
-              </tr>
-              <tr>
-                <td>Recent timeline</td>
-                <td class="stats-value">{{ recentEventCount() }}e / {{ recentInventionCount() }}i</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <mat-divider></mat-divider>
-
-        <div class="filters">
-          @for (state of humanStates; track state) {
-            <mat-checkbox [checked]="filters()[state]" (change)="toggleFilter(state)">
-              <span class="list-title">{{ state }}</span>
-            </mat-checkbox>
-          }
-        </div>
-
-        <mat-divider></mat-divider>
-
-        <div class="panel-section scroll-area">
-          <div class="section-title">Humans ({{ filteredHumans().length }})</div>
-          @if (snapshotLoading()) {
-            <div class="empty">Loading humans...</div>
-          } @else {
-            <mat-nav-list>
-              @for (human of filteredHumans(); track human.id) {
-                <button mat-list-item type="button" (click)="selectHuman(human)">
-                  <mat-icon matListItemIcon>person</mat-icon>
-                  <div matListItemTitle class="list-title">{{ human.name }}</div>
-                  <div matListItemLine class="list-subtitle">
-                    {{ humanPrimaryTrait(human) }} · {{ humanState(human) }}
-                  </div>
-                </button>
-              } @empty {
-                <div class="empty">No humans available for selected filters.</div>
-              }
-            </mat-nav-list>
-          }
+        <div class="board-status">
+          <span class="status-chip">Tick {{ currentTick() }}</span>
+          <span class="status-chip">{{ populationTotal() }} humans</span>
+          <span class="status-chip">{{ isRunning() ? "Running" : "Paused" }}</span>
         </div>
       </div>
-    </mat-drawer>
 
-    <mat-drawer
-      position="end"
-      mode="side"
-      opened
-      class="drawer drawer--right app-surface-bg app-drawer-flat"
-    >
-      <div class="panel">
-        <div class="panel-header">
-          <div class="panel-title">
-            <mat-icon>notes</mat-icon>
-            Context
-          </div>
-          @if (selectedHuman() || selectedInvention() || selectedEvent()) {
-            <button mat-icon-button type="button" (click)="clearSelection()" aria-label="Clear selection">
-              <mat-icon>close</mat-icon>
-            </button>
-          }
-        </div>
-
-        @if (selectedHuman()) {
-          <div class="panel-section">
-            <div class="section-title">{{ selectedHuman()!.name }}</div>
-            <table class="stats">
-              <tbody>
-                <tr>
-                  <td>ID</td>
-                  <td class="stats-value">{{ selectedHuman()!.id }}</td>
-                </tr>
-                <tr>
-                  <td>State</td>
-                  <td class="stats-value">{{ humanState(selectedHuman()!) }}</td>
-                </tr>
-                <tr>
-                  <td>Trait</td>
-                  <td class="stats-value">{{ humanPrimaryTrait(selectedHuman()!) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        } @else if (selectedInvention()) {
-          <div class="panel-section">
-            <div class="section-title">{{ inventionDisplayTitle(selectedInvention()!) }}</div>
-            <div class="enrichment-block">
-              <span class="enrichment-status">Enrichment: {{ inventionEnrichmentStatusLabel(selectedInvention()!) }}</span>
-              @if (selectedInvention()!.enrichmentFallback) {
-                <span class="enrichment-fallback">Fallback</span>
-              }
+      <div class="world-body">
+        <app-simulation-board
+          class="world-board"
+          [markers]="boardMarkers()"
+          [places]="boardPlaces()"
+          [selectedHumanId]="selectedHumanId()"
+          (markerSelected)="selectHumanById($event)"
+        ></app-simulation-board>
+        @if (showWorldOverlay()) {
+          <div class="world-overlay">
+            <mat-icon>public</mat-icon>
+            <div>
+              {{ noRunYet() ? "No run started yet." : "No humans available yet." }}
             </div>
-            <div class="enrichment-text">{{ inventionDisplaySummary(selectedInvention()!) }}</div>
-            <table class="stats">
-              <tbody>
-                <tr>
-                  <td>Category</td>
-                  <td class="stats-value">{{ inventionCategoryLabel(selectedInvention()!) }}</td>
-                </tr>
-                <tr>
-                  <td>Year</td>
-                  <td class="stats-value">{{ selectedInvention()!.yearCreated }}</td>
-                </tr>
-                <tr>
-                  <td>Impact</td>
-                  <td class="stats-value">{{ selectedInvention()!.impactScore }}%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        } @else if (selectedEvent()) {
-          <div class="panel-section">
-            <div class="section-title">{{ eventTitle(selectedEvent()!) }}</div>
-            <div class="event-detail">
-              <div>{{ eventDescription(selectedEvent()!) }}</div>
-              <div class="list-subtitle">{{ eventTimestamp(selectedEvent()!) }}</div>
-            </div>
-            <div class="enrichment-block">
-              <span class="enrichment-status">Enrichment: {{ eventEnrichmentStatusLabel(selectedEvent()!) }}</span>
-              @if (selectedEvent()!.enrichmentFallback) {
-                <span class="enrichment-fallback">Fallback</span>
-              }
-            </div>
-            @if (eventNarrative(selectedEvent()!); as narrative) {
-              <div class="enrichment-text">{{ narrative }}</div>
-            } @else {
-              <div class="list-subtitle">No enrichment generated for this event yet.</div>
-            }
           </div>
         }
+        @if (snapshotLoading()) {
+          <div class="world-loading">
+            <mat-spinner diameter="24"></mat-spinner>
+            <span>Loading simulation...</span>
+          </div>
+        }
+      </div>
+    </section>
 
-        <div class="panel-section scroll-area">
-          <div class="section-title">Recent inventions ({{ inventions().length }})</div>
-          @if (historyLoading()) {
-            <div class="empty">Loading inventions...</div>
-          } @else {
-            <mat-nav-list>
-              @for (inv of displayedInventions(); track inv.id) {
-                <button mat-list-item type="button" (click)="selectInvention(inv)">
-                  <mat-icon matListItemIcon>lightbulb</mat-icon>
-                  <div matListItemTitle class="list-title">{{ inventionDisplayTitle(inv) }}</div>
-                  <div matListItemLine class="list-subtitle">
-                    {{ inventionCategoryLabel(inv) }} · Year {{ inv.yearCreated }} · Impact {{ inv.impactScore }}%
-                  </div>
-                </button>
-              } @empty {
-                <div class="empty">No inventions recorded yet.</div>
-              }
-            </mat-nav-list>
-          }
+    <section class="status-panel app-surface-bg">
+      <div class="status-grid">
+        <div class="pill">
+          <span>Status</span><strong>{{ isRunning() ? "Running" : "Paused" }}</strong>
         </div>
-
-        <mat-divider></mat-divider>
-
-        <div class="panel-section scroll-area events">
-          <div class="section-title">Recent events ({{ events().length }})</div>
-          @if (historyLoading()) {
-            <div class="empty">Loading events...</div>
-          } @else {
-            @for (event of displayedEvents(); track event.id) {
-              <button type="button" class="event-select" (click)="selectEvent(event)">
-                <app-event-item
-                  [title]="eventTitle(event)"
-                  [description]="eventDescription(event)"
-                  [timestamp]="eventTimestamp(event)"
-                  [type]="eventType(event)"
-                ></app-event-item>
-              </button>
-            } @empty {
-              <div class="empty">No events recorded yet.</div>
-            }
-          }
+        <div class="pill">
+          <span>Active</span><strong>{{ populationActive() }}</strong>
+        </div>
+        <div class="pill">
+          <span>Busy</span><strong>{{ populationBusy() }}</strong>
+        </div>
+        <div class="pill">
+          <span>Recent</span><strong>{{ recentEventCount() }}e / {{ recentInventionCount() }}i</strong>
         </div>
       </div>
-    </mat-drawer>
 
-    <mat-drawer-content class="content">
-      <div class="world">
-        <div class="world-header">
-          <div class="world-title">Simulation Console</div>
-          <div class="world-meta">
-            {{ populationActive() }} active / {{ populationTotal() }} total
-            @if (trackedHuman(); as tracked) {
-              · Tracking {{ tracked.name }}
-            }
-          </div>
-        </div>
-
-        <div class="world-body">
-          <app-symbolic-board
-            class="world-board"
-            [markers]="boardMarkers()"
-            [places]="boardPlaces()"
-            [interactions]="boardInteractions()"
-            [eventMarkers]="boardEventMarkers()"
-            [pulseNonce]="boardPulseNonce()"
-            [highlightedEventId]="selectedEventId()"
-            [interventionState]="directorBoardState()"
-            [selectedHumanId]="selectedHumanId()"
-            [trackedHumanId]="trackedHumanId()"
-            (markerSelected)="selectHumanById($event)"
-            (eventMarkerSelected)="selectEventById($event)"
-          ></app-symbolic-board>
-          @if (showWorldOverlay()) {
-            <div class="world-overlay">
-              <mat-icon>public</mat-icon>
-              <div>
-                {{ noRunYet() ? "No run started yet." : "No humans available yet." }}
-              </div>
-            </div>
-          }
-          @if (snapshotLoading()) {
-            <div class="world-loading">
-              <mat-spinner diameter="24"></mat-spinner>
-              <span>Loading simulation...</span>
-            </div>
-          }
-        </div>
-
-        <div class="world-footer">
-          <div class="pill">
-            <span>Status</span><strong>{{ isRunning() ? "Running" : "Paused" }}</strong>
-          </div>
-          <div class="pill">
-            <span>Events</span><strong>{{ totalEvents() }}</strong>
-          </div>
-          <div class="pill">
-            <span>Inventions</span><strong>{{ totalInventions() }}</strong>
-          </div>
-          <div class="pill">
-            <span>Recent</span><strong>{{ recentEventCount() }}e / {{ recentInventionCount() }}i</strong>
-          </div>
-          @if (lastBoardReaction(); as reaction) {
-            <div class="pill">
-              <span>Board</span><strong>{{ reaction }}</strong>
-            </div>
-          }
-          @if (directorBoardState() === 'pending') {
-            <div class="pill">
-              <span>Intervention</span><strong>Pending confirmation</strong>
-            </div>
-          }
-          @if (directorBoardState() === 'executed') {
-            <div class="pill">
-              <span>Intervention</span><strong>Executed</strong>
-            </div>
-          }
-        </div>
-
-        <div class="chat-shell">
-          <div class="chat-header">
-            <div class="world-title">Agent Chat</div>
-            @if (chatBusy()) {
-              <mat-spinner diameter="16"></mat-spinner>
-            }
-          </div>
-
-          @if (chatError()) {
-            <div class="state-banner state-banner--error chat-error">
-              <mat-icon>error</mat-icon>
-              <span>{{ chatError() }}</span>
-            </div>
-          }
-
-          @if (guidedComparison(); as compare) {
-            <div class="guided-panel">
-              <div class="guided-panel-title">Guided compare</div>
-              <div class="guided-compare-grid">
-                <button type="button" class="guided-chip" (click)="selectedHumanId.set(compare.left.id)">
-                  <span>{{ compare.left.name }}</span>
-                  <small>#{{ compare.left.id }} · {{ humanBusyLabel(compare.left.busy) }}</small>
-                </button>
-                <button type="button" class="guided-chip" (click)="selectedHumanId.set(compare.right.id)">
-                  <span>{{ compare.right.name }}</span>
-                  <small>#{{ compare.right.id }} · {{ humanBusyLabel(compare.right.busy) }}</small>
-                </button>
-              </div>
-            </div>
-          }
-
-          @if (guidedFollow(); as follow) {
-            <div class="guided-panel">
-              <div class="guided-panel-title">Follow window</div>
-              <div class="guided-follow-summary">
-                {{ follow.human.name }} · {{ follow.ticks }} tick(s) · {{ follow.fromTick }} → {{ follow.resultTick }}
-              </div>
-              <div class="guided-follow-meta">
-                Events {{ follow.eventWindow.length }} · Inventions {{ follow.inventionWindow.length }}
-              </div>
-            </div>
-          }
-
-          @if (pendingDirectorConfirmation(); as pending) {
-            <div class="guided-panel guided-panel--director">
-              <div class="guided-panel-title">Director intervention pending</div>
-              <div class="guided-follow-summary">
-                {{ pending.commandType }} · Humans {{ pending.humanIds.join(", ") }}
-              </div>
-              <div class="guided-follow-meta">
-                Expires {{ pending.expiresAt | date: "short" }}
-              </div>
-              <div class="director-actions">
-                <button mat-flat-button color="warn" type="button" (click)="onConfirmDirectorIntervention()" [disabled]="chatBusy()">
-                  Confirm intervention
-                </button>
-                <button mat-stroked-button type="button" (click)="onCancelDirectorIntervention()" [disabled]="chatBusy()">
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          }
-
-          <div class="chat-log">
-            @for (entry of chatEntries(); track entry.timestamp + entry.content) {
-              <div class="chat-entry" [class.chat-entry--user]="entry.role === 'user'" [class.chat-entry--director]="entry.commandClass === 'DIRECTOR'">
-                <div class="chat-entry-role">{{ entry.role === "user" ? "You" : "Agent" }}</div>
-                <div class="chat-entry-content">{{ entry.content }}</div>
-              </div>
-            } @empty {
-              <div class="empty">Ask for a step, snapshot, summary, event explanation, or recent inventions.</div>
-            }
-          </div>
-
-          <div class="chat-composer">
-            <textarea
-              class="chat-input"
-              rows="2"
-              [value]="chatInput()"
-              (input)="onChatInput($any($event.target).value)"
-              [disabled]="chatBusy()"
-              placeholder="Example: Advance city by 3 steps"
-            ></textarea>
+      <div class="human-strip">
+        <div class="section-title">Humans</div>
+        @if (selectedHumanSummary(); as summary) {
+          <div class="selection-summary">{{ summary }}</div>
+        }
+        <div class="human-list">
+          @for (human of filteredHumans(); track human.id) {
             <button
-              mat-flat-button
-              color="primary"
               type="button"
-              (click)="onSendChat()"
-              [disabled]="!canSendChat()"
+              class="human-pill"
+              [class.human-pill--selected]="selectedHumanId() === human.id"
+              (click)="selectHuman(human)"
             >
-              Send
+              {{ human.name }}
             </button>
-          </div>
+          } @empty {
+            <div class="empty">No humans available.</div>
+          }
         </div>
       </div>
-    </mat-drawer-content>
-  </mat-drawer-container>
+    </section>
+  </div>
 </div>

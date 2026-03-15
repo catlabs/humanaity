@@ -18,7 +18,7 @@
   flex: none;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0;
-  padding: 0 20px;
+  padding: 0 map.get($spacing-scale, 5);
 }
 
 .title-block {
@@ -44,144 +44,61 @@
 .spacer {
   flex: 1 1 auto;
 }
-.action-btn {
-  @include hai-row(1);
-}
-
-.drawer-container {
-  margin-top: 0;
-  flex: 1 1 0%;
-  min-height: 0;
-  border: none;
-  border-radius: 0;
-  overflow: hidden;
-}
-
-.drawer {
-  padding: 0;
-  background: var(--mat-sys-surface-container-lowest);
-}
-
-.drawer--left {
-  width: 14rem;
-  max-width: 90vw;
-}
-
-.drawer--right {
-  width: 18rem;
-  max-width: 90vw;
-}
 
 .content {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: map.get($spacing-scale, 4);
+  padding: map.get($spacing-scale, 4);
   flex: 1 1 0%;
   min-height: 0;
-  padding: map.get($spacing-scale, 2);
 }
 
-.panel {
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  height: 100%;
+.board-panel,
+.status-panel {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-md;
+  padding: map.get($spacing-scale, 4);
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  gap: map.get($spacing-scale, 4);
 }
 
-.panel-header {
-  @include hai-panel-header;
-  @include hai-row(2);
+.board-header {
+  display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: map.get($spacing-scale, 3);
+  flex-wrap: wrap;
 }
 
-.panel-title {
-  @include hai-row(1);
-  @include hai-label;
+.board-title {
+  @include hai-item-title;
 }
 
-.panel-section {
-  padding: map.get($spacing-scale, 4) map.get($spacing-scale, 6);
-}
-.panel-section--compact {
-  padding-top: map.get($spacing-scale, 3);
-}
-.panel-footer {
-  @include hai-panel-footer;
+.board-subtitle {
+  @include hai-meta;
+  margin-top: map.get($spacing-scale, 1);
 }
 
-.section-title {
-  @include hai-panel-section-title;
+.board-status {
+  display: flex;
+  gap: map.get($spacing-scale, 2);
+  flex-wrap: wrap;
 }
 
-.stats {
-  @include hai-stats-table;
-}
-
-.stats-value {
-  text-align: right;
-  color: var(--mat-sys-on-surface);
+.status-chip {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: var(--mat-sys-surface-container);
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.8rem;
   font-weight: 600;
 }
 
-.list-title {
-  text-transform: capitalize;
-}
-.list-subtitle {
-  color: var(--mat-sys-on-surface-variant);
-}
-.empty {
-  padding: map.get($spacing-scale, 4) map.get($spacing-scale, 6);
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.filters {
-  // Stack checkboxes vertically and align them flush-left.
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: map.get($spacing-scale, 3);
-  padding: map.get($spacing-scale, 4) map.get($spacing-scale, 6);
-}
-
-.filters mat-checkbox {
-  width: 100%;
-}
-
-.scroll-area {
-  @include hai-panel-body;
-  padding: 0;
-}
-
-.world {
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  gap: map.get($spacing-scale, 2);
-}
-
-.world-header {
-  @include hai-panel-header;
-  @include hai-row(2);
-  justify-content: space-between;
-}
-
-.world-title {
-  @include hai-label;
-}
-
 .world-body {
-  flex: 1 1 0%;
-  min-height: 22rem;
   position: relative;
-  overflow: hidden;
-  background: var(--mat-sys-surface);
-  border-radius: $radius-sm;
-  border: 1px solid var(--mat-sys-outline-variant);
+  min-height: 32rem;
 }
 
 .world-board {
@@ -199,7 +116,7 @@
   justify-content: center;
   gap: map.get($spacing-scale, 2);
   color: var(--mat-sys-on-surface-variant);
-  background: color-mix(in srgb, var(--mat-sys-surface) 80%, transparent);
+  background: color-mix(in srgb, var(--mat-sys-surface) 82%, transparent);
 }
 
 .world-loading {
@@ -211,14 +128,15 @@
   gap: map.get($spacing-scale, 2);
   padding: map.get($spacing-scale, 2) map.get($spacing-scale, 3);
   border-radius: $radius-sm;
-  background: color-mix(in srgb, var(--mat-sys-surface-container) 92%, transparent);
+  background: color-mix(in srgb, var(--mat-sys-surface-container) 94%, transparent);
   color: var(--mat-sys-on-surface-variant);
   font-size: 0.8rem;
 }
 
-.world-footer {
-  @include hai-panel-footer;
-  @include hai-row(2);
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: map.get($spacing-scale, 2);
 }
 
 .pill {
@@ -228,9 +146,49 @@
   border-radius: $radius-sm;
   border: 1px solid var(--mat-sys-outline-variant);
   color: var(--mat-sys-on-surface-variant);
+
   strong {
     color: var(--mat-sys-on-surface);
   }
+}
+
+.human-strip {
+  display: flex;
+  flex-direction: column;
+  gap: map.get($spacing-scale, 2);
+}
+
+.section-title {
+  @include hai-panel-section-title;
+}
+
+.selection-summary {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.85rem;
+}
+
+.human-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: map.get($spacing-scale, 2);
+}
+
+.human-pill {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 999px;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+
+.human-pill--selected {
+  background: rgb(37 99 235 / 0.08);
+  border-color: rgb(37 99 235 / 0.5);
+}
+
+.empty {
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .state-banner {
@@ -251,162 +209,34 @@
   color: #f59e0b;
 }
 
-.event-select {
-  display: block;
-  width: 100%;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  padding: 0;
-  cursor: pointer;
+@media (max-width: 900px) {
+  .status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-.event-detail {
-  @include hai-col(2);
-}
+@media (max-width: 720px) {
+  .info-bar {
+    padding: map.get($spacing-scale, 2) map.get($spacing-scale, 3);
+    gap: map.get($spacing-scale, 2);
+    height: auto;
+    flex-wrap: wrap;
+  }
 
-.enrichment-block {
-  @include hai-row(2);
-  align-items: center;
-  margin-top: map.get($spacing-scale, 2);
-}
+  .title-block {
+    margin-left: 0;
+  }
 
-.enrichment-status {
-  @include hai-meta;
-}
+  .content {
+    padding: map.get($spacing-scale, 3);
+    gap: map.get($spacing-scale, 3);
+  }
 
-.enrichment-fallback {
-  @include hai-body-small;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: $radius-sm;
-  padding: 0 map.get($spacing-scale, 1.5);
-  color: var(--mat-sys-on-surface-variant);
-}
+  .world-body {
+    min-height: 22rem;
+  }
 
-.enrichment-text {
-  @include hai-body-small;
-  margin-top: map.get($spacing-scale, 2);
-  color: var(--mat-sys-on-surface);
-}
-
-.chat-shell {
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: $radius-sm;
-  background: var(--mat-sys-surface-container-lowest);
-  padding: map.get($spacing-scale, 3) map.get($spacing-scale, 4);
-  @include hai-col(2);
-  max-height: 16rem;
-}
-
-.chat-header {
-  @include hai-row(2);
-  justify-content: space-between;
-  align-items: center;
-}
-
-.chat-log {
-  flex: 1 1 auto;
-  min-height: 6rem;
-  overflow: auto;
-  @include hai-col(2);
-}
-
-.guided-panel {
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: $radius-sm;
-  padding: map.get($spacing-scale, 2) map.get($spacing-scale, 3);
-  background: var(--mat-sys-surface);
-}
-
-.guided-panel-title {
-  @include hai-meta;
-  color: var(--mat-sys-on-surface-variant);
-  margin-bottom: map.get($spacing-scale, 1);
-}
-
-.guided-compare-grid {
-  @include hai-row(2);
-}
-
-.guided-chip {
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: $radius-sm;
-  background: var(--mat-sys-surface-container-low);
-  color: var(--mat-sys-on-surface);
-  cursor: pointer;
-  @include hai-col(0.5);
-  padding: map.get($spacing-scale, 1.5) map.get($spacing-scale, 2);
-}
-
-.guided-chip small {
-  @include hai-meta;
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.guided-follow-summary {
-  @include hai-body-small;
-  color: var(--mat-sys-on-surface);
-}
-
-.guided-follow-meta {
-  @include hai-meta;
-  color: var(--mat-sys-on-surface-variant);
-  margin-top: map.get($spacing-scale, 1);
-}
-
-.guided-panel--director {
-  border-color: color-mix(in srgb, #ef4444 40%, var(--mat-sys-outline-variant));
-  background: color-mix(in srgb, #ef4444 8%, var(--mat-sys-surface));
-}
-
-.director-actions {
-  @include hai-row(2);
-  margin-top: map.get($spacing-scale, 2);
-}
-
-.chat-entry {
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: $radius-sm;
-  padding: map.get($spacing-scale, 2) map.get($spacing-scale, 3);
-  background: var(--mat-sys-surface);
-}
-
-.chat-entry--user {
-  background: color-mix(in srgb, var(--mat-sys-primary) 10%, var(--mat-sys-surface));
-}
-
-.chat-entry--director {
-  border-color: color-mix(in srgb, #ef4444 45%, var(--mat-sys-outline-variant));
-  background: color-mix(in srgb, #ef4444 8%, var(--mat-sys-surface));
-}
-
-.chat-entry-role {
-  @include hai-meta;
-}
-
-.chat-entry-content {
-  @include hai-body-small;
-  margin-top: map.get($spacing-scale, 1);
-}
-
-.chat-composer {
-  @include hai-row(2);
-  align-items: flex-end;
-}
-
-.chat-input {
-  flex: 1 1 auto;
-  resize: vertical;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: $radius-sm;
-  background: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
-  padding: map.get($spacing-scale, 2);
-  font: inherit;
-}
-
-.chat-error {
-  margin: 0;
-  border-radius: $radius-sm;
-  border: 1px solid color-mix(in srgb, #ef4444 35%, transparent);
+  .status-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
