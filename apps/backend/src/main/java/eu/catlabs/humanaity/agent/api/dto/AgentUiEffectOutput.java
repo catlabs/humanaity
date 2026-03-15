@@ -1,5 +1,7 @@
 package eu.catlabs.humanaity.agent.api.dto;
 
+import java.util.List;
+
 public class AgentUiEffectOutput {
 
     private String type;
@@ -8,6 +10,9 @@ public class AgentUiEffectOutput {
     private Long inventionId;
     private Long fromTick;
     private String panel;
+    private String placeId;
+    private String eventType;
+    private List<Long> eventIds;
 
     public AgentUiEffectOutput() {
     }
@@ -62,5 +67,29 @@ public class AgentUiEffectOutput {
 
     public void setPanel(String panel) {
         this.panel = panel;
+    }
+
+    public String getPlaceId() {
+        return placeId;
+    }
+
+    public void setPlaceId(String placeId) {
+        this.placeId = placeId;
+    }
+
+    public String getEventType() {
+        return eventType;
+    }
+
+    public void setEventType(String eventType) {
+        this.eventType = eventType;
+    }
+
+    public List<Long> getEventIds() {
+        return eventIds;
+    }
+
+    public void setEventIds(List<Long> eventIds) {
+        this.eventIds = eventIds;
     }
 }

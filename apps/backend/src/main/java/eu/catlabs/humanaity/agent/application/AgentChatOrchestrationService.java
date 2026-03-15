@@ -8,7 +8,9 @@ import eu.catlabs.humanaity.agent.api.dto.AgentUiEffectOutput;
 import eu.catlabs.humanaity.auth.domain.User;
 import eu.catlabs.humanaity.city.domain.City;
 import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
+import eu.catlabs.humanaity.event.application.EventApplicationService;
 import eu.catlabs.humanaity.event.domain.Event;
+import eu.catlabs.humanaity.event.domain.EventType;
 import eu.catlabs.humanaity.event.infrastructure.persistence.EventRepository;
 import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionRepository;
@@ -48,6 +50,7 @@ public class AgentChatOrchestrationService {
     private final CityRepository cityRepository;
     private final SimulationApplicationService simulationApplicationService;
     private final SimulationReadModelQueryService simulationReadModelQueryService;
+    private final EventApplicationService eventApplicationService;
     private final EventRepository eventRepository;
     private final InventionRepository inventionRepository;
     private final HumanRepository humanRepository;
@@ -57,6 +60,7 @@ public class AgentChatOrchestrationService {
             CityRepository cityRepository,
             SimulationApplicationService simulationApplicationService,
             SimulationReadModelQueryService simulationReadModelQueryService,
+            EventApplicationService eventApplicationService,
             EventRepository eventRepository,
             InventionRepository inventionRepository,
             HumanRepository humanRepository,
@@ -65,6 +69,7 @@ public class AgentChatOrchestrationService {
         this.cityRepository = cityRepository;
         this.simulationApplicationService = simulationApplicationService;
         this.simulationReadModelQueryService = simulationReadModelQueryService;
+        this.eventApplicationService = eventApplicationService;
         this.eventRepository = eventRepository;
         this.inventionRepository = inventionRepository;
         this.humanRepository = humanRepository;
@@ -95,6 +100,7 @@ public class AgentChatOrchestrationService {
                 response.setCommandClass("GUIDED");
                 executeMoveHumanToPlace(cityId, input, normalizedMessage, response);
             }
+            case "show_events_by_type" -> executeShowEventsByType(cityId, normalizedMessage, response);
             case "step" -> executeStep(cityId, normalizedMessage, response);
             case "snapshot" -> executeSnapshot(cityId, response);
             case "summary" -> executeSummary(cityId, response);
@@ -246,6 +252,44 @@ public class AgentChatOrchestrationService {
         focus.setHumanId(targetHuman.getId());
         response.getUiEffects().add(focus);
         response.setMessage("Moved " + targetHuman.getName() + " to " + targetPlace.label + ".");
+    }
+
+    private void executeShowEventsByType(
+            Long cityId,
+            String normalizedMessage,
+            AgentChatResponseOutput response
+    ) {
+        EventType requestedType = resolveRequestedEventType(normalizedMessage);
+        if (requestedType == null) {
+            response.getExecutedActions().add(new AgentActionOutput(
+                    "SHOW_EVENTS_BY_TYPE",
+                    "REJECTED",
+                    "No supported event type found in request"
+            ));
+            response.setMessage("I could not determine which event type to show.");
+            return;
+        }
+
+        List<Event> events = takeLast(
+                eventApplicationService.listCityEventsByType(cityId, requestedType),
+                50
+        );
+        List<Long> eventIds = events.stream().map(Event::getId).toList();
+
+        response.getExecutedActions().add(new AgentActionOutput(
+                "SHOW_EVENTS_BY_TYPE",
+                "COMPLETED",
+                "Loaded " + events.size() + " event(s) for type " + requestedType.name()
+        ));
+        response.getReferencedEntities().setEventIds(eventIds);
+
+        AgentUiEffectOutput drawer = new AgentUiEffectOutput("OPEN_EVENTS_DRAWER");
+        drawer.setEventType(requestedType.name());
+        drawer.setEventIds(eventIds);
+        response.getUiEffects().add(drawer);
+
+        response.setMessage("Showing " + events.size() + " " + requestedType.name().toLowerCase(Locale.ROOT)
+                .replace('_', ' ') + " event(s).");
     }
 
     private void executeExplainEvent(
@@ -657,6 +701,9 @@ public class AgentChatOrchestrationService {
         if (containsAny(normalizedMessage, "go to", "send", "move") && resolveTargetPlace(normalizedMessage) != null) {
             return "move_human_to_place";
         }
+        if (containsAny(normalizedMessage, "show", "list", "events") && resolveRequestedEventType(normalizedMessage) != null) {
+            return "show_events_by_type";
+        }
         if (containsAny(normalizedMessage, "meet", "introduce", "director")) {
             return "director_meet_humans";
         }
@@ -771,6 +818,25 @@ public class AgentChatOrchestrationService {
                 .filter(place -> place.matches(normalizedMessage))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private EventType resolveRequestedEventType(String normalizedMessage) {
+        if (containsAny(normalizedMessage, "collision", "collisions")) {
+            return EventType.HUMANS_COLLIDED;
+        }
+        if (containsAny(normalizedMessage, "dialogue", "discussion", "talk")) {
+            return EventType.DIALOGUE_EXCHANGED;
+        }
+        if (containsAny(normalizedMessage, "discovery", "discoveries")) {
+            return EventType.DISCOVERY_UNLOCKED;
+        }
+        if (containsAny(normalizedMessage, "invention", "milestone")) {
+            return EventType.INVENTION_EMERGED;
+        }
+        if (containsAny(normalizedMessage, "started", "paused", "resumed", "completed", "lifecycle")) {
+            return EventType.SIMULATION_STARTED;
+        }
+        return null;
     }
 
     private static Map<String, PlaceTarget> createPlaceRegistry() {

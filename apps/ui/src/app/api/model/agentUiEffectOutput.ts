@@ -16,5 +16,7 @@ export interface AgentUiEffectOutput {
     inventionId?: number;
     fromTick?: number;
     panel?: string;
+    placeId?: string;
+    eventType?: string;
+    eventIds?: Array<number>;
 }
-
