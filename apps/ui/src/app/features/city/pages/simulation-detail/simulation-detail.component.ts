@@ -188,6 +188,16 @@ export class SimulationDetailComponent
     }
     return `${human.name} · ${this.humanBusyLabel(human.busy)}`;
   });
+  latestAgentMessage = computed(() => {
+    const entries = this.chatEntries();
+    for (let index = entries.length - 1; index >= 0; index -= 1) {
+      const entry = entries[index];
+      if (entry.role === 'agent') {
+        return entry.content;
+      }
+    }
+    return null;
+  });
   canSendChat = computed(
     () => !this.chatBusy() && this.chatInput().trim().length > 0
   );

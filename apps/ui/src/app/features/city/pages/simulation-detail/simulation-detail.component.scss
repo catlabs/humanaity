@@ -158,6 +158,60 @@
   gap: map.get($spacing-scale, 2);
 }
 
+.chat-strip {
+  display: flex;
+  flex-direction: column;
+  gap: map.get($spacing-scale, 2);
+}
+
+.chat-row {
+  display: flex;
+  gap: map.get($spacing-scale, 2);
+}
+
+.chat-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  padding: 0.55rem 0.7rem;
+}
+
+.chat-send {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  background: var(--mat-sys-surface-container);
+  color: var(--mat-sys-on-surface);
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chat-send:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.chat-meta {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.8rem;
+}
+
+.chat-meta--error {
+  color: #ef4444;
+}
+
+.chat-reply {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  background: var(--mat-sys-surface-container-low);
+  color: var(--mat-sys-on-surface-variant);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.85rem;
+}
+
 .section-title {
   @include hai-panel-section-title;
 }

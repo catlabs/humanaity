@@ -116,6 +116,38 @@
           }
         </div>
       </div>
+
+      <div class="chat-strip">
+        <div class="section-title">Chat Control</div>
+        <div class="chat-row">
+          <input
+            #chatBox
+            class="chat-input"
+            type="text"
+            [value]="chatInput()"
+            (input)="onChatInput(chatBox.value)"
+            (keydown.enter)="onSendChat()"
+            placeholder="Ask to step, focus, compare, or summarize"
+          />
+          <button
+            type="button"
+            class="chat-send"
+            [disabled]="!canSendChat()"
+            (click)="onSendChat()"
+          >
+            Send
+          </button>
+        </div>
+        @if (chatBusy()) {
+          <div class="chat-meta">Sending...</div>
+        }
+        @if (chatError(); as errorMessage) {
+          <div class="chat-meta chat-meta--error">{{ errorMessage }}</div>
+        }
+        @if (latestAgentMessage(); as reply) {
+          <div class="chat-reply">{{ reply }}</div>
+        }
+      </div>
     </section>
   </div>
 </div>
