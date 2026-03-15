@@ -19,6 +19,7 @@ export type BoardViewModel = {
 export type BoardPlaceViewModel = {
   id: string;
   label: string;
+  icon?: string;
   leftPct: number;
   topPct: number;
 };

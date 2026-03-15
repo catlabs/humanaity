@@ -9,12 +9,8 @@ import {
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
-import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import {
   AgentChatRequestInput,
@@ -25,14 +21,12 @@ import {
   InventionOutput,
   SimulationSnapshotOutput,
 } from '@api';
-import { EventItemComponent, EventType } from '@shared';
+import { EventType } from '@shared';
 import { Observable, Subscription, interval } from 'rxjs';
 import { CityService } from '../../city.service';
-import { SymbolicBoardComponent } from '../../components/symbolic-board/symbolic-board.component';
+import { SimulationBoardComponent } from '../../components/simulation-board/simulation-board.component';
 import { AgentChatEffectsService } from '../../services/agent-chat-effects.service';
 import {
-  BoardEventMarkerViewModel,
-  BoardInteractionViewModel,
   BoardPlaceViewModel,
   BoardViewModelService,
 } from '../../services/board-view-model.service';
@@ -44,14 +38,9 @@ import {
     CommonModule,
     MatToolbarModule,
     MatButtonModule,
-    MatCheckboxModule,
     MatIconModule,
-    MatDividerModule,
-    MatSidenavModule,
-    MatListModule,
     MatProgressSpinnerModule,
-    EventItemComponent,
-    SymbolicBoardComponent,
+    SimulationBoardComponent,
   ],
   templateUrl: './simulation-detail.component.html',
   styleUrl: './simulation-detail.component.scss',
@@ -133,61 +122,12 @@ export class SimulationDetailComponent
     this.boardViewModelService.fromHumans(this.humans()).markers
   );
   boardPlaces = computed<BoardPlaceViewModel[]>(() => [
-    { id: 'archive', label: 'Archive', leftPct: 15, topPct: 18 },
-    { id: 'commons', label: 'Commons', leftPct: 52, topPct: 47 },
-    { id: 'workshop', label: 'Workshop', leftPct: 79, topPct: 26 },
-    { id: 'forum', label: 'Forum', leftPct: 68, topPct: 74 },
+    { id: 'forest', label: 'Forest', icon: '🌳', leftPct: 14, topPct: 18 },
+    { id: 'river', label: 'River', icon: '🌊', leftPct: 82, topPct: 22 },
+    { id: 'church', label: 'Church', icon: '⛪', leftPct: 52, topPct: 30 },
+    { id: 'campfire', label: 'Campfire', icon: '🔥', leftPct: 34, topPct: 72 },
+    { id: 'house', label: 'House', icon: '🏠', leftPct: 72, topPct: 74 },
   ]);
-  boardInteractions = computed<BoardInteractionViewModel[]>(() => {
-    const markerById = new Map(this.boardMarkers().map((marker) => [marker.id, marker]));
-    return this.events()
-      .slice(-14)
-      .flatMap((event) => {
-        if (
-          event.eventType !== 'HUMANS_COLLIDED' &&
-          event.eventType !== 'DIALOGUE_EXCHANGED'
-        ) {
-          return [];
-        }
-        const [fromId, toId] = event.actorIds ?? [];
-        if (typeof fromId !== 'number' || typeof toId !== 'number') {
-          return [];
-        }
-        const from = markerById.get(fromId);
-        const to = markerById.get(toId);
-        if (!from || !to) {
-          return [];
-        }
-        return [
-          {
-            key: `${event.id}:${fromId}:${toId}`,
-            fromLeftPct: from.leftPct,
-            fromTopPct: from.topPct,
-            toLeftPct: to.leftPct,
-            toTopPct: to.topPct,
-            kind:
-              event.eventType === 'HUMANS_COLLIDED' ? ('collision' as const) : ('dialogue' as const),
-          },
-        ];
-      })
-      .slice(-8);
-  });
-  boardEventMarkers = computed<BoardEventMarkerViewModel[]>(() => {
-    const now = Date.now();
-    const markerById = new Map(this.boardMarkers().map((marker) => [marker.id, marker]));
-    return this.boardEventEntries()
-      .filter((entry) => entry.expiresAtMs > now)
-      .map((entry) => {
-        const anchor = markerById.get(entry.anchorHumanId);
-        return {
-          eventId: entry.eventId,
-          leftPct: anchor?.leftPct ?? 50,
-          topPct: anchor?.topPct ?? 50,
-          tone: entry.tone,
-          label: entry.label,
-        };
-      });
-  });
 
   selectedHuman = computed(() => {
     const id = this.selectedHumanId();
@@ -243,6 +183,13 @@ export class SimulationDetailComponent
   noRunYet = computed(() => !this.snapshotLoading() && !this.hasRun());
   hasHumans = computed(() => this.populationTotal() > 0);
   showWorldOverlay = computed(() => this.noRunYet() || !this.hasHumans());
+  selectedHumanSummary = computed(() => {
+    const human = this.selectedHuman();
+    if (!human) {
+      return null;
+    }
+    return `${human.name} · ${this.humanBusyLabel(human.busy)}`;
+  });
   canSendChat = computed(
     () => !this.chatBusy() && this.chatInput().trim().length > 0
   );

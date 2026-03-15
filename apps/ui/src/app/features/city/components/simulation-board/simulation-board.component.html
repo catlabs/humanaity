@@ -1,0 +1,31 @@
+<div class="board" role="img" aria-label="Simulation board">
+  <div class="board-surface"></div>
+
+  @for (place of places; track place.id) {
+    <div
+      class="place"
+      [style.left.%]="place.leftPct"
+      [style.top.%]="place.topPct"
+      [attr.aria-label]="place.label"
+    >
+      <span class="place-icon">{{ place.icon || "•" }}</span>
+      <span class="place-label">{{ place.label }}</span>
+    </div>
+  }
+
+  @for (marker of markers; track trackByMarkerId($index, marker)) {
+    <button
+      type="button"
+      class="human"
+      [class.human--busy]="marker.state === 'busy'"
+      [class.human--selected]="selectedHumanId === marker.id"
+      [style.left.%]="marker.leftPct"
+      [style.top.%]="marker.topPct"
+      (click)="onMarkerClick(marker.id)"
+      [attr.aria-label]="'Select ' + marker.name"
+    >
+      <span class="human-dot"></span>
+      <span class="human-name">{{ marker.name }}</span>
+    </button>
+  }
+</div>
