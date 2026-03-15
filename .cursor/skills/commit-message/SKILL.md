@@ -7,7 +7,7 @@ description: Generate Conventional Commit messages for the Humanaity monorepo by
 
 ## Goal
 
-Generate high-quality Conventional Commit messages for the Humanaity monorepo.
+Generate high-quality Conventional Commit messages for the Humanaity monorepo, **optimizing for human readability first**.
 Commit grouping should follow roadmap structure: `Epic` first, then `Task`.
 Prefer staged changes because they reflect what will actually be committed.
 When the user asks to commit changes, group the diff into coherent work subjects and create the commits in the command line instead of only proposing messages.
@@ -30,33 +30,47 @@ Then apply this skill's rules.
 
 ## Format
 
+**Title (required):**
+
 ```text
-<type>(<scope>): E<epic> T<task> <subject>
-
-[optional body]
-
-[optional footer]
+<type>(<scope>): <concise human-readable summary>
 ```
 
-Example:
+**Body:** Use for context, rationale, and **always for epic/task when known** (e.g. `E1 T2b`). Epic and task numbers must still be recorded as before—in the body, not in the title.
+
+**Footer (optional):** Breaking changes, issue refs.
+
+- The commit **title** must be understandable without opening roadmap or sprint docs.
+- Do **not** start the title with internal planning identifiers such as `E10`, `T2a`, `Sprint-xx`, etc.
+- **Always** include epic and task in the **body** when the mapping is known (same traceability as before, just in the body).
+
+**Good example:**
 
 ```text
-feat(simulation): E1 T2b Add run lifecycle persistence
+feat(ui): add symbolic simulation board with animated human markers
+```
+
+**Bad example:**
+
+```text
+feat(ui): E11 T3a Add symbolic board component and board-first layout integration
 ```
 
 ## Rules
 
-- Keep the subject line under 72 characters
-- Use imperative mood: `Add`, `Fix`, `Refactor`, `Improve`, `Update`
-- Capitalize the first letter of the subject
-- Do not end the subject with a period
-- Prefer a single strong subject line
-- Include epic number before task number in the subject when the mapping is known
-- Prefer `E<epic> T<task>` over prose such as `Epic 1` or `Task 2b`
-- Add a body only when the reason is not obvious
-- Do not list changed files or implementation steps in the body
-- Focus on the behavioral or product outcome, not the mechanical edit
-- Prefer domain or technical scopes over repo labels like `frontend`, `backend`, or `mcp`
+- **Human readability first:** The title describes what changed and why it matters in plain language.
+- Keep the subject line under 72 characters.
+- Use imperative mood: `Add`, `Fix`, `Refactor`, `Improve`, `Update`.
+- Capitalize the first letter of the subject.
+- Do not end the subject with a period.
+- Prefer a single strong subject line.
+- **Do not** put internal planning identifiers (`E<epic>`, `T<task>`, Sprint-xx) in the title; put them in the body.
+- **Always include epic and task in the body** when the mapping is known (e.g. `E1 T2b`)—same traceability as before.
+- Prefer plain language over internal planning jargon in the title.
+- Add a body for epic/task when known; also add a body when the reason is not obvious.
+- Do not list changed files or implementation steps in the body.
+- Focus the title on the behavioral or product outcome, not the mechanical edit.
+- Prefer domain or technical scopes over repo labels like `frontend`, `backend`, or `mcp`.
 
 ## Types
 
@@ -135,8 +149,8 @@ Grouping priority:
 - then by task number
 - then by coherent behavior within that task if more splitting is still needed
 
-If the epic is clear but the task is not, use `E<epic>` in the subject and explain the missing task mapping briefly in the body if needed.
-If neither epic nor task can be mapped with confidence, fall back to the standard Conventional Commit format and say that the work could not be mapped to a roadmap item.
+**Epic and task in the body:** When epic/task mapping is known, **always** add it in the commit **body** (e.g. `E11 T3a` or `Epic 11, Task 3a`), not in the title. The title stays human-readable; epic and task numbers are still present in every commit that can be mapped, just in the body.
+If neither epic nor task can be mapped with confidence, use a human-readable title only; optionally note in the body that the work could not be mapped to a roadmap item.
 
 ## Footer
 
@@ -189,10 +203,9 @@ Mention relevant untracked files in your reasoning when needed.
 
 ### 5. Draft the message
 
-- Write the subject line first
-- Prefer subject pattern: `<type>(<scope>): E<epic> T<task> <subject>`
-- Add a body only if needed for context
-- Use the body to clarify epic/task mapping when the relationship is non-obvious or partial
+- Write the **title** first: `<type>(<scope>): <concise human-readable summary>`. No E/T or Sprint-xx in the title.
+- Focus the title on what changed and why it matters; use plain language.
+- **When epic/task are known, always add a body line** with `E<epic> T<task>` (e.g. `E11 T3a`). Add body for context or rationale when needed.
 - Add a footer only for breaking changes or issue references
 
 ### 6. Commit when requested
@@ -215,26 +228,46 @@ Mention relevant untracked files in your reasoning when needed.
 
 ## Examples
 
+**Titles (human-readable, no internal IDs):**
+
 ```text
-feat(simulation): E1 T2b Add run lifecycle persistence
+feat(simulation): add run lifecycle persistence
 ```
 
 ```text
-refactor(simulation): E1 T3a Extract deterministic step flow
+refactor(simulation): extract deterministic step flow
 ```
 
 ```text
-test(simulation): E1 T5a Add same-seed reproducibility coverage
+test(simulation): add same-seed reproducibility coverage
 ```
 
 ```text
-feat(api): E3 T2c Expose simulation run lifecycle endpoints
+feat(api): expose simulation run lifecycle endpoints
 ```
 
 ```text
-ui(simulation): E4 T1 Improve city simulation timeline layout
+feat(ui): add symbolic simulation board with animated human markers
 ```
 
 ```text
-docs: E7 T1 Document MCP smoke validation flow
+ui(simulation): improve city simulation timeline layout
+```
+
+```text
+docs: document MCP smoke validation flow
+```
+
+**With epic/task in the body (include whenever mapping is known):**
+
+```text
+feat(simulation): add run lifecycle persistence
+
+E1 T2b
+```
+
+```text
+feat(ui): add symbolic simulation board with animated human markers
+
+E11 T3a
 ```
