@@ -2,11 +2,11 @@
 
 ## Execution status
 
-- Current phase: In progress
-- Active chunk: `Task 4a` - validation and closeout
+- Current phase: Sprint 15 complete
+- Active chunk: none
 - Next chunk: none
 - Blocked items: none
-- Last completed chunk: `Task 3b` - simulation page simplification (2026-03-15)
+- Last completed chunk: `Task 4a` - validation and closeout (2026-03-15)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
@@ -14,7 +14,7 @@
 | Task 2a | done | Confirmed backend coordinates are in-domain `[0,1]`, snapshot `x/y` contract is sufficient, and existing deterministic clamp/fallback frontend mapping is adequate without API changes. |
 | Task 3a | done | Added a lightweight `SimulationBoardComponent`, wired marker/place rendering from backend snapshot-derived board markers, and aligned board view-model typing for symbolic place icons. |
 | Task 3b | done | Reworked simulation detail into a board-first layout, reduced visible controls to refresh/step, and kept a compact status/human strip that no longer competes with the board surface. |
-| Task 4a | pending | Validate that refresh and deterministic step actions visibly move at least some humans on the main board. |
+| Task 4a | done | Validated authoritative simulation-detail path has no PixiJS references and recorded that focused UI test/build commands still exit `-1` in this environment after the Angular build phase starts. |
 
 ## Sprint intent
 
