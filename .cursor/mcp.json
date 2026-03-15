@@ -4,7 +4,7 @@
       "command": "zsh",
       "args": [
         "-lc",
-        "MONOREPO_ROOT=\"$(git rev-parse --show-toplevel)\" && cd \"$MONOREPO_ROOT/apps/mcp\" && set -a && [ -f \"$MONOREPO_ROOT/.env\" ] && source \"$MONOREPO_ROOT/.env\"; set +a && npm run dev"
+        "MONOREPO_ROOT=\"$(git rev-parse --show-toplevel)\" && cd \"$MONOREPO_ROOT/apps/mcp\" && set -a && [ -f \"$MONOREPO_ROOT/.env\" ] && source \"$MONOREPO_ROOT/.env\" && set +a && npm run dev"
       ],
       "env": {
         "HUMANAITY_API_BASE_URL": "http://localhost:8080",
