@@ -2,15 +2,15 @@
 
 ## Execution status
 
-- Current phase: Not started
-- Active chunk: none
-- Next chunk: Task 1a
+- Current phase: In progress
+- Active chunk: Task 2a
+- Next chunk: Task 3a
 - Blocked items: none
-- Last completed chunk: none
+- Last completed chunk: Task 1a (2026-03-15)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | pending | Backend: MOVE_HUMAN_TO_PLACE intent + place map + move human. |
+| Task 1a | done | Added MOVE_HUMAN_TO_PLACE intent classification, backend place registry aligned with board coordinates, name-based human resolution, and deterministic position updates with refresh/focus effects. |
 | Task 2a | pending | Backend: SHOW_EVENTS_BY_TYPE intent + OPEN_EVENTS_DRAWER effect. |
 | Task 3a | pending | Frontend: Events drawer for OPEN_EVENTS_DRAWER. |
 | Task 4a | pending | Frontend: Place highlight + focus when chat moves human. |

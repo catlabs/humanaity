@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,6 +43,7 @@ public class AgentChatOrchestrationService {
     private static final int MAX_DIRECTOR_CONFIRMATION_SECONDS = 300;
     private static final Pattern NUMBER_PATTERN = Pattern.compile("(\\d+)");
     private static final Pattern FOLLOW_TICKS_PATTERN = Pattern.compile("\\bfor\\s+(\\d+)\\b");
+    private static final Map<String, PlaceTarget> PLACE_REGISTRY = createPlaceRegistry();
 
     private final CityRepository cityRepository;
     private final SimulationApplicationService simulationApplicationService;
@@ -89,6 +91,10 @@ public class AgentChatOrchestrationService {
         response.setReferencedEntities(referenced);
 
         switch (intent) {
+            case "move_human_to_place" -> {
+                response.setCommandClass("GUIDED");
+                executeMoveHumanToPlace(cityId, input, normalizedMessage, response);
+            }
             case "step" -> executeStep(cityId, normalizedMessage, response);
             case "snapshot" -> executeSnapshot(cityId, response);
             case "summary" -> executeSummary(cityId, response);
@@ -195,6 +201,51 @@ public class AgentChatOrchestrationService {
         response.setMessage("Recent summary: " + timeline.events().size() + " event(s), "
                 + timeline.inventions().size() + " invention(s). Latest event: " + latestEvent
                 + ". Latest invention: " + latestInvention + ".");
+    }
+
+    private void executeMoveHumanToPlace(
+            Long cityId,
+            AgentChatRequestInput input,
+            String normalizedMessage,
+            AgentChatResponseOutput response
+    ) {
+        PlaceTarget targetPlace = resolveTargetPlace(normalizedMessage);
+        if (targetPlace == null) {
+            response.getExecutedActions().add(new AgentActionOutput(
+                    "MOVE_HUMAN_TO_PLACE",
+                    "REJECTED",
+                    "No supported place name found in request"
+            ));
+            response.setMessage("I could not find a target place. Try forest, river, church, campfire, or house.");
+            return;
+        }
+
+        Human targetHuman = resolveTargetHumanByName(cityId, input, normalizedMessage);
+        if (targetHuman == null) {
+            response.getExecutedActions().add(new AgentActionOutput(
+                    "MOVE_HUMAN_TO_PLACE",
+                    "REJECTED",
+                    "No human could be resolved from request"
+            ));
+            response.setMessage("I could not resolve which human to move.");
+            return;
+        }
+
+        targetHuman.setX(targetPlace.x);
+        targetHuman.setY(targetPlace.y);
+        humanRepository.save(targetHuman);
+
+        response.getExecutedActions().add(new AgentActionOutput(
+                "MOVE_HUMAN_TO_PLACE",
+                "COMPLETED",
+                "Moved human " + targetHuman.getId() + " to place " + targetPlace.id
+        ));
+        response.getReferencedEntities().setHumanIds(List.of(targetHuman.getId()));
+        response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
+        AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
+        focus.setHumanId(targetHuman.getId());
+        response.getUiEffects().add(focus);
+        response.setMessage("Moved " + targetHuman.getName() + " to " + targetPlace.label + ".");
     }
 
     private void executeExplainEvent(
@@ -603,6 +654,9 @@ public class AgentChatOrchestrationService {
     }
 
     private String classifyIntent(String normalizedMessage) {
+        if (containsAny(normalizedMessage, "go to", "send", "move") && resolveTargetPlace(normalizedMessage) != null) {
+            return "move_human_to_place";
+        }
         if (containsAny(normalizedMessage, "meet", "introduce", "director")) {
             return "director_meet_humans";
         }
@@ -686,6 +740,49 @@ public class AgentChatOrchestrationService {
         return resolveHumanByIdOrDefault(humans, input.getSelectedHumanId(), ids, 0);
     }
 
+    private Human resolveTargetHumanByName(Long cityId, AgentChatRequestInput input, String normalizedMessage) {
+        List<Human> humans = humanRepository.findByCityIdOrderByIdAsc(cityId);
+        if (humans.isEmpty()) {
+            return null;
+        }
+        if (input.getSelectedHumanId() != null) {
+            Human preferred = humans.stream()
+                    .filter(human -> human.getId().equals(input.getSelectedHumanId()))
+                    .findFirst()
+                    .orElse(null);
+            if (preferred != null) {
+                return preferred;
+            }
+        }
+        Human byName = humans.stream()
+                .filter(human -> human.getName() != null)
+                .filter(human -> normalizedMessage.contains(human.getName().toLowerCase(Locale.ROOT)))
+                .findFirst()
+                .orElse(null);
+        if (byName != null) {
+            return byName;
+        }
+        List<Long> ids = extractNumbers(normalizedMessage);
+        return resolveHumanByIdOrDefault(humans, null, ids, 0);
+    }
+
+    private PlaceTarget resolveTargetPlace(String normalizedMessage) {
+        return PLACE_REGISTRY.values().stream()
+                .filter(place -> place.matches(normalizedMessage))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static Map<String, PlaceTarget> createPlaceRegistry() {
+        Map<String, PlaceTarget> places = new LinkedHashMap<>();
+        places.put("forest", new PlaceTarget("forest", "forest", 0.14, 0.18, List.of("forest", "woods")));
+        places.put("river", new PlaceTarget("river", "river", 0.82, 0.22, List.of("river", "water")));
+        places.put("church", new PlaceTarget("church", "church", 0.52, 0.30, List.of("church", "temple")));
+        places.put("campfire", new PlaceTarget("campfire", "campfire", 0.34, 0.72, List.of("campfire", "fire")));
+        places.put("house", new PlaceTarget("house", "house", 0.72, 0.74, List.of("house", "home")));
+        return places;
+    }
+
     private Human resolveHumanByIdOrDefault(
             List<Human> humans,
             Long preferredId,
@@ -741,5 +838,17 @@ public class AgentChatOrchestrationService {
             return input;
         }
         return input.subList(input.size() - max, input.size());
+    }
+
+    private record PlaceTarget(
+            String id,
+            String label,
+            double x,
+            double y,
+            List<String> aliases
+    ) {
+        private boolean matches(String normalizedMessage) {
+            return aliases.stream().anyMatch(normalizedMessage::contains);
+        }
     }
 }
