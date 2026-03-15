@@ -2,15 +2,15 @@
 
 ## Execution status
 
-- Current phase: Not started
-- Active chunk: none
-- Next chunk: Task 1a
+- Current phase: In progress
+- Active chunk: Task 2a
+- Next chunk: Task 3a
 - Blocked items: none
-- Last completed chunk: none
+- Last completed chunk: Task 1a (2026-03-15)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | pending | Verify/fix 2D movement (horizontal line). |
+| Task 1a | done | Verified backend updates both x/y per tick and frontend board mapping uses y->topPct with deterministic clamping; no movement fix required in this chunk. |
 | Task 2a | pending | Add recent-discussion state and buildDialogueDrafts. |
 | Task 3a | pending | Confirm DIALOGUE_EXCHANGED in timeline and board. |
 
