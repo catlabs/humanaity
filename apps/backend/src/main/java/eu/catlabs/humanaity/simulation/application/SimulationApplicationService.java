@@ -47,6 +47,8 @@ public class SimulationApplicationService {
     private static final long RECENT_DIALOGUE_WINDOW_TICKS = 3L;
     private static final long RECENT_COLLISION_DISCOVERY_WINDOW_TICKS = 6L;
     private static final long REACHED_PLACE_COOLDOWN_TICKS = 5L;
+    private static final int STAYED_AT_PLACE_THRESHOLD_TICKS = 3;
+    private static final long STAYED_AT_PLACE_COOLDOWN_TICKS = 3L;
     private static final long DISCOVERY_SEED_SALT = 0x9E3779B97F4A7C15L;
     private static final String[] INVENTION_TOPICS = {
             "Canal Irrigation",
@@ -58,6 +60,8 @@ public class SimulationApplicationService {
     };
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(4);
     private final Map<Long, ScheduledFuture<?>> runningTasks = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, String> lastPlaceByHuman = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, Integer> placeStreakByHuman = new java.util.concurrent.ConcurrentHashMap<>();
     private final HumanRepository humanRepository;
     private final HumanApplicationService humanApplicationService;
     private final CityRepository cityRepository;
@@ -285,6 +289,9 @@ public class SimulationApplicationService {
     }
 
     private void runSingleDeterministicTick(SimulationRun run) {
+        if (run.getTick() == 0L) {
+            resetPlaceStayState(run.getCity().getId());
+        }
         List<Human> orderedHumans = new ArrayList<>(humanRepository.findByCityIdOrderByIdAsc(run.getCity().getId()));
         if (orderedHumans.isEmpty()) {
             logger.debug("No humans found in city {}", run.getCity().getId());
@@ -354,6 +361,7 @@ public class SimulationApplicationService {
         drafts.addAll(buildCollisionDrafts(tick, humans));
         drafts.addAll(buildDialogueDrafts(run.getCity().getId(), tick, humans));
         drafts.addAll(buildReachedPlaceDrafts(run.getCity().getId(), tick, humans, previousPlaceByHuman));
+        drafts.addAll(buildStayedAtPlaceDrafts(run.getCity().getId(), tick, humans));
         List<EventDraft> collisionDiscoveries = buildCollisionDiscoveryDrafts(run.getCity().getId(), tick, humans);
         drafts.addAll(collisionDiscoveries);
         drafts.addAll(buildDiscoveryDrafts(run.getSeed(), tick, humans, humansWithContextDiscovery(collisionDiscoveries)));
@@ -657,11 +665,68 @@ public class SimulationApplicationService {
         return drafts;
     }
 
+    private List<EventDraft> buildStayedAtPlaceDrafts(Long cityId, long tick, List<Human> humans) {
+        List<EventDraft> drafts = new ArrayList<>();
+        for (Human human : humans) {
+            if (human.isBusy()) {
+                continue;
+            }
+            Optional<SimulationPlaceRegistry.SimulationPlace> currentPlace =
+                    resolvePlaceForPosition(human.getX(), human.getY());
+            String stateKey = placeStateKey(cityId, human.getId());
+            if (currentPlace.isEmpty()) {
+                lastPlaceByHuman.remove(stateKey);
+                placeStreakByHuman.remove(stateKey);
+                continue;
+            }
+
+            String currentPlaceId = currentPlace.get().id();
+            String previousPlaceId = lastPlaceByHuman.get(stateKey);
+            int nextStreak = currentPlaceId.equals(previousPlaceId)
+                    ? placeStreakByHuman.getOrDefault(stateKey, 0) + 1
+                    : 1;
+            lastPlaceByHuman.put(stateKey, currentPlaceId);
+            placeStreakByHuman.put(stateKey, nextStreak);
+
+            if (nextStreak < STAYED_AT_PLACE_THRESHOLD_TICKS) {
+                continue;
+            }
+            if (hasRecentStayedPlaceDiscovery(cityId, human.getId(), currentPlaceId, tick)) {
+                continue;
+            }
+
+            String discoveryKey = "STAYED:" + human.getId() + ":" + currentPlaceId + ":" + tick;
+            Map<String, String> payload = buildDiscoveryPayload(
+                    currentPlace.get().category(),
+                    currentPlaceId,
+                    human.getId(),
+                    tick,
+                    "Stayed at " + currentPlaceId,
+                    "STAYED_AT_PLACE"
+            );
+            drafts.add(new EventDraft(
+                    EventType.DISCOVERY_UNLOCKED,
+                    List.of(human.getId()),
+                    payload,
+                    discoveryImpact(human.getId(), tick, 33),
+                    discoveryKey
+            ));
+        }
+        return drafts;
+    }
+
     private boolean hasRecentReachedPlaceDiscovery(Long cityId, Long humanId, String placeId, long tick) {
         long blockedFromTick = Math.max(0L, tick - REACHED_PLACE_COOLDOWN_TICKS + 1L);
         return eventApplicationService.listCityEventsByType(cityId, EventType.DISCOVERY_UNLOCKED).stream()
                 .filter(event -> event.getTick() >= blockedFromTick && event.getTick() < tick)
                 .anyMatch(event -> isReachedPlaceDiscovery(event, humanId, placeId));
+    }
+
+    private boolean hasRecentStayedPlaceDiscovery(Long cityId, Long humanId, String placeId, long tick) {
+        long blockedFromTick = Math.max(0L, tick - STAYED_AT_PLACE_COOLDOWN_TICKS + 1L);
+        return eventApplicationService.listCityEventsByType(cityId, EventType.DISCOVERY_UNLOCKED).stream()
+                .filter(event -> event.getTick() >= blockedFromTick && event.getTick() < tick)
+                .anyMatch(event -> isStayedPlaceDiscovery(event, humanId, placeId));
     }
 
     private boolean isReachedPlaceDiscovery(Event event, Long humanId, String placeId) {
@@ -674,6 +739,18 @@ public class SimulationApplicationService {
         String trigger = event.getPayload().getOrDefault("trigger", "");
         String payloadPlaceId = event.getPayload().getOrDefault("placeId", "");
         return "REACHED_PLACE".equals(trigger) && placeId.equals(payloadPlaceId);
+    }
+
+    private boolean isStayedPlaceDiscovery(Event event, Long humanId, String placeId) {
+        if (event.getActorIds() == null || !event.getActorIds().contains(humanId)) {
+            return false;
+        }
+        if (event.getPayload() == null) {
+            return false;
+        }
+        String trigger = event.getPayload().getOrDefault("trigger", "");
+        String payloadPlaceId = event.getPayload().getOrDefault("placeId", "");
+        return "STAYED_AT_PLACE".equals(trigger) && placeId.equals(payloadPlaceId);
     }
 
     private Map<String, String> buildDiscoveryPayload(
@@ -754,6 +831,16 @@ public class SimulationApplicationService {
         double deltaX = left.getX() - right.getX();
         double deltaY = left.getY() - right.getY();
         return Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
+    }
+
+    private String placeStateKey(Long cityId, Long humanId) {
+        return cityId + ":" + humanId;
+    }
+
+    private void resetPlaceStayState(Long cityId) {
+        String prefix = cityId + ":";
+        lastPlaceByHuman.keySet().removeIf(key -> key.startsWith(prefix));
+        placeStreakByHuman.keySet().removeIf(key -> key.startsWith(prefix));
     }
 
     public record TimelineHistory(

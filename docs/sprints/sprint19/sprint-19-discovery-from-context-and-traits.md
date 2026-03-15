@@ -2,17 +2,17 @@
 
 ## Execution status
 
-- Current phase: In progress
-- Active chunk: Task 3a
+- Current phase: Completed
+- Active chunk: none
 - Next chunk: none
 - Blocked items: none
-- Last completed chunk: Task 2a (2026-03-15)
+- Last completed chunk: Task 3a (2026-03-15)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Added collision complementary-trait discovery path with deterministic category mapping and per-pair cooldown; random discovery now skips humans that already received context discovery this tick. |
 | Task 2a | done | Removed topic-index category assignment from fallback discovery; categories now resolve from place context when available, otherwise from deterministic human trait profile. |
-| Task 3a | pending | STAYED_AT_PLACE (N ticks) discovery. |
+| Task 3a | done | Added STAYED_AT_PLACE discovery with deterministic place-streak tracking, per-place cooldown throttling, and tick-0 state reset for reproducibility. |
 
 ## Sprint intent
 
