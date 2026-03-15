@@ -4,7 +4,8 @@
 
 - Status: LOCKED for Sprint 4 planning
 - Scope anchor: `docs/sprints/sprint04/sprint-04-frontend-simulation-experience.md`
-- Applies to: the primary city simulation experience in `apps/ui`
+- Applies to: Sprint 4 historical baseline for the city simulation experience in `apps/ui`
+- Current authoritative page note: superseded for the main `/cities/:id` surface by `docs/specs/main-simulation-board-spec.md` (Sprint 15)
 
 ## Purpose
 
@@ -88,6 +89,8 @@ Rules:
 - controls must not mutate page state optimistically in ways that hide backend truth
 
 ## World View Behavior
+
+This section is Sprint 4 historical behavior and is not the current authoritative-page direction.
 
 The world view is centered on the Pixi canvas.
 

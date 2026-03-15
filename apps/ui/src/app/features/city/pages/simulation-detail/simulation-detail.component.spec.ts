@@ -3,7 +3,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import { CityService } from '../../city.service';
-import { PixiCanvasService } from '../../services/pixi-canvas.service';
 import { SimulationDetailComponent } from './simulation-detail.component';
 
 describe('SimulationDetailComponent', () => {
@@ -118,15 +117,6 @@ describe('SimulationDetailComponent', () => {
           useValue: { snapshot: { data: { city: { id: 7, name: 'Spec City' } } } },
         },
         { provide: CityService, useValue: cityService },
-        {
-          provide: PixiCanvasService,
-          useValue: {
-            initialize: () => Promise.resolve(),
-            addHuman: () => undefined,
-            updateHuman: () => undefined,
-            destroy: () => undefined,
-          },
-        },
       ],
     }).compileComponents();
 

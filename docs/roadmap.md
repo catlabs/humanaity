@@ -17,7 +17,7 @@ HUMANAIty has a strong technical base, but it is still in early alpha product ma
 - Deterministic simulation foundation in backend: persisted `SimulationRun`, city-scoped lifecycle controls, deterministic `step()` execution, and reproducibility tests.
 - Historical event, invention, and timeline persistence/query surfaces.
 - Backend-owned simulation snapshot and overview read models for UI and MCP consumers.
-- Pixi-based simulation canvas implementation available in UI.
+- Legacy PixiJS exploration still exists in the UI codebase, but the product direction is to remove PixiJS ownership and references from the authoritative main simulation page.
 - AI integration layer with fallback behavior in backend, including history enrichment.
 - MCP tools for auth/cities/humans/simulation, including recent-change summaries and event explanation workflows.
 
@@ -31,6 +31,7 @@ HUMANAIty has a strong technical base, but it is still in early alpha product ma
 
 - Main product UX is still spread across several surfaces instead of one strong simulation-console experience.
 - The current simulation presentation still leans on an implementation-oriented canvas instead of a clear symbolic observatory board.
+- The main simulation page needs a corrective simplification pass so one minimal symbolic board becomes the obvious primary surface again.
 - The frontend still treats map controls, history reading, and agent workflows as adjacent features rather than one coherent interaction loop.
 - Delivery/test maturity is still limited outside the most mature backend slices.
 
@@ -179,7 +180,7 @@ A **single-city deterministic civilization sandbox** presented as an **agentic s
 
 - Real city overview list
 - Real city simulation detail page
-- Live Pixi human map
+- Real human world view on the authoritative page
 - Event feed panel
 - Inventions panel
 - Human detail side panel
@@ -187,9 +188,9 @@ A **single-city deterministic civilization sandbox** presented as an **agentic s
 
 ### Implementation tasks
 
-- Route city detail to data-driven Pixi-capable page and retire placeholder-heavy view.
+- Route city detail to the authoritative real-data simulation page and retire placeholder-heavy view.
 - Replace mock-derived city list fields with backend values.
-- Extend Pixi rendering for real simulation state + entity selection.
+- Keep the main simulation route free of PixiJS-specific ownership and references as the symbolic board direction takes over.
 - Add timeline/invention/event layout using existing shared UI patterns.
 - De-scope or hide admin mock surface until backed by real data.
 
@@ -473,6 +474,35 @@ A **single-city deterministic civilization sandbox** presented as an **agentic s
 - Depends on Epic 12.
 - Intervention-oriented board flows depend on Epic 10's explicit intervention path being complete.
 
+## Epic 14: Main simulation board simplification
+
+- **Build order:** After Epic 13, as a corrective iteration on the authoritative city simulation page
+- **Business/product value:** Makes the flagship page legible enough to demo immediately
+- **Technical portfolio value:** Shows disciplined scope control and preference for working product clarity over UI sprawl
+- **Estimated complexity:** Low-medium
+
+### Features
+
+- One authoritative symbolic board surface on the main city simulation page
+- Real human markers rendered from backend snapshot coordinates
+- Visible movement after refresh or deterministic step actions
+- Small fixed symbolic places for board readability
+- Minimal controls and compact debug/status information
+
+### Implementation tasks
+
+- Remove or disable PixiJS from the authoritative main simulation page for this iteration.
+- Remove remaining PixiJS-oriented references from the main-page implementation path and related planning/docs where they would mislead follow-up work.
+- Introduce or consolidate on one lightweight Angular board component for the page surface.
+- Keep human rendering tied to backend-owned snapshot coordinates with only deterministic frontend clamping/fallback mapping.
+- Reduce or hide secondary panels so the board is the primary visible element.
+- Validate that refresh and step actions visibly move at least some humans on the board.
+
+### Dependencies
+
+- Depends on Epics 11, 12, and 13 for board ownership, symbolic places, and backend-led refresh behavior.
+- Should avoid backend changes unless the current snapshot contract proves insufficient for stable coordinate rendering.
+
 ## Features by epic and task dependency map
 
 ```mermaid
@@ -523,11 +553,12 @@ flowchart TD
 14. Replace the current simulation canvas emphasis with a symbolic board built from Angular, HTML, CSS, and lightweight overlays.
 15. Add fixed places, transient interaction links, and event markers once the board foundation is stable.
 16. Extend chat/UI-effect flows so board reactions become the primary visual feedback loop for simulation commands.
-17. Add scoped hardening (tests, config, authorization, contract alignment).
-18. Establish testing strategy and baseline automated checks for backend and frontend (build, lint, and focused tests).
-19. Introduce CI pipelines for pull requests and main branch validation.
-20. Prepare simple deployment architecture and perform a first non-production deployment (dev or staging).
-21. Introduce standards-based identity for external clients and MCP access (`Keycloak`/OIDC/OAuth2) once core product flows are stable.
+17. Simplify the authoritative main simulation page around one minimal symbolic board and remove PixiJS from that main surface and its authoritative references.
+18. Add scoped hardening (tests, config, authorization, contract alignment).
+19. Establish testing strategy and baseline automated checks for backend and frontend (build, lint, and focused tests).
+20. Introduce CI pipelines for pull requests and main branch validation.
+21. Prepare simple deployment architecture and perform a first non-production deployment (dev or staging).
+22. Introduce standards-based identity for external clients and MCP access (`Keycloak`/OIDC/OAuth2) once core product flows are stable.
 
 ## Suggested delegation
 
