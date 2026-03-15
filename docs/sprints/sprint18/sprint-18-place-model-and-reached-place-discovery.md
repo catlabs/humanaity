@@ -3,15 +3,15 @@
 ## Execution status
 
 - Current phase: In progress
-- Active chunk: Task 2a
-- Next chunk: Task 3a
+- Active chunk: Task 3a
+- Next chunk: none
 - Blocked items: none
-- Last completed chunk: Task 1a (2026-03-15)
+- Last completed chunk: Task 2a (2026-03-15)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Added backend place registry with normalized ids/coords/radius and context categories aligned to board places (forest, river, church, campfire, house). |
-| Task 2a | pending | At-place detection per tick; REACHED_PLACE discovery emission. |
+| Task 2a | done | Added at-place transition detection and REACHED_PLACE discovery emission with place/category payload and persisted-history cooldown to preserve determinism. |
 | Task 3a | pending | Align backend places with FE; category from place. |
 
 ## Sprint intent

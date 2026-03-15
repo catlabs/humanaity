@@ -11,6 +11,7 @@ import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.invention.application.InventionApplicationService;
 import eu.catlabs.humanaity.invention.domain.Invention;
+import eu.catlabs.humanaity.invention.domain.InventionCategory;
 import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
 import eu.catlabs.humanaity.simulation.domain.SimulationRunStatus;
@@ -30,7 +31,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -45,6 +45,7 @@ public class SimulationApplicationService {
     private static final int MAX_STEPS_PER_REQUEST = 10_000;
     private static final double COLLISION_DISTANCE_THRESHOLD = 0.08;
     private static final long RECENT_DIALOGUE_WINDOW_TICKS = 3L;
+    private static final long REACHED_PLACE_COOLDOWN_TICKS = 5L;
     private static final long DISCOVERY_SEED_SALT = 0x9E3779B97F4A7C15L;
     private static final String[] INVENTION_TOPICS = {
             "Canal Irrigation",
@@ -55,7 +56,7 @@ public class SimulationApplicationService {
             "Oral Archive"
     };
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(4);
-    private final Map<Long, ScheduledFuture<?>> runningTasks = new ConcurrentHashMap<>();
+    private final Map<Long, ScheduledFuture<?>> runningTasks = new java.util.concurrent.ConcurrentHashMap<>();
     private final HumanRepository humanRepository;
     private final HumanApplicationService humanApplicationService;
     private final CityRepository cityRepository;
@@ -293,6 +294,14 @@ public class SimulationApplicationService {
             return;
         }
 
+        Map<Long, String> previousPlaceByHuman = new HashMap<>();
+        for (Human human : orderedHumans) {
+            previousPlaceByHuman.put(
+                    human.getId(),
+                    resolvePlaceForPosition(human.getX(), human.getY()).map(SimulationPlaceRegistry.SimulationPlace::id).orElse(null)
+            );
+        }
+
         for (Human human : orderedHumans) {
             human.setBusy(false);
             updateHumanPosition(run.getSeed(), run.getTick(), human);
@@ -305,7 +314,7 @@ public class SimulationApplicationService {
         run.setTick(nextTick);
         simulationRunRepository.save(run);
 
-        List<EventDraft> stepEvents = buildStepEventDrafts(run, nextTick, orderedHumans);
+        List<EventDraft> stepEvents = buildStepEventDrafts(run, nextTick, orderedHumans, previousPlaceByHuman);
         eventApplicationService.emitEventsAtTick(run.getCity().getId(), nextTick, stepEvents);
 
         List<Invention> createdInventions = inventionApplicationService.deriveFromPersistedEvents(run.getCity().getId());
@@ -331,13 +340,19 @@ public class SimulationApplicationService {
         return mixed;
     }
 
-    private List<EventDraft> buildStepEventDrafts(SimulationRun run, long tick, List<Human> orderedHumans) {
+    private List<EventDraft> buildStepEventDrafts(
+            SimulationRun run,
+            long tick,
+            List<Human> orderedHumans,
+            Map<Long, String> previousPlaceByHuman
+    ) {
         List<Human> humans = orderedHumans.stream()
                 .sorted(Comparator.comparing(Human::getId))
                 .toList();
         List<EventDraft> drafts = new ArrayList<>();
         drafts.addAll(buildCollisionDrafts(tick, humans));
         drafts.addAll(buildDialogueDrafts(run.getCity().getId(), tick, humans));
+        drafts.addAll(buildReachedPlaceDrafts(run.getCity().getId(), tick, humans, previousPlaceByHuman));
         drafts.addAll(buildDiscoveryDrafts(run.getSeed(), tick, humans));
         return drafts;
     }
@@ -457,6 +472,112 @@ public class SimulationApplicationService {
         long first = Math.min(actorIds.get(0), actorIds.get(1));
         long second = Math.max(actorIds.get(0), actorIds.get(1));
         return first == actorA && second == actorB;
+    }
+
+    private List<EventDraft> buildReachedPlaceDrafts(
+            Long cityId,
+            long tick,
+            List<Human> humans,
+            Map<Long, String> previousPlaceByHuman
+    ) {
+        List<EventDraft> drafts = new ArrayList<>();
+        for (Human human : humans) {
+            if (human.isBusy()) {
+                continue;
+            }
+            Optional<SimulationPlaceRegistry.SimulationPlace> currentPlace =
+                    resolvePlaceForPosition(human.getX(), human.getY());
+            if (currentPlace.isEmpty()) {
+                continue;
+            }
+            String previousPlaceId = previousPlaceByHuman.get(human.getId());
+            if (currentPlace.get().id().equals(previousPlaceId)) {
+                continue;
+            }
+            if (hasRecentReachedPlaceDiscovery(cityId, human.getId(), currentPlace.get().id(), tick)) {
+                continue;
+            }
+
+            String discoveryKey = "REACHED:" + human.getId() + ":" + currentPlace.get().id() + ":" + tick;
+            Map<String, String> payload = buildDiscoveryPayload(
+                    currentPlace.get().category(),
+                    currentPlace.get().id(),
+                    human.getId(),
+                    tick,
+                    "Reached " + currentPlace.get().id(),
+                    "REACHED_PLACE"
+            );
+
+            drafts.add(new EventDraft(
+                    EventType.DISCOVERY_UNLOCKED,
+                    List.of(human.getId()),
+                    payload,
+                    discoveryImpact(human.getId(), tick, 29),
+                    discoveryKey
+            ));
+        }
+        return drafts;
+    }
+
+    private boolean hasRecentReachedPlaceDiscovery(Long cityId, Long humanId, String placeId, long tick) {
+        long blockedFromTick = Math.max(0L, tick - REACHED_PLACE_COOLDOWN_TICKS + 1L);
+        return eventApplicationService.listCityEventsByType(cityId, EventType.DISCOVERY_UNLOCKED).stream()
+                .filter(event -> event.getTick() >= blockedFromTick && event.getTick() < tick)
+                .anyMatch(event -> isReachedPlaceDiscovery(event, humanId, placeId));
+    }
+
+    private boolean isReachedPlaceDiscovery(Event event, Long humanId, String placeId) {
+        if (event.getActorIds() == null || !event.getActorIds().contains(humanId)) {
+            return false;
+        }
+        if (event.getPayload() == null) {
+            return false;
+        }
+        String trigger = event.getPayload().getOrDefault("trigger", "");
+        String payloadPlaceId = event.getPayload().getOrDefault("placeId", "");
+        return "REACHED_PLACE".equals(trigger) && placeId.equals(payloadPlaceId);
+    }
+
+    private Map<String, String> buildDiscoveryPayload(
+            InventionCategory category,
+            String contextKey,
+            Long humanId,
+            long tick,
+            String titlePrefix,
+            String trigger
+    ) {
+        String inventionKey = "DISCOVERY:" + contextKey + ":" + humanId + ":" + tick;
+        String title = titlePrefix + " insight";
+        String summary = "Tick " + tick + ": human " + humanId + " unlocked " + title.toLowerCase(Locale.ROOT) + ".";
+        Map<String, String> payload = new HashMap<>();
+        payload.put("discoveryKey", inventionKey);
+        payload.put("inventionKey", inventionKey);
+        payload.put("inventionCategory", category.name());
+        payload.put("title", title);
+        payload.put("summary", summary);
+        payload.put("impactScore", String.valueOf(discoveryImpact(humanId, tick, 31)));
+        payload.put("placeId", contextKey);
+        payload.put("trigger", trigger);
+        return payload;
+    }
+
+    private int discoveryImpact(Long humanId, long tick, int spread) {
+        return 30 + (int) Math.floorMod((humanId * 17L) + tick, spread);
+    }
+
+    private Optional<SimulationPlaceRegistry.SimulationPlace> resolvePlaceForPosition(Double x, Double y) {
+        if (x == null || y == null || !Double.isFinite(x) || !Double.isFinite(y)) {
+            return Optional.empty();
+        }
+        return SimulationPlaceRegistry.all().stream()
+                .filter(place -> distanceTo(x, y, place.x(), place.y()) <= place.radius())
+                .min(Comparator.comparingDouble(place -> distanceTo(x, y, place.x(), place.y())));
+    }
+
+    private double distanceTo(double xA, double yA, double xB, double yB) {
+        double deltaX = xA - xB;
+        double deltaY = yA - yB;
+        return Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
     }
 
     private void emitMilestoneEvents(Long cityId, List<Invention> inventions) {
