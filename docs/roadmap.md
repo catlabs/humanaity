@@ -503,6 +503,37 @@ A **single-city deterministic civilization sandbox** presented as an **agentic s
 - Depends on Epics 11, 12, and 13 for board ownership, symbolic places, and backend-led refresh behavior.
 - Should avoid backend changes unless the current snapshot contract proves insufficient for stable coordinate rendering.
 
+## Epic 15: Rule-based event and discovery system
+
+- **Build order:** After Epic 14; delivers the coherent rule matrix for triggers, domain events, and discovery categories
+- **Business/product value:** Makes simulation events and discoveries emerge from explicit rules (collision, place, proximity) and keeps chat as state/UI influence only
+- **Technical portfolio value:** Demonstrates deterministic rule-driven simulation design and clear backend ownership of event semantics
+- **Estimated complexity:** High
+
+### Features
+
+- Collision → HUMANS_COLLIDED (existing) plus DIALOGUE_EXCHANGED when both available and no recent discussion; DISCOVERY_UNLOCKED when complementary traits
+- Place model and REACHED_PLACE / STAYED_AT_PLACE triggers with discovery category from place (FIRE→TECHNIQUE, MARKET/CHURCH→SOCIAL, LIBRARY→KNOWLEDGE)
+- PROXIMITY_GROUP trigger: sustained proximity → DIALOGUE or SOCIAL discovery
+- Chat: MOVE_HUMAN_TO_PLACE (e.g. "Tell Pierre to go to the forest") and SHOW_EVENTS_BY_TYPE with events drawer; no chat-created domain events
+- Discovery category from context (place/traits) instead of arbitrary topic index; INVENTION_EMERGED inherits from source discoveries
+- Board visual markers and event drawer driven by backend uiEffects and rule matrix
+
+### Implementation tasks
+
+- Add buildDialogueDrafts with "recent discussion" check; collision + both available + no recent DIALOGUE for pair → DIALOGUE_EXCHANGED.
+- Introduce backend place model (fixed places with coords); at-place detection per tick; REACHED_PLACE and STAYED_AT_PLACE discovery emission with category from place.
+- Add complementary-traits logic for collision→discovery; refactor discovery category assignment to use place and context.
+- Track proximity groups over ticks; emit DIALOGUE or DISCOVERY_UNLOCKED (SOCIAL_PRACTICE) when group satisfies bounded time.
+- Chat: MOVE_HUMAN_TO_PLACE intent and place→coords map; SHOW_EVENTS_BY_TYPE intent and OPEN_EVENTS_DRAWER uiEffect; ensure chat never emits domain events.
+- Frontend: events drawer for "show events by type"; place highlight and focus when chat moves human; visual markers per matrix.
+
+### Dependencies
+
+- Depends on Epics 12, 13, 14 (board, chat-to-board effects, simplified main page).
+- Spec: `docs/specs/event-discovery-rule-matrix-spec.md`.
+- Delivered in Sprints 16–20 (movement/dialogue, chat commands, place model, discovery context, proximity group).
+
 ## Features by epic and task dependency map
 
 ```mermaid
@@ -532,7 +563,9 @@ flowchart TD
   epic10 --> mvp
   epic11 --> mvp
   epic12 --> mvp
-  epic13 --> mvp
+  epic13 --> epic14[MainSimulationBoardSimplification]
+  epic14 --> epic15[RuleBasedEventAndDiscoverySystem]
+  epic15 --> mvp
 ```
 
 ## Recommended implementation order
@@ -554,11 +587,12 @@ flowchart TD
 15. Add fixed places, transient interaction links, and event markers once the board foundation is stable.
 16. Extend chat/UI-effect flows so board reactions become the primary visual feedback loop for simulation commands.
 17. Simplify the authoritative main simulation page around one minimal symbolic board and remove PixiJS from that main surface and its authoritative references.
-18. Add scoped hardening (tests, config, authorization, contract alignment).
-19. Establish testing strategy and baseline automated checks for backend and frontend (build, lint, and focused tests).
-20. Introduce CI pipelines for pull requests and main branch validation.
-21. Prepare simple deployment architecture and perform a first non-production deployment (dev or staging).
-22. Introduce standards-based identity for external clients and MCP access (`Keycloak`/OIDC/OAuth2) once core product flows are stable.
+18. Rule-based event and discovery system: dialogue from collision (S16), chat go-to-place and show-events drawer (S17), place model and REACHED_PLACE (S18), discovery from context and traits (S19), proximity group and markers (S20).
+19. Add scoped hardening (tests, config, authorization, contract alignment).
+20. Establish testing strategy and baseline automated checks for backend and frontend (build, lint, and focused tests).
+21. Introduce CI pipelines for pull requests and main branch validation.
+22. Prepare simple deployment architecture and perform a first non-production deployment (dev or staging).
+23. Introduce standards-based identity for external clients and MCP access (`Keycloak`/OIDC/OAuth2) once core product flows are stable.
 
 ## Suggested delegation
 
