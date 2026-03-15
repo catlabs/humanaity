@@ -29,4 +29,19 @@
       <span class="human-name">{{ marker.name }}</span>
     </button>
   }
+
+  @for (eventMarker of eventMarkers; track eventMarker.eventId) {
+    <div
+      class="event-marker"
+      [class.event-marker--collision]="eventMarker.kind === 'collision'"
+      [class.event-marker--dialogue]="eventMarker.kind === 'dialogue'"
+      [class.event-marker--discovery]="eventMarker.kind === 'discovery'"
+      [style.left.%]="eventMarker.leftPct"
+      [style.top.%]="eventMarker.topPct"
+      [attr.aria-label]="eventMarker.label"
+      [title]="eventMarker.label"
+    >
+      <span>{{ eventMarker.icon }}</span>
+    </div>
+  }
 </div>

@@ -24,7 +24,10 @@ import {
 import { EventType } from '@shared';
 import { Observable, Subscription, interval } from 'rxjs';
 import { CityService } from '../../city.service';
-import { SimulationBoardComponent } from '../../components/simulation-board/simulation-board.component';
+import {
+  SimulationBoardComponent,
+  SimulationBoardEventMarker,
+} from '../../components/simulation-board/simulation-board.component';
 import { AgentChatEffectsService } from '../../services/agent-chat-effects.service';
 import {
   BoardPlaceViewModel,
@@ -125,6 +128,39 @@ export class SimulationDetailComponent
   boardMarkers = computed(() =>
     this.boardViewModelService.fromHumans(this.humans()).markers
   );
+  boardEventMarkers = computed<SimulationBoardEventMarker[]>(() => {
+    const markersByHumanId = new Map(
+      this.boardMarkers().map((marker) => [marker.id, marker])
+    );
+    return this.events()
+      .slice(-16)
+      .filter((event) =>
+        event.eventType === 'HUMANS_COLLIDED' ||
+        event.eventType === 'DIALOGUE_EXCHANGED' ||
+        event.eventType === 'DISCOVERY_UNLOCKED'
+      )
+      .map((event) => {
+        const anchors = event.actorIds
+          .map((id) => markersByHumanId.get(id))
+          .filter((marker): marker is NonNullable<typeof marker> => !!marker);
+        if (anchors.length === 0) {
+          return null;
+        }
+        const leftPct =
+          anchors.reduce((sum, marker) => sum + marker.leftPct, 0) / anchors.length;
+        const topPct =
+          anchors.reduce((sum, marker) => sum + marker.topPct, 0) / anchors.length;
+        return {
+          eventId: event.id,
+          leftPct,
+          topPct,
+          icon: this.eventMarkerIcon(event),
+          kind: this.eventMarkerKind(event),
+          label: this.eventTitle(event),
+        };
+      })
+      .filter((entry): entry is SimulationBoardEventMarker => entry !== null);
+  });
   boardPlaces = computed<BoardPlaceViewModel[]>(() => [
     { id: 'forest', label: 'Forest', icon: '🌳', leftPct: 14, topPct: 18 },
     { id: 'river', label: 'River', icon: '🌊', leftPct: 82, topPct: 22 },
@@ -729,6 +765,39 @@ export class SimulationDetailComponent
       });
 
     this.boardEventEntries.set([...existing, ...fresh].slice(-20));
+  }
+
+  private eventMarkerKind(
+    event: EventOutput
+  ): SimulationBoardEventMarker['kind'] {
+    switch (event.eventType) {
+      case 'HUMANS_COLLIDED':
+        return 'collision';
+      case 'DIALOGUE_EXCHANGED':
+        return 'dialogue';
+      default:
+        return 'discovery';
+    }
+  }
+
+  private eventMarkerIcon(event: EventOutput): string {
+    if (event.eventType === 'HUMANS_COLLIDED') {
+      return '✦';
+    }
+    if (event.eventType === 'DIALOGUE_EXCHANGED') {
+      return '💬';
+    }
+    const category = event.payload?.['inventionCategory'];
+    switch (category) {
+      case 'TECHNIQUE':
+        return '⚙';
+      case 'SOCIAL_PRACTICE':
+        return '🏛';
+      case 'KNOWLEDGE':
+        return '📜';
+      default:
+        return '📜';
+    }
   }
 }
 

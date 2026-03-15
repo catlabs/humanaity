@@ -5,6 +5,15 @@ import {
   BoardPlaceViewModel,
 } from '../../services/board-view-model.service';
 
+export type SimulationBoardEventMarker = {
+  eventId: number;
+  leftPct: number;
+  topPct: number;
+  icon: string;
+  kind: 'collision' | 'dialogue' | 'discovery';
+  label: string;
+};
+
 @Component({
   selector: 'app-simulation-board',
   standalone: true,
@@ -15,6 +24,7 @@ import {
 export class SimulationBoardComponent {
   @Input() markers: BoardMarkerViewModel[] = [];
   @Input() places: BoardPlaceViewModel[] = [];
+  @Input() eventMarkers: SimulationBoardEventMarker[] = [];
   @Input() selectedHumanId: number | null = null;
   @Input() highlightedPlaceId: string | null = null;
   @Output() markerSelected = new EventEmitter<number>();

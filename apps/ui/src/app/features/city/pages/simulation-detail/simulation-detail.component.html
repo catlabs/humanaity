@@ -52,6 +52,12 @@
           <span class="status-chip">Tick {{ currentTick() }}</span>
           <span class="status-chip">{{ populationTotal() }} humans</span>
           <span class="status-chip">{{ isRunning() ? "Running" : "Paused" }}</span>
+          @if (directorBoardState() === "pending") {
+            <span class="status-chip status-chip--pending">Intervention Pending</span>
+          }
+          @if (directorBoardState() === "executed") {
+            <span class="status-chip status-chip--executed">Intervention Executed</span>
+          }
         </div>
       </div>
 
@@ -59,6 +65,7 @@
         <app-simulation-board
           class="world-board"
           [markers]="boardMarkers()"
+          [eventMarkers]="boardEventMarkers()"
           [places]="boardPlaces()"
           [selectedHumanId]="selectedHumanId()"
           [highlightedPlaceId]="highlightedPlaceId()"

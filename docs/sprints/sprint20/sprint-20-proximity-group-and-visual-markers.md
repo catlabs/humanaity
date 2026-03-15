@@ -2,16 +2,16 @@
 
 ## Execution status
 
-- Current phase: In progress
-- Active chunk: Task 2a
+- Current phase: Completed
+- Active chunk: none
 - Next chunk: none
 - Blocked items: none
-- Last completed chunk: Task 1a (2026-03-15)
+- Last completed chunk: Task 2a (2026-03-15)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Added sustained proximity-group detection with deterministic connected components and per-group cooldown; emits DIALOGUE for pairs and SOCIAL_PRACTICE discovery for groups of 3+. |
-| Task 2a | pending | Visual markers per matrix; intervention badge. |
+| Task 2a | done | Added board markers for collision/dialogue/discovery categories (✦/💬/⚙🏛📜) plus explicit intervention status badges in board header. |
 
 ## Sprint intent
 
