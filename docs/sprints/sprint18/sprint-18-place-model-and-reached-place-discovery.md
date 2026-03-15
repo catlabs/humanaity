@@ -2,15 +2,15 @@
 
 ## Execution status
 
-- Current phase: Not started
-- Active chunk: none
-- Next chunk: Task 1a
+- Current phase: In progress
+- Active chunk: Task 2a
+- Next chunk: Task 3a
 - Blocked items: none
-- Last completed chunk: none
+- Last completed chunk: Task 1a (2026-03-15)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | pending | Backend place model (id, coords, radius). |
+| Task 1a | done | Added backend place registry with normalized ids/coords/radius and context categories aligned to board places (forest, river, church, campfire, house). |
 | Task 2a | pending | At-place detection per tick; REACHED_PLACE discovery emission. |
 | Task 3a | pending | Align backend places with FE; category from place. |
 
