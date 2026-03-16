@@ -534,6 +534,117 @@ A **single-city deterministic civilization sandbox** presented as an **agentic s
 - Spec: `docs/specs/event-discovery-rule-matrix-spec.md`.
 - Delivered in Sprints 16–20 (movement/dialogue, chat commands, place model, discovery context, proximity group).
 
+## Epic 16: Hybrid command interpretation and transparency
+
+- **Build order:** Next recommended milestone after Epic 15
+- **Business/product value:** Reduces unnecessary token spend while making the chat control surface more trustworthy
+- **Technical portfolio value:** Demonstrates policy-aware orchestration with deterministic-first design
+- **Estimated complexity:** Medium-high
+
+### Features
+
+- Structured command contract for chat-controlled simulation actions
+- Deterministic matcher for common command families
+- LLM fallback only for ambiguous but supported requests
+- Interpretation provenance exposed to logs and UI
+
+### Implementation tasks
+
+- Define structured backend commands for safe command families such as `step`, `pause`, `focus`, `move to place`, and `meet human`.
+- Add deterministic parsing and entity resolution that fail closed when a request cannot be resolved safely.
+- Add an LLM fallback adapter that returns a structured command candidate only after deterministic parsing fails or remains ambiguous.
+- Validate fallback output against command schema and access policy before execution.
+- Extend the orchestration response contract with interpretation provenance so the UI can show whether a command was parsed deterministically or required the LLM.
+
+### Dependencies
+
+- Depends on Epics 9, 10, and 15.
+- Refines `docs/specs/agent-chat-orchestration-spec.md`.
+- Feeds Epic 17 by turning commands into stable goal assignments instead of ad hoc mutations.
+
+## Epic 17: Goal-based movement and deterministic intent execution
+
+- **Build order:** After Epic 16
+- **Business/product value:** Makes humans feel directed and legible instead of random or teleport-driven
+- **Technical portfolio value:** Demonstrates canonical intent modeling inside a deterministic simulation
+- **Estimated complexity:** High
+
+### Features
+
+- Human goal model with durable assignment and completion
+- Goal-driven movement toward places and humans
+- Idle wandering when no goal is active
+- Goal lifecycle events and history
+- Boundary-safe movement that avoids edge sticking
+
+### Implementation tasks
+
+- Add a canonical goal model with type, status, target reference, assignment provenance, and lifecycle timestamps or ticks.
+- Integrate goals into the deterministic step loop so active goals take priority over idle wandering.
+- Support the first goal types: `MOVE_TO_PLACE`, `MEET_HUMAN`, and `FOLLOW_HUMAN`; keep `BUILD_STRUCTURE` and `EXPLORE_AREA` as planned extensions.
+- Emit deterministic goal assignment and completion signals for history and UI explanation.
+- Update structured chat commands so movement-oriented commands assign goals instead of directly bypassing the simulation model.
+
+### Dependencies
+
+- Depends on Epic 16 and reuses the place model delivered in Epic 15.
+- Feeds Epics 18 and 19 by providing durable simulation intent.
+
+## Epic 18: Knowledge progression graph
+
+- **Build order:** After Epic 17
+- **Business/product value:** Makes discoveries and inventions feel cumulative and meaningful
+- **Technical portfolio value:** Demonstrates config-backed deterministic progression design
+- **Estimated complexity:** High
+
+### Features
+
+- Versioned `tech-tree.json` for discoveries, inventions, and applications
+- Deterministic prerequisite evaluation
+- Application unlock state exposed through read models
+- Stable ids and config validation for future content growth
+
+### Implementation tasks
+
+- Define the `tech-tree.json` schema and loading/validation path.
+- Model discoveries, inventions, and applications as distinct node types with prerequisite ids and optional trigger metadata.
+- Evaluate unlocks deterministically from persisted events and prior knowledge state.
+- Expose unlocked knowledge state through backend read models and MCP parity surfaces.
+- Keep content scope intentionally small at first so the structure is proven before content expansion.
+
+### Dependencies
+
+- Depends on Epics 2, 15, and 17.
+- Feeds Epic 19 by unlocking action families from applications.
+
+## Epic 19: Knowledge-driven actions and autonomous turn pacing
+
+- **Build order:** After Epic 18
+- **Business/product value:** Makes the world evolve gradually and believably over long simulations
+- **Technical portfolio value:** Demonstrates long-run deterministic autonomy without relying on LLM calls
+- **Estimated complexity:** High
+
+### Features
+
+- Application-unlocked human action catalog
+- Deterministic action selection using goals, local context, and unlocked applications
+- Bounded per-tick pacing budget
+- Long-run autonomous stepping without LLM usage
+- Tribe-compatible extension points without full tribe implementation
+
+### Implementation tasks
+
+- Map unlocked applications to deterministic action families such as `COOK_FOOD`, `TELL_STORIES`, `CREATE_ART`, `STORE_FOOD`, and `TRADE_GOODS`.
+- Add deterministic action scheduling that respects active goals, available applications, and local simulation context.
+- Introduce a bounded per-tick outcome budget so one step contains only a small number of visible changes.
+- Add long-run regression coverage to prove the simulation can run for thousands of turns without LLM calls.
+- Preserve forward compatibility for future `tribeId` support in humans, goals, and events without implementing multi-tribe gameplay yet.
+
+### Dependencies
+
+- Depends on Epics 17 and 18.
+- Keeps multi-tribe support explicitly deferred while preserving domain compatibility for a later epic.
+
 ## Features by epic and task dependency map
 
 ```mermaid
@@ -565,7 +676,12 @@ flowchart TD
   epic12 --> mvp
   epic13 --> epic14[MainSimulationBoardSimplification]
   epic14 --> epic15[RuleBasedEventAndDiscoverySystem]
+  epic15 --> epic16[HybridCommandInterpretationAndTransparency]
+  epic16 --> epic17[GoalBasedMovementAndDeterministicIntentExecution]
+  epic17 --> epic18[KnowledgeProgressionGraph]
+  epic18 --> epic19[KnowledgeDrivenActionsAndAutonomousTurnPacing]
   epic15 --> mvp
+  epic19 --> mvp
 ```
 
 ## Recommended implementation order
@@ -588,11 +704,15 @@ flowchart TD
 16. Extend chat/UI-effect flows so board reactions become the primary visual feedback loop for simulation commands.
 17. Simplify the authoritative main simulation page around one minimal symbolic board and remove PixiJS from that main surface and its authoritative references.
 18. Rule-based event and discovery system: dialogue from collision (S16), chat go-to-place and show-events drawer (S17), place model and REACHED_PLACE (S18), discovery from context and traits (S19), proximity group and markers (S20).
-19. Add scoped hardening (tests, config, authorization, contract alignment).
-20. Establish testing strategy and baseline automated checks for backend and frontend (build, lint, and focused tests).
-21. Introduce CI pipelines for pull requests and main branch validation.
-22. Prepare simple deployment architecture and perform a first non-production deployment (dev or staging).
-23. Introduce standards-based identity for external clients and MCP access (`Keycloak`/OIDC/OAuth2) once core product flows are stable.
+19. Add deterministic-first hybrid command interpretation with validated LLM fallback and visible interpretation provenance (Sprint 21 / Epic 16).
+20. Add canonical human goals and goal-driven movement so chat commands assign durable simulation intent rather than ad hoc movement mutations (Sprint 22 / Epic 17).
+21. Introduce a config-backed knowledge progression graph with deterministic discovery -> invention -> application unlocks and read-model exposure (Sprint 23 / Epic 18).
+22. Turn unlocked applications into deterministic action families and add bounded turn pacing so the simulation can evolve slowly over many ticks without LLM calls (Sprint 24 / Epic 19).
+23. Add scoped hardening (tests, config, authorization, contract alignment).
+24. Establish testing strategy and baseline automated checks for backend and frontend (build, lint, and focused tests).
+25. Introduce CI pipelines for pull requests and main branch validation.
+26. Prepare simple deployment architecture and perform a first non-production deployment (dev or staging).
+27. Introduce standards-based identity for external clients and MCP access (`Keycloak`/OIDC/OAuth2) once core product flows are stable.
 
 ## Suggested delegation
 

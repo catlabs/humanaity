@@ -151,6 +151,9 @@ Rules:
 - prompt pack name: `sprint-XX-prompt-pack.md`
 - `XX` is a two-digit number
 - theme must describe the sprint outcome, not a vague label
+- use short, human-readable theme names
+- avoid long architectural or overly descriptive names in files and titles
+- prefer simple names such as `chat-commands`, `human-goals`, `places`, `tech-tree`, `human-actions`, `turn-pacing`
 
 ### 7. Write the sprint doc in execution order
 
@@ -236,6 +239,9 @@ If the user invoked this skill directly, the final response should briefly summa
 - Treat specs as locked semantic anchors, not brainstorm scratchpads.
 - Treat prompt packs as copy-paste delegation tools, not narrative docs.
 - If a brainstorm contains unresolved choices, surface them explicitly instead of pretending they are settled.
+- Use short, human-readable file names and document titles.
+- Avoid long architectural or overly descriptive names even when the implementation is sophisticated.
+- Optimize for scanability: the feature should be obvious from the file name at a glance.
 
 ## Recommended Response Pattern
 
