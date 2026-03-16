@@ -13,6 +13,7 @@ import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQuer
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
 import eu.catlabs.humanaity.simulation.domain.SimulationRunStatus;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -55,6 +56,10 @@ class SimulationApplicationServiceDeterminismTest {
     private HumanGoalApplicationService humanGoalApplicationService;
     @Mock
     private KnowledgeProgressionService knowledgeProgressionService;
+    @Mock
+    private KnowledgeUnlockRepository knowledgeUnlockRepository;
+    @Mock
+    private HumanActionCatalogService humanActionCatalogService;
 
     @Test
     void sameSeedAndSameInitialStateYieldSameFinalStateAfterSameStepCount() {
@@ -146,7 +151,9 @@ class SimulationApplicationServiceDeterminismTest {
                 inventionApplicationService,
                 simulationReadModelQueryService,
                 humanGoalApplicationService,
-                knowledgeProgressionService
+                knowledgeProgressionService,
+                knowledgeUnlockRepository,
+                humanActionCatalogService
         );
 
         City city = new City();
@@ -174,6 +181,8 @@ class SimulationApplicationServiceDeterminismTest {
         when(eventApplicationService.listCityEvents(anyLong(), any(), any(), any())).thenReturn(List.of());
         when(humanGoalApplicationService.listActiveGoalsByCity(anyLong())).thenReturn(List.of());
         when(knowledgeProgressionService.evaluateUnlocks(anyLong(), anyLong())).thenReturn(List.of());
+        when(knowledgeUnlockRepository.findByCityIdOrderByUnlockedTickAscNodeIdAsc(anyLong())).thenReturn(List.of());
+        when(humanActionCatalogService.actionsForApplications(any())).thenReturn(java.util.EnumSet.noneOf(eu.catlabs.humanaity.simulation.domain.HumanActionType.class));
 
         return new ScenarioContext(service, run, humans, cityId);
     }

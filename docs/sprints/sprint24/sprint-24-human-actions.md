@@ -2,15 +2,15 @@
 
 ## Execution status
 
-- Current phase: Planned
-- Active chunk: none
-- Next chunk: Task 1a
+- Current phase: In progress
+- Active chunk: Task 2a
+- Next chunk: Task 2a
 - Blocked items: none
-- Last completed chunk: none
+- Last completed chunk: Task 1a
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | todo | Add application-unlocked action catalog and deterministic action selection rules. |
+| Task 1a | done | Added application-mapped action catalog, deterministic action selector, and integrated action event drafts. |
 | Task 2a | todo | Introduce bounded per-tick action pacing and gradual progression rules. |
 | Task 3a | todo | Preserve autonomous no-LLM stepping and leave tribe-compatible extension points. |
 

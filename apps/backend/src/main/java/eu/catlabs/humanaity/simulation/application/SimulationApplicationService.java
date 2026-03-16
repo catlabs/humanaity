@@ -14,9 +14,13 @@ import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.invention.domain.InventionCategory;
 import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
 import eu.catlabs.humanaity.simulation.domain.HumanGoal;
+import eu.catlabs.humanaity.simulation.domain.HumanActionType;
+import eu.catlabs.humanaity.simulation.domain.KnowledgeUnlock;
 import eu.catlabs.humanaity.simulation.domain.HumanGoalType;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
 import eu.catlabs.humanaity.simulation.domain.SimulationRunStatus;
+import eu.catlabs.humanaity.simulation.domain.TechTreeNodeType;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -81,6 +85,8 @@ public class SimulationApplicationService {
     private final SimulationReadModelQueryService simulationReadModelQueryService;
     private final HumanGoalApplicationService humanGoalApplicationService;
     private final KnowledgeProgressionService knowledgeProgressionService;
+    private final KnowledgeUnlockRepository knowledgeUnlockRepository;
+    private final HumanActionCatalogService humanActionCatalogService;
 
     public SimulationApplicationService(
             HumanRepository humanRepository,
@@ -91,7 +97,9 @@ public class SimulationApplicationService {
             InventionApplicationService inventionApplicationService,
             SimulationReadModelQueryService simulationReadModelQueryService,
             HumanGoalApplicationService humanGoalApplicationService,
-            KnowledgeProgressionService knowledgeProgressionService
+            KnowledgeProgressionService knowledgeProgressionService,
+            KnowledgeUnlockRepository knowledgeUnlockRepository,
+            HumanActionCatalogService humanActionCatalogService
     ) {
         this.humanRepository = humanRepository;
         this.humanApplicationService = humanApplicationService;
@@ -102,6 +110,8 @@ public class SimulationApplicationService {
         this.simulationReadModelQueryService = simulationReadModelQueryService;
         this.humanGoalApplicationService = humanGoalApplicationService;
         this.knowledgeProgressionService = knowledgeProgressionService;
+        this.knowledgeUnlockRepository = knowledgeUnlockRepository;
+        this.humanActionCatalogService = humanActionCatalogService;
     }
 
     public synchronized String startSimulation(Long cityId) {
@@ -350,10 +360,18 @@ public class SimulationApplicationService {
 
         long nextTick = run.getTick() + 1;
         List<EventDraft> goalLifecycleDrafts = finalizeGoalOutcomes(goalOutcomes, nextTick);
+        List<EventDraft> actionDrafts = buildHumanActionDrafts(run, nextTick, orderedHumans, activeGoalsByHuman);
         run.setTick(nextTick);
         simulationRunRepository.save(run);
 
-        List<EventDraft> stepEvents = buildStepEventDrafts(run, nextTick, orderedHumans, previousPlaceByHuman, goalLifecycleDrafts);
+        List<EventDraft> stepEvents = buildStepEventDrafts(
+                run,
+                nextTick,
+                orderedHumans,
+                previousPlaceByHuman,
+                goalLifecycleDrafts,
+                actionDrafts
+        );
         eventApplicationService.emitEventsAtTick(cityId, nextTick, stepEvents);
 
         List<Invention> createdInventions = inventionApplicationService.deriveFromPersistedEvents(cityId);
@@ -528,13 +546,15 @@ public class SimulationApplicationService {
             long tick,
             List<Human> orderedHumans,
             Map<Long, String> previousPlaceByHuman,
-            List<EventDraft> goalLifecycleDrafts
+            List<EventDraft> goalLifecycleDrafts,
+            List<EventDraft> actionDrafts
     ) {
         List<Human> humans = orderedHumans.stream()
                 .sorted(Comparator.comparing(Human::getId))
                 .toList();
         List<EventDraft> drafts = new ArrayList<>();
         drafts.addAll(goalLifecycleDrafts);
+        drafts.addAll(actionDrafts);
         drafts.addAll(buildCollisionDrafts(tick, humans));
         drafts.addAll(buildDialogueDrafts(run.getCity().getId(), tick, humans));
         drafts.addAll(buildReachedPlaceDrafts(run.getCity().getId(), tick, humans, previousPlaceByHuman));
@@ -550,6 +570,54 @@ public class SimulationApplicationService {
             }
         }
         drafts.addAll(buildDiscoveryDrafts(run.getSeed(), tick, humans, humansWithContextDiscovery(contextDiscoveries)));
+        return drafts;
+    }
+
+    private List<EventDraft> buildHumanActionDrafts(
+            SimulationRun run,
+            long tick,
+            List<Human> humans,
+            Map<Long, HumanGoal> activeGoalsByHuman
+    ) {
+        List<KnowledgeUnlock> unlocks = knowledgeUnlockRepository.findByCityIdOrderByUnlockedTickAscNodeIdAsc(run.getCity().getId());
+        java.util.Set<String> unlockedApplications = unlocks.stream()
+                .filter(unlock -> unlock.getNodeType() == TechTreeNodeType.APPLICATION)
+                .map(KnowledgeUnlock::getNodeId)
+                .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+        java.util.EnumSet<HumanActionType> catalog = humanActionCatalogService.actionsForApplications(unlockedApplications);
+        if (catalog.isEmpty()) {
+            return List.of();
+        }
+
+        List<EventDraft> drafts = new ArrayList<>();
+        for (Human human : humans) {
+            Optional<SimulationPlaceRegistry.SimulationPlace> place = resolvePlaceForPosition(human.getX(), human.getY());
+            Optional<HumanActionCatalogService.SelectedHumanAction> maybeAction = humanActionCatalogService.selectAction(
+                    run.getSeed(),
+                    tick,
+                    human,
+                    humans,
+                    place,
+                    catalog,
+                    activeGoalsByHuman.containsKey(human.getId())
+            );
+            if (maybeAction.isEmpty()) {
+                continue;
+            }
+            HumanActionCatalogService.SelectedHumanAction selected = maybeAction.get();
+            Map<String, String> payload = new HashMap<>();
+            payload.put("actionType", selected.actionType().name());
+            payload.put("humanId", String.valueOf(selected.humanId()));
+            place.ifPresent(simulationPlace -> payload.put("placeId", simulationPlace.id()));
+            String eventKey = "HUMAN_ACTION:" + selected.humanId() + ":" + selected.actionType().name() + ":" + tick;
+            drafts.add(new EventDraft(
+                    EventType.HUMAN_ACTION_PERFORMED,
+                    List.of(selected.humanId()),
+                    payload,
+                    16,
+                    eventKey
+            ));
+        }
         return drafts;
     }
 
