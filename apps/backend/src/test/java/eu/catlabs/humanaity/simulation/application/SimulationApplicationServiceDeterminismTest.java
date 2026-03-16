@@ -53,6 +53,8 @@ class SimulationApplicationServiceDeterminismTest {
     private SimulationReadModelQueryService simulationReadModelQueryService;
     @Mock
     private HumanGoalApplicationService humanGoalApplicationService;
+    @Mock
+    private KnowledgeProgressionService knowledgeProgressionService;
 
     @Test
     void sameSeedAndSameInitialStateYieldSameFinalStateAfterSameStepCount() {
@@ -143,7 +145,8 @@ class SimulationApplicationServiceDeterminismTest {
                 eventApplicationService,
                 inventionApplicationService,
                 simulationReadModelQueryService,
-                humanGoalApplicationService
+                humanGoalApplicationService,
+                knowledgeProgressionService
         );
 
         City city = new City();
@@ -170,6 +173,7 @@ class SimulationApplicationServiceDeterminismTest {
         when(inventionApplicationService.listCityInventions(anyLong(), any(), any(), any())).thenReturn(List.of());
         when(eventApplicationService.listCityEvents(anyLong(), any(), any(), any())).thenReturn(List.of());
         when(humanGoalApplicationService.listActiveGoalsByCity(anyLong())).thenReturn(List.of());
+        when(knowledgeProgressionService.evaluateUnlocks(anyLong(), anyLong())).thenReturn(List.of());
 
         return new ScenarioContext(service, run, humans, cityId);
     }

@@ -80,6 +80,7 @@ public class SimulationApplicationService {
     private final InventionApplicationService inventionApplicationService;
     private final SimulationReadModelQueryService simulationReadModelQueryService;
     private final HumanGoalApplicationService humanGoalApplicationService;
+    private final KnowledgeProgressionService knowledgeProgressionService;
 
     public SimulationApplicationService(
             HumanRepository humanRepository,
@@ -89,7 +90,8 @@ public class SimulationApplicationService {
             EventApplicationService eventApplicationService,
             InventionApplicationService inventionApplicationService,
             SimulationReadModelQueryService simulationReadModelQueryService,
-            HumanGoalApplicationService humanGoalApplicationService
+            HumanGoalApplicationService humanGoalApplicationService,
+            KnowledgeProgressionService knowledgeProgressionService
     ) {
         this.humanRepository = humanRepository;
         this.humanApplicationService = humanApplicationService;
@@ -99,6 +101,7 @@ public class SimulationApplicationService {
         this.inventionApplicationService = inventionApplicationService;
         this.simulationReadModelQueryService = simulationReadModelQueryService;
         this.humanGoalApplicationService = humanGoalApplicationService;
+        this.knowledgeProgressionService = knowledgeProgressionService;
     }
 
     public synchronized String startSimulation(Long cityId) {
@@ -355,6 +358,7 @@ public class SimulationApplicationService {
 
         List<Invention> createdInventions = inventionApplicationService.deriveFromPersistedEvents(cityId);
         emitMilestoneEvents(cityId, createdInventions);
+        knowledgeProgressionService.evaluateUnlocks(cityId, nextTick);
     }
 
     private GoalTickOutcome updateIdleHumanPosition(Long runSeed, Long tick, Human human) {
