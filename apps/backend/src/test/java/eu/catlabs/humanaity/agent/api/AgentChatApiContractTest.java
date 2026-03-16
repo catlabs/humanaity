@@ -102,6 +102,8 @@ class AgentChatApiContractTest {
 
         JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
         assertThat(payload.get("commandClass").asText()).isEqualTo("SAFE_MVP");
+        assertThat(payload.get("interpretationProvenance").asText()).isEqualTo("DETERMINISTIC_MATCH");
+        assertThat(payload.get("interpretedCommandSummary").asText()).contains("STEP_SIMULATION");
         assertThat(payload.get("message").asText()).contains("Advanced the city");
         assertThat(payload.get("conversationId").asText()).isNotBlank();
         assertThat(payload.get("referencedEntities").get("cityId").asLong()).isEqualTo(city.getId());
@@ -140,6 +142,7 @@ class AgentChatApiContractTest {
         JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
         assertThat(payload.get("executedActions").get(0).get("type").asText()).isEqualTo("UNSUPPORTED_REQUEST");
         assertThat(payload.get("executedActions").get(0).get("status").asText()).isEqualTo("REJECTED");
+        assertThat(payload.get("interpretationProvenance").asText()).isEqualTo("REFUSED_UNSUPPORTED");
         assertThat(payload.get("message").asText()).contains("safe Sprint 8 commands");
     }
 

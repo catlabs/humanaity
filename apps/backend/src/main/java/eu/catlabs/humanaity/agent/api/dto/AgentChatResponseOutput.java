@@ -9,6 +9,8 @@ public class AgentChatResponseOutput {
     private String conversationId;
     private String message;
     private String commandClass;
+    private String interpretationProvenance;
+    private String interpretedCommandSummary;
     private List<AgentActionOutput> executedActions = new ArrayList<>();
     private AgentReferencedEntitiesOutput referencedEntities = new AgentReferencedEntitiesOutput();
     private List<AgentUiEffectOutput> uiEffects = new ArrayList<>();
@@ -36,6 +38,22 @@ public class AgentChatResponseOutput {
 
     public void setCommandClass(String commandClass) {
         this.commandClass = commandClass;
+    }
+
+    public String getInterpretationProvenance() {
+        return interpretationProvenance;
+    }
+
+    public void setInterpretationProvenance(String interpretationProvenance) {
+        this.interpretationProvenance = interpretationProvenance;
+    }
+
+    public String getInterpretedCommandSummary() {
+        return interpretedCommandSummary;
+    }
+
+    public void setInterpretedCommandSummary(String interpretedCommandSummary) {
+        this.interpretedCommandSummary = interpretedCommandSummary;
     }
 
     public List<AgentActionOutput> getExecutedActions() {

@@ -155,6 +155,7 @@ describe('SimulationDetailComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Agent Chat');
     expect(text).toContain('Advanced the city by 3 step(s). Current tick is 3.');
+    expect(text).toContain('Parsed via DETERMINISTIC_MATCH');
   });
 
   it('applies uiEffects refresh and highlight signals from backend chat responses', () => {
@@ -163,6 +164,8 @@ describe('SimulationDetailComponent', () => {
         conversationId: 'conv-2',
         message: 'Refreshed and highlighted latest event.',
         commandClass: 'SAFE_MVP',
+        interpretationProvenance: 'DETERMINISTIC_MATCH',
+        interpretedCommandSummary: 'EXPLAIN_EVENT',
         executedActions: [],
         referencedEntities: { cityId: 7, eventIds: [12] },
         uiEffects: [

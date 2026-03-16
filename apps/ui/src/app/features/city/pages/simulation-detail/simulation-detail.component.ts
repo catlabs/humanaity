@@ -250,6 +250,16 @@ export class SimulationDetailComponent
     }
     return null;
   });
+  latestAgentEntry = computed(() => {
+    const entries = this.chatEntries();
+    for (let index = entries.length - 1; index >= 0; index -= 1) {
+      const entry = entries[index];
+      if (entry.role === 'agent') {
+        return entry;
+      }
+    }
+    return null;
+  });
   canSendChat = computed(
     () => !this.chatBusy() && this.chatInput().trim().length > 0
   );
@@ -311,6 +321,8 @@ export class SimulationDetailComponent
         content: message,
         timestamp: new Date().toISOString(),
         commandClass: null,
+        interpretationProvenance: null,
+        interpretedCommandSummary: null,
       },
     ]);
 
@@ -576,6 +588,8 @@ export class SimulationDetailComponent
         content: response.message?.trim() || 'No response message returned.',
         timestamp: new Date().toISOString(),
         commandClass: response.commandClass ?? null,
+        interpretationProvenance: response.interpretationProvenance ?? null,
+        interpretedCommandSummary: response.interpretedCommandSummary ?? null,
       },
     ]);
 
@@ -706,6 +720,8 @@ export class SimulationDetailComponent
         content: `Confirm intervention ${pending.commandType}`,
         timestamp: new Date().toISOString(),
         commandClass: 'DIRECTOR',
+        interpretationProvenance: null,
+        interpretedCommandSummary: null,
       },
     ]);
 
@@ -806,6 +822,8 @@ type ChatEntry = {
   content: string;
   timestamp: string;
   commandClass: string | null;
+  interpretationProvenance: string | null;
+  interpretedCommandSummary: string | null;
 };
 
 type GuidedHumanSummary = {

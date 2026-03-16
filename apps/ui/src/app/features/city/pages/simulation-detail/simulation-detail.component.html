@@ -155,6 +155,16 @@
         @if (latestAgentMessage(); as reply) {
           <div class="chat-reply">{{ reply }}</div>
         }
+        @if (latestAgentEntry(); as latestEntry) {
+          @if (latestEntry.interpretationProvenance || latestEntry.interpretedCommandSummary) {
+            <div class="chat-meta">
+              Parsed via {{ latestEntry.interpretationProvenance ?? 'unknown' }}
+              @if (latestEntry.interpretedCommandSummary) {
+                · {{ latestEntry.interpretedCommandSummary }}
+              }
+            </div>
+          }
+        }
       </div>
     </section>
   </div>

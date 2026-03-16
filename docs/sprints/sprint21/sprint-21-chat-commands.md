@@ -2,17 +2,17 @@
 
 ## Execution status
 
-- Current phase: Planned
+- Current phase: Sprint 21 complete
 - Active chunk: none
-- Next chunk: Task 3a
+- Next chunk: none
 - Blocked items: none
-- Last completed chunk: Task 2a (2026-03-16)
+- Last completed chunk: Task 3a (2026-03-16)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Added structured command types and deterministic matcher coverage for step, pause, focus, move-to-place, and meet-human parsing with fail-closed resolution tests. |
 | Task 2a | done | Added LLM fallback for ambiguous move-style requests with schema validation, deterministic-first precedence, and refusal on invalid output. |
-| Task 3a | todo | Surface interpretation provenance in API, logs, and UI feedback. |
+| Task 3a | done | Added response provenance fields, backend interpretation logs, and a compact provenance line in the simulation chat UI. |
 
 ## Sprint intent
 

@@ -34,6 +34,8 @@ import eu.catlabs.humanaity.simulation.infrastructure.persistence.DirectorInterv
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -49,6 +51,8 @@ import java.util.regex.Pattern;
 
 @Service
 public class AgentChatOrchestrationService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AgentChatOrchestrationService.class);
 
     private static final int MAX_SAFE_STEPS = 50;
     private static final int MAX_DIRECTOR_CONFIRMATION_SECONDS = 300;
@@ -111,24 +115,27 @@ public class AgentChatOrchestrationService {
 
         DeterministicCommandMatch deterministicMatch = deterministicAgentCommandMatcher.match(cityId, input);
         if (deterministicMatch.status() == DeterministicCommandMatchStatus.MATCHED) {
+            applyInterpretationMetadata(response, "DETERMINISTIC_MATCH", summarizeCommand(deterministicMatch.command()));
             executeDeterministicCommand(cityId, input, deterministicMatch.command(), normalizedMessage, response);
-            return response;
+            return logAndReturn(cityId, response);
         }
 
         List<Human> cityHumans = humanRepository.findByCityIdOrderByIdAsc(cityId);
         FallbackCommandMatch fallbackMatch = llmFallbackCommandInterpreter.interpret(normalizedMessage, cityHumans);
         if (fallbackMatch.status() == FallbackCommandMatchStatus.MATCHED) {
+            applyInterpretationMetadata(response, "LLM_FALLBACK", summarizeCommand(fallbackMatch.command()));
             executeDeterministicCommand(cityId, input, fallbackMatch.command(), normalizedMessage, response);
-            return response;
+            return logAndReturn(cityId, response);
         }
         if (fallbackMatch.status() == FallbackCommandMatchStatus.INVALID) {
+            applyInterpretationMetadata(response, "REFUSED_AMBIGUOUS", "Fallback validation failed");
             response.getExecutedActions().add(new AgentActionOutput(
                     "UNSUPPORTED_REQUEST",
                     "REJECTED",
                     "LLM fallback could not validate a structured command"
             ));
             response.setMessage("I could not validate a safe structured command for that request.");
-            return response;
+            return logAndReturn(cityId, response);
         }
 
         String intent = classifyIntent(normalizedMessage);
@@ -161,6 +168,7 @@ public class AgentChatOrchestrationService {
                 executeDirectorMeetHumans(cityId, currentUser, input, normalizedMessage, response);
             }
             default -> {
+                applyInterpretationMetadata(response, "REFUSED_UNSUPPORTED", "Unsupported request");
                 response.getExecutedActions().add(new AgentActionOutput(
                         "UNSUPPORTED_REQUEST",
                         "REJECTED",
@@ -170,7 +178,55 @@ public class AgentChatOrchestrationService {
             }
         }
 
+        if (response.getInterpretationProvenance() == null) {
+            applyInterpretationMetadata(response, "DETERMINISTIC_MATCH", summarizeLegacyIntent(intent));
+        }
+
+        return logAndReturn(cityId, response);
+    }
+
+    private AgentChatResponseOutput logAndReturn(Long cityId, AgentChatResponseOutput response) {
+        logger.info(
+                "Agent chat interpreted cityId={} conversationId={} provenance={} command={}",
+                cityId,
+                response.getConversationId(),
+                response.getInterpretationProvenance(),
+                response.getInterpretedCommandSummary()
+        );
         return response;
+    }
+
+    private void applyInterpretationMetadata(
+            AgentChatResponseOutput response,
+            String provenance,
+            String commandSummary
+    ) {
+        response.setInterpretationProvenance(provenance);
+        response.setInterpretedCommandSummary(commandSummary);
+    }
+
+    private String summarizeCommand(AgentChatCommand command) {
+        return switch (command.type()) {
+            case STEP_SIMULATION -> "STEP_SIMULATION count=" + command.stepCount();
+            case PAUSE_SIMULATION -> "PAUSE_SIMULATION";
+            case FOCUS_HUMAN -> "FOCUS_HUMAN humanId=" + command.primaryHumanId();
+            case MOVE_TO_PLACE -> "MOVE_TO_PLACE humanId=" + command.primaryHumanId() + " placeId=" + command.placeId();
+            case MEET_HUMAN -> "MEET_HUMAN humanIds=" + command.primaryHumanId() + "," + command.secondaryHumanId();
+        };
+    }
+
+    private String summarizeLegacyIntent(String intent) {
+        return switch (intent) {
+            case "show_events_by_type" -> "SHOW_EVENTS_BY_TYPE";
+            case "snapshot" -> "READ_SNAPSHOT";
+            case "summary" -> "READ_SUMMARY";
+            case "explain_event" -> "EXPLAIN_EVENT";
+            case "recent_inventions" -> "READ_INVENTIONS";
+            case "compare_humans" -> "COMPARE_HUMANS";
+            case "follow_human" -> "FOLLOW_HUMAN";
+            case "director_meet_humans" -> "DIRECTOR_MEET_HUMANS";
+            default -> intent.toUpperCase(Locale.ROOT);
+        };
     }
 
     private void executeDeterministicCommand(

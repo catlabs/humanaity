@@ -16,8 +16,9 @@ export interface AgentChatResponseOutput {
     conversationId?: string;
     message?: string;
     commandClass?: string;
+    interpretationProvenance?: string;
+    interpretedCommandSummary?: string;
     executedActions?: Array<AgentActionOutput>;
     referencedEntities?: AgentReferencedEntitiesOutput;
     uiEffects?: Array<AgentUiEffectOutput>;
 }
-
