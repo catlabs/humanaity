@@ -24,9 +24,13 @@ import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionRepository;
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
+import eu.catlabs.humanaity.simulation.domain.HumanGoal;
+import eu.catlabs.humanaity.simulation.domain.HumanGoalSource;
+import eu.catlabs.humanaity.simulation.domain.HumanGoalType;
 import eu.catlabs.humanaity.simulation.domain.DirectorIntervention;
 import eu.catlabs.humanaity.simulation.domain.DirectorInterventionStatus;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
+import eu.catlabs.humanaity.simulation.application.HumanGoalApplicationService;
 import eu.catlabs.humanaity.simulation.application.SimulationPlaceRegistry;
 import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
@@ -69,6 +73,7 @@ public class AgentChatOrchestrationService {
     private final InventionRepository inventionRepository;
     private final HumanRepository humanRepository;
     private final DirectorInterventionRepository directorInterventionRepository;
+    private final HumanGoalApplicationService humanGoalApplicationService;
     private final DeterministicAgentCommandMatcher deterministicAgentCommandMatcher;
     private final LlmFallbackCommandInterpreter llmFallbackCommandInterpreter;
 
@@ -81,6 +86,7 @@ public class AgentChatOrchestrationService {
             InventionRepository inventionRepository,
             HumanRepository humanRepository,
             DirectorInterventionRepository directorInterventionRepository,
+            HumanGoalApplicationService humanGoalApplicationService,
             DeterministicAgentCommandMatcher deterministicAgentCommandMatcher,
             LlmFallbackCommandInterpreter llmFallbackCommandInterpreter
     ) {
@@ -92,6 +98,7 @@ public class AgentChatOrchestrationService {
         this.inventionRepository = inventionRepository;
         this.humanRepository = humanRepository;
         this.directorInterventionRepository = directorInterventionRepository;
+        this.humanGoalApplicationService = humanGoalApplicationService;
         this.deterministicAgentCommandMatcher = deterministicAgentCommandMatcher;
         this.llmFallbackCommandInterpreter = llmFallbackCommandInterpreter;
     }
@@ -294,15 +301,31 @@ public class AgentChatOrchestrationService {
     }
 
     private void executeMeetHuman(AgentChatCommand command, AgentChatResponseOutput response) {
-        response.getExecutedActions().add(new AgentActionOutput(
+        Human actor = humanRepository.findById(command.primaryHumanId()).orElse(null);
+        Human target = humanRepository.findById(command.secondaryHumanId()).orElse(null);
+        if (actor == null || target == null || actor.getCity() == null || !actor.getCity().getId().equals(target.getCity().getId())) {
+            response.getExecutedActions().add(new AgentActionOutput(
+                    "MEET_HUMAN",
+                    "REJECTED",
+                    "Could not resolve both humans in the same city"
+            ));
+            response.setMessage("I could not resolve both humans for the meet goal.");
+            return;
+        }
+        assignGoalAndAnnotateResponse(
+                actor.getCity().getId(),
+                actor,
+                HumanGoalType.MEET_HUMAN,
+                new HumanGoalApplicationService.GoalTarget(null, target.getId(), target.getX(), target.getY(), "chat:meet"),
                 "MEET_HUMAN",
-                "REJECTED",
-                "Meeting commands are parsed deterministically but execute in Sprint 22 goal flows"
-        ));
-        response.getReferencedEntities().setHumanIds(List.of(command.primaryHumanId(), command.secondaryHumanId()));
-        response.setMessage("Parsed a meet command for humans "
-                + command.primaryHumanId() + " and " + command.secondaryHumanId()
-                + ", but meeting goals are not executed until Sprint 22.");
+                response,
+                "Assigned MEET_HUMAN: " + actor.getName() + " -> " + target.getName() + "."
+        );
+        response.getReferencedEntities().setHumanIds(List.of(actor.getId(), target.getId()));
+        AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
+        focus.setHumanId(actor.getId());
+        response.getUiEffects().add(focus);
+        response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
     }
 
     private void executeSnapshot(Long cityId, AgentChatResponseOutput response) {
@@ -376,15 +399,15 @@ public class AgentChatOrchestrationService {
             return;
         }
 
-        targetHuman.setX(targetPlace.x);
-        targetHuman.setY(targetPlace.y);
-        humanRepository.save(targetHuman);
-
-        response.getExecutedActions().add(new AgentActionOutput(
+        assignGoalAndAnnotateResponse(
+                cityId,
+                targetHuman,
+                HumanGoalType.MOVE_TO_PLACE,
+                new HumanGoalApplicationService.GoalTarget(targetPlace.id, null, targetPlace.x, targetPlace.y, "chat:move"),
                 "MOVE_HUMAN_TO_PLACE",
-                "COMPLETED",
-                "Moved human " + targetHuman.getId() + " to place " + targetPlace.id
-        ));
+                response,
+                "Assigned MOVE_TO_PLACE: " + targetHuman.getName() + " -> " + targetPlace.label + "."
+        );
         response.getReferencedEntities().setHumanIds(List.of(targetHuman.getId()));
         response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
         AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
@@ -393,7 +416,6 @@ public class AgentChatOrchestrationService {
         AgentUiEffectOutput highlightPlace = new AgentUiEffectOutput("HIGHLIGHT_PLACE");
         highlightPlace.setPlaceId(targetPlace.id);
         response.getUiEffects().add(highlightPlace);
-        response.setMessage("Moved " + targetHuman.getName() + " to " + targetPlace.label + ".");
     }
 
     private void executeMoveHumanToPlace(
@@ -424,15 +446,15 @@ public class AgentChatOrchestrationService {
             return;
         }
 
-        targetHuman.setX(targetPlace.x);
-        targetHuman.setY(targetPlace.y);
-        humanRepository.save(targetHuman);
-
-        response.getExecutedActions().add(new AgentActionOutput(
+        assignGoalAndAnnotateResponse(
+                cityId,
+                targetHuman,
+                HumanGoalType.MOVE_TO_PLACE,
+                new HumanGoalApplicationService.GoalTarget(targetPlace.id, null, targetPlace.x, targetPlace.y, "chat:move"),
                 "MOVE_HUMAN_TO_PLACE",
-                "COMPLETED",
-                "Moved human " + targetHuman.getId() + " to place " + targetPlace.id
-        ));
+                response,
+                "Assigned MOVE_TO_PLACE: " + targetHuman.getName() + " -> " + targetPlace.label + "."
+        );
         response.getReferencedEntities().setHumanIds(List.of(targetHuman.getId()));
         response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
         AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
@@ -441,7 +463,6 @@ public class AgentChatOrchestrationService {
         AgentUiEffectOutput highlightPlace = new AgentUiEffectOutput("HIGHLIGHT_PLACE");
         highlightPlace.setPlaceId(targetPlace.id);
         response.getUiEffects().add(highlightPlace);
-        response.setMessage("Moved " + targetHuman.getName() + " to " + targetPlace.label + ".");
     }
 
     private void executeShowEventsByType(
@@ -627,65 +648,121 @@ public class AgentChatOrchestrationService {
             String normalizedMessage,
             AgentChatResponseOutput response
     ) {
+        List<Human> humans = humanRepository.findByCityIdOrderByIdAsc(cityId);
+        if (humans.size() < 2) {
+            response.getExecutedActions().add(new AgentActionOutput(
+                    "FOLLOW_HUMAN",
+                    "REJECTED",
+                    "Follow requires at least two humans"
+            ));
+            response.setMessage("I need at least two humans in this city to assign a follow goal.");
+            return;
+        }
         Human target = resolveTargetHuman(cityId, input, normalizedMessage);
-        int followTicks = Math.max(1, Math.min(extractRequestedFollowTickCount(normalizedMessage), 20));
-        SimulationRun run = simulationApplicationService.step(cityId, followTicks);
-        long fromTick = Math.max(1L, run.getTick() - followTicks + 1);
-        List<Event> followEvents = eventRepository.findHumanEventsInTickWindow(
-                cityId,
-                target.getId(),
-                fromTick,
-                run.getTick()
-        );
-        List<Invention> followInventions = inventionRepository.findByCityIdAndTickCreatedBetweenOrderByTickCreatedAscInventionKeyAscIdAsc(
-                cityId,
-                fromTick,
-                run.getTick()
-        );
+        Human follower = humans.stream()
+                .filter(h -> !h.getId().equals(target.getId()))
+                .findFirst()
+                .orElse(null);
+        if (follower == null) {
+            response.getExecutedActions().add(new AgentActionOutput(
+                    "FOLLOW_HUMAN",
+                    "REJECTED",
+                    "Could not resolve a follower"
+            ));
+            response.setMessage("I could not resolve who should follow.");
+            return;
+        }
 
-        response.getExecutedActions().add(new AgentActionOutput(
+        HumanGoal goal = assignGoalAndAnnotateResponse(
+                cityId,
+                follower,
+                HumanGoalType.FOLLOW_HUMAN,
+                new HumanGoalApplicationService.GoalTarget(null, target.getId(), target.getX(), target.getY(), "chat:follow"),
                 "FOLLOW_HUMAN",
-                "COMPLETED",
-                "Followed human " + target.getId() + " for " + followTicks + " tick(s)"
-        ));
-        response.getReferencedEntities().setHumanIds(List.of(target.getId()));
-        response.getReferencedEntities().setEventIds(takeLast(followEvents, 5).stream().map(Event::getId).toList());
-        response.getReferencedEntities().setInventionIds(takeLast(followInventions, 5).stream().map(Invention::getId).toList());
-
+                response,
+                "Assigned FOLLOW_HUMAN: " + follower.getName() + " -> " + target.getName() + "."
+        );
+        response.getReferencedEntities().setHumanIds(List.of(follower.getId(), target.getId()));
         AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
-        focus.setHumanId(target.getId());
+        focus.setHumanId(follower.getId());
         response.getUiEffects().add(focus);
         AgentUiEffectOutput track = new AgentUiEffectOutput("TRACK_HUMAN");
         track.setHumanId(target.getId());
         response.getUiEffects().add(track);
         response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
-        AgentUiEffectOutput refreshTimeline = new AgentUiEffectOutput("REFRESH_TIMELINE");
-        refreshTimeline.setFromTick(fromTick);
-        response.getUiEffects().add(refreshTimeline);
-        if (!followEvents.isEmpty()) {
-            Event latestEvent = followEvents.get(followEvents.size() - 1);
-            AgentUiEffectOutput highlightEvent = new AgentUiEffectOutput("HIGHLIGHT_EVENT");
-            highlightEvent.setEventId(latestEvent.getId());
-            response.getUiEffects().add(highlightEvent);
-        }
-        if (!followInventions.isEmpty()) {
-            Invention latestInvention = followInventions.get(followInventions.size() - 1);
-            AgentUiEffectOutput highlightInvention = new AgentUiEffectOutput("HIGHLIGHT_INVENTION");
-            highlightInvention.setInventionId(latestInvention.getId());
-            response.getUiEffects().add(highlightInvention);
-        }
         response.setStructuredData(Map.of(
                 "followHuman", Map.of(
-                        "human", toHumanSummary(target),
-                        "ticks", followTicks,
-                        "fromTick", fromTick,
-                        "resultTick", run.getTick(),
-                        "eventWindow", takeLast(followEvents, 8).stream().map(this::toFollowEventSummary).toList(),
-                        "inventionWindow", takeLast(followInventions, 8).stream().map(this::toFollowInventionSummary).toList()
+                        "goalId", goal.getId(),
+                        "follower", toHumanSummary(follower),
+                        "target", toHumanSummary(target),
+                        "assignedTick", goal.getAssignedTick()
                 )
         ));
-        response.setMessage("Followed " + target.getName() + " for " + followTicks
-                + " tick(s). Simulation is now at tick " + run.getTick() + ".");
+        response.setMessage("Assigned " + follower.getName() + " to follow " + target.getName() + ".");
+    }
+
+    private HumanGoal assignGoalAndAnnotateResponse(
+            Long cityId,
+            Human actor,
+            HumanGoalType goalType,
+            HumanGoalApplicationService.GoalTarget goalTarget,
+            String actionType,
+            AgentChatResponseOutput response,
+            String userMessage
+    ) {
+        long assignedTick = currentTickForGoalAssignment(cityId);
+        HumanGoal goal = humanGoalApplicationService.assignGoal(
+                cityId,
+                actor.getId(),
+                goalType,
+                HumanGoalSource.CHAT_COMMAND,
+                assignedTick,
+                goalTarget
+        );
+        emitGoalAssignedEvent(cityId, goal, assignedTick);
+        response.getExecutedActions().add(new AgentActionOutput(
+                actionType,
+                "COMPLETED",
+                "Assigned " + goalType.name() + " goal " + goal.getId() + " to human " + actor.getId()
+        ));
+        response.setMessage(userMessage);
+        return goal;
+    }
+
+    private long currentTickForGoalAssignment(Long cityId) {
+        try {
+            return simulationApplicationService.loadRun(cityId).getTick();
+        } catch (EntityNotFoundException notFound) {
+            return simulationApplicationService.createRun(cityId).getTick();
+        }
+    }
+
+    private void emitGoalAssignedEvent(Long cityId, HumanGoal goal, long assignedTick) {
+        Map<String, String> payload = new LinkedHashMap<>();
+        payload.put("goalId", String.valueOf(goal.getId()));
+        payload.put("goalType", goal.getGoalType().name());
+        payload.put("source", goal.getSource().name());
+        if (goal.getTargetPlaceId() != null) {
+            payload.put("targetPlaceId", goal.getTargetPlaceId());
+        }
+        if (goal.getTargetHumanId() != null) {
+            payload.put("targetHumanId", String.valueOf(goal.getTargetHumanId()));
+        }
+        if (goal.getMetadataKey() != null) {
+            payload.put("metadataKey", goal.getMetadataKey());
+        }
+        String eventKey = "GOAL_ASSIGNED:" + goal.getId() + ":" + assignedTick;
+        eventApplicationService.emitEventsAtTick(
+                cityId,
+                assignedTick,
+                List.of(new eu.catlabs.humanaity.event.application.EventDraft(
+                        EventType.GOAL_ASSIGNED,
+                        List.of(goal.getHuman().getId()),
+                        payload,
+                        12,
+                        eventKey
+                ))
+        );
     }
 
     private void executeDirectorMeetHumans(

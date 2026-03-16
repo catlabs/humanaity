@@ -2,17 +2,17 @@
 
 ## Execution status
 
-- Current phase: In progress
-- Active chunk: Task 3a
-- Next chunk: Task 3a
+- Current phase: Completed
+- Active chunk: none
+- Next chunk: Sprint 23 Task 1a
 - Blocked items: none
-- Last completed chunk: Task 2a
+- Last completed chunk: Task 3a
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Added canonical goal model, migration, goal assignment service, and creation/update tests. |
 | Task 2a | done | Integrated goal-priority movement, deterministic completion/cancellation, boundary-safe movement, and goal completion events with regression tests. |
-| Task 3a | todo | Route chat commands to goal assignment instead of ad hoc position mutation where applicable. |
+| Task 3a | done | Routed MOVE/MEET/FOLLOW chat flows to goal assignment with GOAL_ASSIGNED signals and updated API/fallback behavior tests. |
 
 ## Sprint intent
 

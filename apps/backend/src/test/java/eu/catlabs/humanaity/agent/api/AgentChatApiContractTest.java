@@ -12,6 +12,7 @@ import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,8 @@ class AgentChatApiContractTest {
     @Autowired
     private SimulationRunRepository simulationRunRepository;
     @Autowired
+    private HumanGoalRepository humanGoalRepository;
+    @Autowired
     private EventRepository eventRepository;
     @Autowired
     private InventionRepository inventionRepository;
@@ -56,6 +59,7 @@ class AgentChatApiContractTest {
 
     @BeforeEach
     void cleanDatabase() {
+        humanGoalRepository.deleteAll();
         inventionRepository.deleteAll();
         eventRepository.deleteAll();
         simulationRunRepository.deleteAll();
@@ -165,7 +169,7 @@ class AgentChatApiContractTest {
     }
 
     @Test
-    void chatMatchesMeetCommandDeterministicallyAndFailsClosedUntilGoalsExist() throws Exception {
+    void chatMatchesMeetCommandDeterministicallyAndAssignsGoal() throws Exception {
         User owner = persistUser("owner-agent-meet@example.com");
         City city = persistCity("MeetCity", owner);
         Human left = persistHuman(city, "Pierre", 0.1, 0.2);
@@ -180,10 +184,10 @@ class AgentChatApiContractTest {
 
         JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
         assertThat(payload.get("executedActions").get(0).get("type").asText()).isEqualTo("MEET_HUMAN");
-        assertThat(payload.get("executedActions").get(0).get("status").asText()).isEqualTo("REJECTED");
+        assertThat(payload.get("executedActions").get(0).get("status").asText()).isEqualTo("COMPLETED");
         assertThat(payload.path("referencedEntities").path("humanIds").toString())
                 .contains(left.getId().toString(), right.getId().toString());
-        assertThat(payload.get("message").asText()).contains("Sprint 22");
+        assertThat(payload.get("message").asText()).contains("Assigned MEET_HUMAN");
     }
 
     @Test
@@ -249,12 +253,10 @@ class AgentChatApiContractTest {
 
         assertThat(payload.get("commandClass").asText()).isEqualTo("GUIDED");
         assertThat(payload.get("executedActions").get(0).get("type").asText()).isEqualTo("FOLLOW_HUMAN");
-        assertThat(followHuman.path("ticks").asInt()).isEqualTo(20);
-        assertThat(followHuman.path("fromTick").asLong()).isPositive();
-        assertThat(followHuman.path("resultTick").asLong()).isGreaterThanOrEqualTo(followHuman.path("fromTick").asLong());
-        assertThat(followHuman.path("eventWindow").isArray()).isTrue();
-        assertThat(followHuman.path("inventionWindow").isArray()).isTrue();
-        assertThat(payload.path("uiEffects").toString()).contains("REFRESH_TIMELINE");
+        assertThat(followHuman.path("goalId").asLong()).isPositive();
+        assertThat(followHuman.path("assignedTick").asLong()).isGreaterThanOrEqualTo(0L);
+        assertThat(followHuman.path("follower").isObject()).isTrue();
+        assertThat(followHuman.path("target").isObject()).isTrue();
         assertThat(payload.path("uiEffects").toString()).contains("TRACK_HUMAN");
         assertThat(payload.path("uiEffects").toString()).contains("FOCUS_HUMAN");
     }

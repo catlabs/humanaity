@@ -10,7 +10,8 @@ import eu.catlabs.humanaity.city.domain.City;
 import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
-import eu.catlabs.humanaity.simulation.application.SimulationPlaceRegistry;
+import eu.catlabs.humanaity.simulation.domain.HumanGoalStatus;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,11 +45,14 @@ class AgentChatOrchestrationServiceFallbackTest {
     private HumanRepository humanRepository;
     @Autowired
     private SimulationRunRepository simulationRunRepository;
+    @Autowired
+    private HumanGoalRepository humanGoalRepository;
     @MockBean
     private AiGenerationService aiGenerationService;
 
     @BeforeEach
     void cleanDatabase() {
+        humanGoalRepository.deleteAll();
         simulationRunRepository.deleteAll();
         humanRepository.deleteAll();
         cityRepository.deleteAll();
@@ -87,12 +91,16 @@ class AgentChatOrchestrationServiceFallbackTest {
         );
 
         Human reloaded = humanRepository.findById(elsa.getId()).orElseThrow();
-        SimulationPlaceRegistry.SimulationPlace forest = SimulationPlaceRegistry.byId("forest").orElseThrow();
+        var goal = humanGoalRepository.findFirstByHumanIdAndStatusOrderByAssignedTickDescIdDesc(
+                elsa.getId(),
+                HumanGoalStatus.ACTIVE
+        ).orElseThrow();
 
         assertThat(response.getExecutedActions().get(0).getType()).isEqualTo("MOVE_HUMAN_TO_PLACE");
         assertThat(response.getExecutedActions().get(0).getStatus()).isEqualTo("COMPLETED");
-        assertThat(reloaded.getX()).isEqualTo(forest.x());
-        assertThat(reloaded.getY()).isEqualTo(forest.y());
+        assertThat(goal.getTargetPlaceId()).isEqualTo("forest");
+        assertThat(reloaded.getX()).isEqualTo(0.25);
+        assertThat(reloaded.getY()).isEqualTo(0.35);
         verify(aiGenerationService).generate(any());
     }
 
