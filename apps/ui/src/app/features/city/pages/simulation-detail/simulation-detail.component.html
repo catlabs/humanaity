@@ -40,133 +40,115 @@
   }
 
   <div class="content">
-    <section class="board-panel app-surface-bg">
-      <div class="board-header">
-        <div>
-          <div class="board-title">Simulation Board</div>
-          <div class="board-subtitle">
-            Real backend snapshot positions rendered as symbolic markers.
+    <div class="world-body">
+      <app-simulation-board
+        class="world-board"
+        [markers]="boardMarkers()"
+        [eventMarkers]="boardEventMarkers()"
+        [places]="boardPlaces()"
+        [selectedHumanId]="selectedHumanId()"
+        [highlightedPlaceId]="highlightedPlaceId()"
+        (markerSelected)="selectHumanById($event)"
+      ></app-simulation-board>
+
+      @if (showWorldOverlay()) {
+        <div class="world-overlay">
+          <mat-icon>public</mat-icon>
+          <div>
+            {{ noRunYet() ? "No run started yet." : "No humans available yet." }}
           </div>
         </div>
-        <div class="board-status">
-          <span class="status-chip">Tick {{ currentTick() }}</span>
-          <span class="status-chip">{{ populationTotal() }} humans</span>
-          <span class="status-chip">{{ isRunning() ? "Running" : "Paused" }}</span>
-          @if (directorBoardState() === "pending") {
-            <span class="status-chip status-chip--pending">Intervention Pending</span>
-          }
-          @if (directorBoardState() === "executed") {
-            <span class="status-chip status-chip--executed">Intervention Executed</span>
-          }
-        </div>
-      </div>
+      }
 
-      <div class="world-body">
-        <app-simulation-board
-          class="world-board"
-          [markers]="boardMarkers()"
-          [eventMarkers]="boardEventMarkers()"
-          [places]="boardPlaces()"
-          [selectedHumanId]="selectedHumanId()"
-          [highlightedPlaceId]="highlightedPlaceId()"
-          (markerSelected)="selectHumanById($event)"
-        ></app-simulation-board>
-        @if (showWorldOverlay()) {
-          <div class="world-overlay">
-            <mat-icon>public</mat-icon>
-            <div>
-              {{ noRunYet() ? "No run started yet." : "No humans available yet." }}
+      @if (snapshotLoading()) {
+        <div class="world-loading">
+          <mat-spinner diameter="24"></mat-spinner>
+          <span>Loading simulation...</span>
+        </div>
+      }
+
+      @if (statusPanelVisible()) {
+        <section class="status-panel app-surface-bg">
+          <div class="status-grid">
+            <div class="pill">
+              <span>Status</span><strong>{{ isRunning() ? "Running" : "Paused" }}</strong>
+            </div>
+            <div class="pill">
+              <span>Active</span><strong>{{ populationActive() }}</strong>
+            </div>
+            <div class="pill">
+              <span>Busy</span><strong>{{ populationBusy() }}</strong>
+            </div>
+            <div class="pill">
+              <span>Recent</span><strong>{{ recentEventCount() }}e / {{ recentInventionCount() }}i</strong>
             </div>
           </div>
-        }
-        @if (snapshotLoading()) {
-          <div class="world-loading">
-            <mat-spinner diameter="24"></mat-spinner>
-            <span>Loading simulation...</span>
-          </div>
-        }
-      </div>
-    </section>
 
-    <section class="status-panel app-surface-bg">
-      <div class="status-grid">
-        <div class="pill">
-          <span>Status</span><strong>{{ isRunning() ? "Running" : "Paused" }}</strong>
-        </div>
-        <div class="pill">
-          <span>Active</span><strong>{{ populationActive() }}</strong>
-        </div>
-        <div class="pill">
-          <span>Busy</span><strong>{{ populationBusy() }}</strong>
-        </div>
-        <div class="pill">
-          <span>Recent</span><strong>{{ recentEventCount() }}e / {{ recentInventionCount() }}i</strong>
-        </div>
-      </div>
-
-      <div class="human-strip">
-        <div class="section-title">Humans</div>
-        @if (selectedHumanSummary(); as summary) {
-          <div class="selection-summary">{{ summary }}</div>
-        }
-        <div class="human-list">
-          @for (human of filteredHumans(); track human.id) {
-            <button
-              type="button"
-              class="human-pill"
-              [class.human-pill--selected]="selectedHumanId() === human.id"
-              (click)="selectHuman(human)"
-            >
-              {{ human.name }}
-            </button>
-          } @empty {
-            <div class="empty">No humans available.</div>
-          }
-        </div>
-      </div>
-
-      <div class="chat-strip">
-        <div class="section-title">Chat Control</div>
-        <div class="chat-row">
-          <input
-            #chatBox
-            class="chat-input"
-            type="text"
-            [value]="chatInput()"
-            (input)="onChatInput(chatBox.value)"
-            (keydown.enter)="onSendChat()"
-            placeholder="Ask to step, focus, compare, or summarize"
-          />
-          <button
-            type="button"
-            class="chat-send"
-            [disabled]="!canSendChat()"
-            (click)="onSendChat()"
-          >
-            Send
-          </button>
-        </div>
-        @if (chatBusy()) {
-          <div class="chat-meta">Sending...</div>
-        }
-        @if (chatError(); as errorMessage) {
-          <div class="chat-meta chat-meta--error">{{ errorMessage }}</div>
-        }
-        @if (latestAgentMessage(); as reply) {
-          <div class="chat-reply">{{ reply }}</div>
-        }
-        @if (latestAgentEntry(); as latestEntry) {
-          @if (latestEntry.interpretationProvenance || latestEntry.interpretedCommandSummary) {
-            <div class="chat-meta">
-              Parsed via {{ latestEntry.interpretationProvenance ?? 'unknown' }}
-              @if (latestEntry.interpretedCommandSummary) {
-                · {{ latestEntry.interpretedCommandSummary }}
+          <div class="human-strip">
+            <div class="section-title">Humans</div>
+            @if (selectedHumanSummary(); as summary) {
+              <div class="selection-summary">{{ summary }}</div>
+            }
+            <div class="human-list">
+              @for (human of filteredHumans(); track human.id) {
+                <button
+                  type="button"
+                  class="human-pill"
+                  [class.human-pill--selected]="selectedHumanId() === human.id"
+                  (click)="selectHuman(human)"
+                >
+                  {{ human.name }}
+                </button>
+              } @empty {
+                <div class="empty">No humans available.</div>
               }
             </div>
-          }
-        }
-      </div>
-    </section>
+          </div>
+
+          <div class="chat-strip">
+            <div class="section-title">Chat Control</div>
+            <div class="chat-row">
+              <input
+                #chatBox
+                class="chat-input"
+                type="text"
+                [value]="chatInput()"
+                (input)="onChatInput(chatBox.value)"
+                (keydown.enter)="onSendChat()"
+                placeholder="Ask to step, focus, compare, or summarize"
+              />
+              <button
+                type="button"
+                class="chat-send"
+                [disabled]="!canSendChat()"
+                (click)="onSendChat()"
+              >
+                Send
+              </button>
+            </div>
+            @if (chatBusy()) {
+              <div class="chat-meta">Sending...</div>
+            }
+            @if (chatError(); as errorMessage) {
+              <div class="chat-meta chat-meta--error">{{ errorMessage }}</div>
+            }
+            @if (latestAgentMessage(); as reply) {
+              <div class="chat-reply">{{ reply }}</div>
+            }
+            @if (latestAgentEntry(); as latestEntry) {
+              @if (latestEntry.interpretationProvenance || latestEntry.interpretedCommandSummary) {
+                <div class="chat-meta">
+                  Parsed via {{ latestEntry.interpretationProvenance ?? 'unknown' }}
+                  @if (latestEntry.interpretedCommandSummary) {
+                    · {{ latestEntry.interpretedCommandSummary }}
+                  }
+                </div>
+              }
+            }
+          </div>
+        </section>
+      }
+    </div>
   </div>
 
   @if (eventsDrawerOpen()) {

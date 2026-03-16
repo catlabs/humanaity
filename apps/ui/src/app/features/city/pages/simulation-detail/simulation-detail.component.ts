@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import {
   Component,
+  HostListener,
   OnDestroy,
   OnInit,
   computed,
@@ -101,6 +102,7 @@ export class SimulationDetailComponent
   eventsDrawerType = signal<string | null>(null);
   eventsDrawerIds = signal<number[] | null>(null);
   highlightedPlaceId = signal<string | null>(null);
+  statusPanelVisible = signal(false);
 
   snapshotLoading = signal(true);
   historyLoading = signal(true);
@@ -275,6 +277,29 @@ export class SimulationDetailComponent
 
   ngOnDestroy(): void {
     this.pollingSubscription?.unsubscribe();
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeydown(event: KeyboardEvent): void {
+    if (event.code !== 'Space') {
+      return;
+    }
+
+    const target = event.target;
+    if (target instanceof HTMLElement) {
+      const tagName = target.tagName;
+      if (
+        target.isContentEditable ||
+        tagName === 'INPUT' ||
+        tagName === 'TEXTAREA' ||
+        tagName === 'SELECT'
+      ) {
+        return;
+      }
+    }
+
+    event.preventDefault();
+    this.statusPanelVisible.update((visible) => !visible);
   }
 
   toggleFilter(state: string): void {

@@ -12,6 +12,7 @@
 
 .page {
   @include hai-page-shell;
+  overflow: hidden;
 }
 
 .info-bar {
@@ -46,15 +47,12 @@
 }
 
 .content {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: map.get($spacing-scale, 4);
-  padding: map.get($spacing-scale, 4);
+  position: relative;
   flex: 1 1 0%;
   min-height: 0;
+  overflow: hidden;
 }
 
-.board-panel,
 .status-panel {
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: $radius-md;
@@ -64,51 +62,10 @@
   gap: map.get($spacing-scale, 4);
 }
 
-.board-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: map.get($spacing-scale, 3);
-  flex-wrap: wrap;
-}
-
-.board-title {
-  @include hai-item-title;
-}
-
-.board-subtitle {
-  @include hai-meta;
-  margin-top: map.get($spacing-scale, 1);
-}
-
-.board-status {
-  display: flex;
-  gap: map.get($spacing-scale, 2);
-  flex-wrap: wrap;
-}
-
-.status-chip {
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  background: var(--mat-sys-surface-container);
-  color: var(--mat-sys-on-surface-variant);
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.status-chip--pending {
-  background: rgb(249 115 22 / 0.15);
-  color: rgb(154 52 18);
-}
-
-.status-chip--executed {
-  background: rgb(34 197 94 / 0.15);
-  color: rgb(22 101 52);
-}
-
 .world-body {
   position: relative;
-  min-height: 32rem;
+  width: 100%;
+  height: 100%;
 }
 
 .world-board {
@@ -147,6 +104,17 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: map.get($spacing-scale, 2);
+}
+
+.status-panel {
+  position: absolute;
+  top: map.get($spacing-scale, 4);
+  right: map.get($spacing-scale, 4);
+  width: min(32rem, calc(100% - #{map.get($spacing-scale, 8)}));
+  max-height: calc(100% - #{map.get($spacing-scale, 8)});
+  overflow: auto;
+  z-index: 20;
+  background: color-mix(in srgb, var(--mat-sys-surface) 95%, transparent);
 }
 
 .pill {
@@ -372,13 +340,12 @@
     margin-left: 0;
   }
 
-  .content {
-    padding: map.get($spacing-scale, 3);
-    gap: map.get($spacing-scale, 3);
-  }
-
-  .world-body {
-    min-height: 22rem;
+  .status-panel {
+    top: map.get($spacing-scale, 3);
+    right: map.get($spacing-scale, 3);
+    left: map.get($spacing-scale, 3);
+    width: auto;
+    max-height: calc(100% - #{map.get($spacing-scale, 6)});
   }
 
   .status-grid {
