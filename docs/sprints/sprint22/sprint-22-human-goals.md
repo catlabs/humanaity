@@ -2,15 +2,15 @@
 
 ## Execution status
 
-- Current phase: Planned
-- Active chunk: none
-- Next chunk: Task 1a
+- Current phase: In progress
+- Active chunk: Task 2a
+- Next chunk: Task 2a
 - Blocked items: none
-- Last completed chunk: none
+- Last completed chunk: Task 1a
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | todo | Introduce goal domain model and persistence ownership. |
+| Task 1a | done | Added canonical goal model, migration, goal assignment service, and creation/update tests. |
 | Task 2a | todo | Integrate goals into deterministic movement and completion rules. |
 | Task 3a | todo | Route chat commands to goal assignment instead of ad hoc position mutation where applicable. |
 
