@@ -29,6 +29,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
@@ -177,6 +178,7 @@ class SimulationApplicationServiceDeterminismTest {
         when(eventApplicationService.emitLifecycleEvent(anyLong(), anyLong(), any(), any(), any(Map.class), anyInt()))
                 .thenReturn(new Event());
         when(inventionApplicationService.deriveFromPersistedEvents(anyLong())).thenReturn(List.of());
+        when(inventionApplicationService.deriveFromPersistedEvents(anyLong(), anyBoolean())).thenReturn(List.of());
         when(inventionApplicationService.listCityInventions(anyLong(), any(), any(), any())).thenReturn(List.of());
         when(eventApplicationService.listCityEvents(anyLong(), any(), any(), any())).thenReturn(List.of());
         when(humanGoalApplicationService.listActiveGoalsByCity(anyLong())).thenReturn(List.of());

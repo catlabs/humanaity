@@ -80,6 +80,7 @@ class SimulationHistoryReproducibilityTest {
 
         inventionRepository.deleteAll();
         eventRepository.deleteAll();
+        knowledgeUnlockRepository.deleteAll();
         simulationRunRepository.deleteAll();
         restoreHumans(city.getId(), initialState);
 

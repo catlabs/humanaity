@@ -61,6 +61,11 @@ public class EventApplicationService {
 
     @Transactional
     public List<Event> emitEventsAtTick(Long cityId, long tick, List<EventDraft> drafts) {
+        return emitEventsAtTick(cityId, tick, drafts, true);
+    }
+
+    @Transactional
+    public List<Event> emitEventsAtTick(Long cityId, long tick, List<EventDraft> drafts, boolean allowAiEnrichment) {
         if (drafts == null || drafts.isEmpty()) {
             return List.of();
         }
@@ -98,7 +103,9 @@ public class EventApplicationService {
         }
 
         List<Event> saved = eventRepository.saveAll(persisted);
-        saved.forEach(aiHistoryEnrichmentService::enrichEventDialogueIfEligible);
+        if (allowAiEnrichment) {
+            saved.forEach(aiHistoryEnrichmentService::enrichEventDialogueIfEligible);
+        }
         saved.sort(Comparator.comparing(Event::getTick)
                 .thenComparing(Event::getSequenceInTick)
                 .thenComparing(Event::getId, Comparator.nullsLast(Long::compareTo)));

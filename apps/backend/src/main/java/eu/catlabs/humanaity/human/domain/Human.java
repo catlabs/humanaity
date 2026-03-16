@@ -20,6 +20,7 @@ public class Human {
 
     private boolean busy;
     private String name;
+    private String tribeId;
     private Double x;
     private Double y;
 

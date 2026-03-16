@@ -46,6 +46,11 @@ public class InventionApplicationService {
 
     @Transactional
     public List<Invention> deriveFromPersistedEvents(Long cityId) {
+        return deriveFromPersistedEvents(cityId, true);
+    }
+
+    @Transactional
+    public List<Invention> deriveFromPersistedEvents(Long cityId, boolean allowAiEnrichment) {
         City city = cityRepository.findById(cityId)
                 .orElseThrow(() -> new EntityNotFoundException("City not found with id: " + cityId));
 
@@ -92,7 +97,9 @@ public class InventionApplicationService {
             invention.setEraCreated(HistoryTimelineMapper.eraForTick(discovery.getTick()));
 
             Invention saved = inventionRepository.save(invention);
-            aiHistoryEnrichmentService.enrichInvention(saved);
+            if (allowAiEnrichment) {
+                aiHistoryEnrichmentService.enrichInvention(saved);
+            }
             created.add(saved);
             existingKeys.add(inventionKey);
         }

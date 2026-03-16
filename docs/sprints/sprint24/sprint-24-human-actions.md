@@ -2,17 +2,17 @@
 
 ## Execution status
 
-- Current phase: In progress
-- Active chunk: Task 3a
-- Next chunk: Task 3a
+- Current phase: Completed
+- Active chunk: none
+- Next chunk: Sprint 25 Task 1a
 - Blocked items: none
-- Last completed chunk: Task 2a
+- Last completed chunk: Task 3a
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Added application-mapped action catalog, deterministic action selector, and integrated action event drafts. |
 | Task 2a | done | Added deterministic per-tick action/event budgets with priority-based pacing and regression coverage capping outcomes per tick. |
-| Task 3a | todo | Preserve autonomous no-LLM stepping and leave tribe-compatible extension points. |
+| Task 3a | done | Enforced non-AI simulation stepping path, added long-run no-LLM determinism coverage, and introduced optional `tribeId` seams for future multi-tribe support. |
 
 ## Sprint intent
 

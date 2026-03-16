@@ -121,6 +121,10 @@ Required compatibility points:
 - goals, events, and unlocked actions must not assume one global tribe
 - place, discovery, and application logic should remain city-scoped and tribe-compatible
 
+Current seam:
+
+- `Human.tribeId` is optional and nullable; no tribe behavior is executed yet
+
 ## Explicitly Out of Scope
 
 - Using the LLM inside simulation stepping

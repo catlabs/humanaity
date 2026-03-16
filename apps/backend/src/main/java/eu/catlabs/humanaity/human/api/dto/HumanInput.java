@@ -17,6 +17,9 @@ public class HumanInput {
     
     @Size(max = 100, message = "Name must not exceed 100 characters")
     private String name;
+
+    @Size(max = 64, message = "Tribe ID must not exceed 64 characters")
+    private String tribeId;
     
     @DecimalMin(value = "0.0", message = "X must be >= 0")
     @DecimalMax(value = "1.0", message = "X must be <= 1")

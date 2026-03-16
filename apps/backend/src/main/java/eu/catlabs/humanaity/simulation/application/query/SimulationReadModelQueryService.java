@@ -105,6 +105,7 @@ public class SimulationReadModelQueryService {
                         .map(human -> new HumanProjection(
                                 human.getId(),
                                 human.getName(),
+                                human.getTribeId(),
                                 human.getX(),
                                 human.getY(),
                                 human.isBusy()
@@ -279,6 +280,7 @@ public class SimulationReadModelQueryService {
     public record HumanProjection(
             Long id,
             String name,
+            String tribeId,
             Double x,
             Double y,
             boolean busy

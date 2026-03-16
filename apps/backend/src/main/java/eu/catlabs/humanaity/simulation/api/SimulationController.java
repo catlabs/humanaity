@@ -363,6 +363,7 @@ public class SimulationController {
                         .map(human -> new SimulationSnapshotHumanOutput(
                                 human.id(),
                                 human.name(),
+                                human.tribeId(),
                                 human.x(),
                                 human.y(),
                                 human.busy()

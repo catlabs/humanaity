@@ -1,0 +1,2 @@
+ALTER TABLE human
+    ADD COLUMN tribe_id VARCHAR(64);

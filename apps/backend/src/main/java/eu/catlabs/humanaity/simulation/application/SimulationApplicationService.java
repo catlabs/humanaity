@@ -375,9 +375,9 @@ public class SimulationApplicationService {
                 actionDrafts
         );
         List<EventDraft> pacedStepEvents = applyTurnPacing(stepEvents);
-        eventApplicationService.emitEventsAtTick(cityId, nextTick, pacedStepEvents);
+        eventApplicationService.emitEventsAtTick(cityId, nextTick, pacedStepEvents, false);
 
-        List<Invention> createdInventions = inventionApplicationService.deriveFromPersistedEvents(cityId);
+        List<Invention> createdInventions = inventionApplicationService.deriveFromPersistedEvents(cityId, false);
         emitMilestoneEvents(cityId, createdInventions);
         knowledgeProgressionService.evaluateUnlocks(cityId, nextTick);
     }

@@ -14,6 +14,7 @@ public class HumanOutput {
     private boolean isBusy;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String name;
+    private String tribeId;
 
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Double x;
