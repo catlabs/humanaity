@@ -146,7 +146,6 @@ in order to avoid naming conflicts:
 
 ```typescript
 import { provideApi as provideUserApi } from 'my-user-api-path';
-import { provideApi as provideAdminApi } from 'my-admin-api-path';
 import { HttpClientModule } from '@angular/common/http';
 import { environment } from '../environments/environment';
 
@@ -155,7 +154,6 @@ export const appConfig: ApplicationConfig = {
         // ...
         provideHttpClient(),
         provideUserApi(environment.basePath),
-        provideAdminApi(environment.basePath),
     ],
 };
 ```

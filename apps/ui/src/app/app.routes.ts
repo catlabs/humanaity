@@ -20,11 +20,6 @@ export const routes: Routes = [
         children: cityRoutes,
         canActivate: [authGuard]
       },
-      {
-        path: 'admin',
-        loadComponent: () => import('./features/admin/pages/admin-tools/admin-tools.page').then(m => m.AdminToolsPage),
-        canActivate: [authGuard]
-      },
       {path: '', redirectTo: '/cities', pathMatch: 'full'}
     ]
   },
