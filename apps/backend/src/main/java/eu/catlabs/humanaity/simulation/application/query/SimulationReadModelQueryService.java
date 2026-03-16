@@ -12,6 +12,8 @@ import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionRepository;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
 import eu.catlabs.humanaity.simulation.domain.SimulationRunStatus;
+import eu.catlabs.humanaity.simulation.domain.TechTreeNodeType;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
@@ -34,19 +36,22 @@ public class SimulationReadModelQueryService {
     private final HumanRepository humanRepository;
     private final EventRepository eventRepository;
     private final InventionRepository inventionRepository;
+    private final KnowledgeUnlockRepository knowledgeUnlockRepository;
 
     public SimulationReadModelQueryService(
             CityRepository cityRepository,
             SimulationRunRepository simulationRunRepository,
             HumanRepository humanRepository,
             EventRepository eventRepository,
-            InventionRepository inventionRepository
+            InventionRepository inventionRepository,
+            KnowledgeUnlockRepository knowledgeUnlockRepository
     ) {
         this.cityRepository = cityRepository;
         this.simulationRunRepository = simulationRunRepository;
         this.humanRepository = humanRepository;
         this.eventRepository = eventRepository;
         this.inventionRepository = inventionRepository;
+        this.knowledgeUnlockRepository = knowledgeUnlockRepository;
     }
 
     @Transactional(readOnly = true)
@@ -69,6 +74,8 @@ public class SimulationReadModelQueryService {
         List<Human> humans = humanRepository.findByCityIdOrderByIdAsc(cityId);
         List<Event> events = eventRepository.findByCityIdOrderByTickAscSequenceInTickAscIdAsc(cityId);
         List<Invention> inventions = inventionRepository.findByCityIdOrderByTickCreatedAscInventionKeyAscIdAsc(cityId);
+        List<eu.catlabs.humanaity.simulation.domain.KnowledgeUnlock> knowledgeUnlocks =
+                knowledgeUnlockRepository.findByCityIdOrderByUnlockedTickAscNodeIdAsc(cityId);
 
         int busyCount = (int) humans.stream().filter(Human::isBusy).count();
         int population = humans.size();
@@ -77,6 +84,8 @@ public class SimulationReadModelQueryService {
 
         List<Event> recentEvents = takeRecent(events, RECENT_HISTORY_WINDOW);
         List<Invention> recentInventions = takeRecent(inventions, RECENT_HISTORY_WINDOW);
+        List<eu.catlabs.humanaity.simulation.domain.KnowledgeUnlock> recentKnowledgeUnlocks =
+                takeRecent(knowledgeUnlocks, RECENT_HISTORY_WINDOW);
 
         return new SimulationSnapshotProjection(
                 new CityProjection(city.getId(), city.getName()),
@@ -105,9 +114,12 @@ public class SimulationReadModelQueryService {
                 new TimelineSummaryProjection(
                         events.isEmpty() ? null : events.get(events.size() - 1).getTick(),
                         inventions.isEmpty() ? null : inventions.get(inventions.size() - 1).getTickCreated(),
+                        knowledgeUnlocks.isEmpty() ? null : knowledgeUnlocks.get(knowledgeUnlocks.size() - 1).getUnlockedTick(),
                         recentEvents.size(),
-                        recentInventions.size()
+                        recentInventions.size(),
+                        recentKnowledgeUnlocks.size()
                 ),
+                buildKnowledgeProjection(knowledgeUnlocks),
                 recentEvents,
                 recentInventions
         );
@@ -121,6 +133,17 @@ public class SimulationReadModelQueryService {
         int population = humanRepository.findByCityId(cityId).size();
         int eventCount = eventRepository.findByCityIdOrderByTickAscSequenceInTickAscIdAsc(cityId).size();
         int inventionCount = inventionRepository.findByCityIdOrderByTickCreatedAscInventionKeyAscIdAsc(cityId).size();
+        List<eu.catlabs.humanaity.simulation.domain.KnowledgeUnlock> knowledgeUnlocks =
+                knowledgeUnlockRepository.findByCityIdOrderByUnlockedTickAscNodeIdAsc(cityId);
+        int discoveryCount = (int) knowledgeUnlocks.stream()
+                .filter(unlock -> unlock.getNodeType() == TechTreeNodeType.DISCOVERY)
+                .count();
+        int unlockedInventionCount = (int) knowledgeUnlocks.stream()
+                .filter(unlock -> unlock.getNodeType() == TechTreeNodeType.INVENTION)
+                .count();
+        int applicationCount = (int) knowledgeUnlocks.stream()
+                .filter(unlock -> unlock.getNodeType() == TechTreeNodeType.APPLICATION)
+                .count();
 
         return new CityOverviewProjection(
                 cityId,
@@ -134,8 +157,29 @@ public class SimulationReadModelQueryService {
                 population,
                 inventionCount,
                 eventCount,
+                discoveryCount,
+                unlockedInventionCount,
+                applicationCount,
                 maybeRun.map(SimulationRun::getUpdatedAt).orElse(null)
         );
+    }
+
+    private KnowledgeProjection buildKnowledgeProjection(
+            List<eu.catlabs.humanaity.simulation.domain.KnowledgeUnlock> unlocks
+    ) {
+        List<String> discoveries = unlocks.stream()
+                .filter(unlock -> unlock.getNodeType() == TechTreeNodeType.DISCOVERY)
+                .map(eu.catlabs.humanaity.simulation.domain.KnowledgeUnlock::getNodeId)
+                .toList();
+        List<String> inventions = unlocks.stream()
+                .filter(unlock -> unlock.getNodeType() == TechTreeNodeType.INVENTION)
+                .map(eu.catlabs.humanaity.simulation.domain.KnowledgeUnlock::getNodeId)
+                .toList();
+        List<String> applications = unlocks.stream()
+                .filter(unlock -> unlock.getNodeType() == TechTreeNodeType.APPLICATION)
+                .map(eu.catlabs.humanaity.simulation.domain.KnowledgeUnlock::getNodeId)
+                .toList();
+        return new KnowledgeProjection(discoveries, inventions, applications);
     }
 
     private MetricsProjection buildMetricsProjection(
@@ -193,6 +237,9 @@ public class SimulationReadModelQueryService {
             Integer population,
             Integer inventionCount,
             Integer eventCount,
+            Integer discoveryUnlockCount,
+            Integer unlockedInventionCount,
+            Integer applicationUnlockCount,
             Instant updatedAt
     ) {
     }
@@ -203,6 +250,7 @@ public class SimulationReadModelQueryService {
             List<HumanProjection> humans,
             MetricsProjection metrics,
             TimelineSummaryProjection timelineSummary,
+            KnowledgeProjection knowledge,
             List<Event> recentEvents,
             List<Invention> recentInventions
     ) {
@@ -265,8 +313,17 @@ public class SimulationReadModelQueryService {
     public record TimelineSummaryProjection(
             Long latestEventTick,
             Long latestInventionTick,
+            Long latestKnowledgeUnlockTick,
             Integer recentEventCount,
-            Integer recentInventionCount
+            Integer recentInventionCount,
+            Integer recentKnowledgeUnlockCount
+    ) {
+    }
+
+    public record KnowledgeProjection(
+            List<String> unlockedDiscoveries,
+            List<String> unlockedInventions,
+            List<String> unlockedApplications
     ) {
     }
 }

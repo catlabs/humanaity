@@ -13,6 +13,7 @@ import eu.catlabs.humanaity.simulation.domain.HumanGoalSource;
 import eu.catlabs.humanaity.simulation.domain.HumanGoalStatus;
 import eu.catlabs.humanaity.simulation.domain.HumanGoalType;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,9 +49,12 @@ class SimulationGoalExecutionTest {
     private CityRepository cityRepository;
     @Autowired
     private SimulationRunRepository simulationRunRepository;
+    @Autowired
+    private KnowledgeUnlockRepository knowledgeUnlockRepository;
 
     @BeforeEach
     void cleanDatabase() {
+        knowledgeUnlockRepository.deleteAll();
         humanGoalRepository.deleteAll();
         inventionRepository.deleteAll();
         eventRepository.deleteAll();

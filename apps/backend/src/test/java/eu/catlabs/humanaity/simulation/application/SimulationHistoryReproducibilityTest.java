@@ -10,6 +10,7 @@ import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionReposi
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,9 +42,12 @@ class SimulationHistoryReproducibilityTest {
     private HumanRepository humanRepository;
     @Autowired
     private SimulationRunRepository simulationRunRepository;
+    @Autowired
+    private KnowledgeUnlockRepository knowledgeUnlockRepository;
 
     @BeforeEach
     void cleanDatabase() {
+        knowledgeUnlockRepository.deleteAll();
         inventionRepository.deleteAll();
         eventRepository.deleteAll();
         simulationRunRepository.deleteAll();

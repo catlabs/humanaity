@@ -578,6 +578,18 @@ export function registerSimulationTools(server: McpServer, backendClient: Backen
           timeline.eventCount === 0 && timeline.inventionCount === 0
             ? `No recorded events or inventions between ticks ${resolvedFromTick} and ${resolvedToTick}.`
             : `Between ticks ${resolvedFromTick} and ${resolvedToTick}, city ${cityId} recorded ${timeline.eventCount} events and ${timeline.inventionCount} inventions.`;
+        const snapshotKnowledge = (snapshot as Record<string, unknown>).knowledge as
+          | Record<string, unknown>
+          | undefined;
+        const unlockedDiscoveries = Array.isArray(snapshotKnowledge?.unlockedDiscoveries)
+          ? snapshotKnowledge.unlockedDiscoveries.length
+          : 0;
+        const unlockedInventions = Array.isArray(snapshotKnowledge?.unlockedInventions)
+          ? snapshotKnowledge.unlockedInventions.length
+          : 0;
+        const unlockedApplications = Array.isArray(snapshotKnowledge?.unlockedApplications)
+          ? snapshotKnowledge.unlockedApplications.length
+          : 0;
 
         return toolSuccess({
           ok: true,
@@ -598,6 +610,11 @@ export function registerSimulationTools(server: McpServer, backendClient: Backen
           counts: {
             eventCount: timeline.eventCount,
             inventionCount: timeline.inventionCount,
+          },
+          knowledge: {
+            unlockedDiscoveries,
+            unlockedInventions,
+            unlockedApplications,
           },
           topEventTypes,
           highImportanceEvents,

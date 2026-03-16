@@ -34,5 +34,11 @@ public class CityOverviewOutput {
     private Integer inventionCount;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer eventCount;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+    private Integer discoveryUnlockCount;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+    private Integer unlockedInventionCount;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+    private Integer applicationUnlockCount;
     private Instant updatedAt;
 }

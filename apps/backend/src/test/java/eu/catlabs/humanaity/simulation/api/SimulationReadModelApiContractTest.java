@@ -9,6 +9,7 @@ import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionRepository;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,9 +51,12 @@ class SimulationReadModelApiContractTest {
     private HumanRepository humanRepository;
     @Autowired
     private CityRepository cityRepository;
+    @Autowired
+    private KnowledgeUnlockRepository knowledgeUnlockRepository;
 
     @BeforeEach
     void cleanDatabase() {
+        knowledgeUnlockRepository.deleteAll();
         inventionRepository.deleteAll();
         eventRepository.deleteAll();
         simulationRunRepository.deleteAll();
@@ -93,6 +97,9 @@ class SimulationReadModelApiContractTest {
         assertThat(noRunOverview.get("population").asInt()).isEqualTo(2);
         assertThat(noRunOverview.get("eventCount").asInt()).isEqualTo(0);
         assertThat(noRunOverview.get("inventionCount").asInt()).isEqualTo(0);
+        assertThat(noRunOverview.get("discoveryUnlockCount").asInt()).isEqualTo(0);
+        assertThat(noRunOverview.get("unlockedInventionCount").asInt()).isEqualTo(0);
+        assertThat(noRunOverview.get("applicationUnlockCount").asInt()).isEqualTo(0);
 
         JsonNode withRunOverview = findOverviewByCityId(payload, withRunCity.getId());
         assertThat(withRunOverview.get("cityName").asText()).isEqualTo("WithRun");
@@ -105,6 +112,9 @@ class SimulationReadModelApiContractTest {
         assertThat(withRunOverview.get("population").asInt()).isEqualTo(2);
         assertThat(withRunOverview.get("eventCount").asInt()).isEqualTo(eventRepository.findByCityIdOrderByTickAscSequenceInTickAscIdAsc(withRunCity.getId()).size());
         assertThat(withRunOverview.get("inventionCount").asInt()).isEqualTo(inventionRepository.findByCityIdOrderByTickCreatedAscInventionKeyAscIdAsc(withRunCity.getId()).size());
+        assertThat(withRunOverview.has("discoveryUnlockCount")).isTrue();
+        assertThat(withRunOverview.has("unlockedInventionCount")).isTrue();
+        assertThat(withRunOverview.has("applicationUnlockCount")).isTrue();
     }
 
     @Test
@@ -143,8 +153,14 @@ class SimulationReadModelApiContractTest {
         JsonNode timelineSummary = snapshot.get("timelineSummary");
         assertThat(timelineSummary.get("latestEventTick").isNull()).isTrue();
         assertThat(timelineSummary.get("latestInventionTick").isNull()).isTrue();
+        assertThat(timelineSummary.get("latestKnowledgeUnlockTick").isNull()).isTrue();
         assertThat(timelineSummary.get("recentEventCount").asInt()).isEqualTo(0);
         assertThat(timelineSummary.get("recentInventionCount").asInt()).isEqualTo(0);
+        assertThat(timelineSummary.get("recentKnowledgeUnlockCount").asInt()).isEqualTo(0);
+        assertThat(snapshot.get("knowledge").isObject()).isTrue();
+        assertThat(snapshot.get("knowledge").get("unlockedDiscoveries").isArray()).isTrue();
+        assertThat(snapshot.get("knowledge").get("unlockedInventions").isArray()).isTrue();
+        assertThat(snapshot.get("knowledge").get("unlockedApplications").isArray()).isTrue();
 
         assertThat(snapshot.get("recentEvents").isArray()).isTrue();
         assertThat(snapshot.get("recentEvents").size()).isEqualTo(0);

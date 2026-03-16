@@ -13,6 +13,7 @@ import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +50,8 @@ class AgentChatApiContractTest {
     @Autowired
     private HumanGoalRepository humanGoalRepository;
     @Autowired
+    private KnowledgeUnlockRepository knowledgeUnlockRepository;
+    @Autowired
     private EventRepository eventRepository;
     @Autowired
     private InventionRepository inventionRepository;
@@ -59,6 +62,7 @@ class AgentChatApiContractTest {
 
     @BeforeEach
     void cleanDatabase() {
+        knowledgeUnlockRepository.deleteAll();
         humanGoalRepository.deleteAll();
         inventionRepository.deleteAll();
         eventRepository.deleteAll();

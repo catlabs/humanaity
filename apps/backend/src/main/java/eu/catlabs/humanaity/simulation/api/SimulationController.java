@@ -13,6 +13,7 @@ import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotBoundsOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotCentroidOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotCityOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotHumanOutput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationKnowledgeOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotMetricsOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotRunOutput;
@@ -306,6 +307,9 @@ public class SimulationController {
                 projection.population(),
                 projection.inventionCount(),
                 projection.eventCount(),
+                projection.discoveryUnlockCount(),
+                projection.unlockedInventionCount(),
+                projection.applicationUnlockCount(),
                 projection.updatedAt()
         );
     }
@@ -345,8 +349,15 @@ public class SimulationController {
                 new SimulationTimelineSummaryOutput(
                         timelineSummary.latestEventTick(),
                         timelineSummary.latestInventionTick(),
+                        timelineSummary.latestKnowledgeUnlockTick(),
                         timelineSummary.recentEventCount(),
-                        timelineSummary.recentInventionCount()
+                        timelineSummary.recentInventionCount(),
+                        timelineSummary.recentKnowledgeUnlockCount()
+                ),
+                new SimulationKnowledgeOutput(
+                        projection.knowledge().unlockedDiscoveries(),
+                        projection.knowledge().unlockedInventions(),
+                        projection.knowledge().unlockedApplications()
                 ),
                 projection.humans().stream()
                         .map(human -> new SimulationSnapshotHumanOutput(

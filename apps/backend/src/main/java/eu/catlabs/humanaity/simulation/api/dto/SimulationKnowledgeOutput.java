@@ -5,17 +5,16 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SimulationTimelineSummaryOutput {
-    private Long latestEventTick;
-    private Long latestInventionTick;
-    private Long latestKnowledgeUnlockTick;
+public class SimulationKnowledgeOutput {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private Integer recentEventCount;
+    private List<String> unlockedDiscoveries;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private Integer recentInventionCount;
+    private List<String> unlockedInventions;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private Integer recentKnowledgeUnlockCount;
+    private List<String> unlockedApplications;
 }

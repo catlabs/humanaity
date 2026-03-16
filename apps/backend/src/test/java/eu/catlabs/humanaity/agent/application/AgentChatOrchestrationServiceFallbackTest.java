@@ -12,6 +12,7 @@ import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.simulation.domain.HumanGoalStatus;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,11 +48,14 @@ class AgentChatOrchestrationServiceFallbackTest {
     private SimulationRunRepository simulationRunRepository;
     @Autowired
     private HumanGoalRepository humanGoalRepository;
+    @Autowired
+    private KnowledgeUnlockRepository knowledgeUnlockRepository;
     @MockBean
     private AiGenerationService aiGenerationService;
 
     @BeforeEach
     void cleanDatabase() {
+        knowledgeUnlockRepository.deleteAll();
         humanGoalRepository.deleteAll();
         simulationRunRepository.deleteAll();
         humanRepository.deleteAll();
