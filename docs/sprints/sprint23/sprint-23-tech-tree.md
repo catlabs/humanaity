@@ -2,15 +2,15 @@
 
 ## Execution status
 
-- Current phase: Planned
-- Active chunk: none
-- Next chunk: Task 1a
+- Current phase: In progress
+- Active chunk: Task 2a
+- Next chunk: Task 2a
 - Blocked items: none
-- Last completed chunk: none
+- Last completed chunk: Task 1a
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
-| Task 1a | todo | Define `tech-tree.json` schema and loading/validation path. |
+| Task 1a | done | Added `tech-tree.json` seed, typed catalog model, loader validation, and invalid-config tests. |
 | Task 2a | todo | Add deterministic discovery-to-invention-to-application unlock evaluation. |
 | Task 3a | todo | Expose knowledge progression in read models and history surfaces without introducing LLM dependency. |
 

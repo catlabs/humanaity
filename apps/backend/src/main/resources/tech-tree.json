@@ -1,0 +1,55 @@
+{
+  "version": "v1",
+  "discoveries": [
+    {
+      "id": "DISC_FIRE",
+      "prerequisites": [],
+      "triggerEventType": "DISCOVERY_UNLOCKED",
+      "metadata": {
+        "title": "Fire discovery",
+        "category": "TECHNIQUE"
+      }
+    },
+    {
+      "id": "DISC_STORY",
+      "prerequisites": [],
+      "triggerEventType": "DIALOGUE_EXCHANGED",
+      "metadata": {
+        "title": "Story tradition",
+        "category": "SOCIAL_PRACTICE"
+      }
+    }
+  ],
+  "inventions": [
+    {
+      "id": "INV_CAMPFIRE",
+      "prerequisites": ["DISC_FIRE"],
+      "metadata": {
+        "title": "Campfire"
+      }
+    },
+    {
+      "id": "INV_ORAL_ARCHIVE",
+      "prerequisites": ["DISC_STORY"],
+      "metadata": {
+        "title": "Oral archive"
+      }
+    }
+  ],
+  "applications": [
+    {
+      "id": "APP_COOK_FOOD",
+      "prerequisites": ["INV_CAMPFIRE"],
+      "metadata": {
+        "action": "COOK_FOOD"
+      }
+    },
+    {
+      "id": "APP_TELL_STORIES",
+      "prerequisites": ["INV_ORAL_ARCHIVE"],
+      "metadata": {
+        "action": "TELL_STORIES"
+      }
+    }
+  ]
+}
