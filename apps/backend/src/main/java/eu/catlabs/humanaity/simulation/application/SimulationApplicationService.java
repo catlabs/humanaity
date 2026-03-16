@@ -53,6 +53,8 @@ public class SimulationApplicationService {
     private static final double GOAL_MOVEMENT_STEP = 0.035;
     private static final double IDLE_MOVEMENT_STEP = 0.012;
     private static final double GOAL_COMPLETION_DISTANCE = 0.03;
+    private static final int MAX_ACTION_OUTCOMES_PER_TICK = 1;
+    private static final int MAX_EVENT_OUTCOMES_PER_TICK = 4;
     private static final long RECENT_DIALOGUE_WINDOW_TICKS = 3L;
     private static final long RECENT_COLLISION_DISCOVERY_WINDOW_TICKS = 6L;
     private static final long REACHED_PLACE_COOLDOWN_TICKS = 5L;
@@ -372,7 +374,8 @@ public class SimulationApplicationService {
                 goalLifecycleDrafts,
                 actionDrafts
         );
-        eventApplicationService.emitEventsAtTick(cityId, nextTick, stepEvents);
+        List<EventDraft> pacedStepEvents = applyTurnPacing(stepEvents);
+        eventApplicationService.emitEventsAtTick(cityId, nextTick, pacedStepEvents);
 
         List<Invention> createdInventions = inventionApplicationService.deriveFromPersistedEvents(cityId);
         emitMilestoneEvents(cityId, createdInventions);
@@ -617,8 +620,37 @@ public class SimulationApplicationService {
                     16,
                     eventKey
             ));
+            if (drafts.size() >= MAX_ACTION_OUTCOMES_PER_TICK) {
+                break;
+            }
         }
         return drafts;
+    }
+
+    private List<EventDraft> applyTurnPacing(List<EventDraft> drafts) {
+        if (drafts.size() <= MAX_EVENT_OUTCOMES_PER_TICK) {
+            return drafts;
+        }
+        List<EventDraft> ordered = drafts.stream()
+                .sorted(Comparator
+                        .comparingInt((EventDraft draft) -> pacingPriority(draft.eventType()))
+                        .reversed()
+                        .thenComparing(EventDraft::payloadDiscriminator))
+                .toList();
+        return ordered.subList(0, MAX_EVENT_OUTCOMES_PER_TICK);
+    }
+
+    private int pacingPriority(EventType type) {
+        return switch (type) {
+            case GOAL_COMPLETED -> 100;
+            case HUMAN_ACTION_PERFORMED -> 90;
+            case DIALOGUE_EXCHANGED -> 80;
+            case HUMANS_COLLIDED -> 70;
+            case DISCOVERY_UNLOCKED -> 60;
+            case INVENTION_EMERGED -> 50;
+            case GOAL_ASSIGNED -> 40;
+            case SIMULATION_STARTED, SIMULATION_PAUSED, SIMULATION_RESUMED, SIMULATION_COMPLETED -> 30;
+        };
     }
 
     private List<EventDraft> buildCollisionDrafts(long tick, List<Human> humans) {
