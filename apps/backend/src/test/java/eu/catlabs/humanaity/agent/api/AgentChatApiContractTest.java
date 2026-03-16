@@ -144,6 +144,46 @@ class AgentChatApiContractTest {
     }
 
     @Test
+    void chatParsesPauseSimulationDeterministically() throws Exception {
+        User owner = persistUser("owner-agent-pause@example.com");
+        City city = persistCity("PauseCity", owner);
+
+        MvcResult result = mockMvc.perform(post("/api/agent/cities/{cityId}/chat", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("pause simulation")))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(payload.get("executedActions").get(0).get("type").asText()).isEqualTo("PAUSE_SIMULATION");
+        assertThat(payload.get("executedActions").get(0).get("status").asText()).isEqualTo("COMPLETED");
+        assertThat(payload.get("message").asText()).contains("Paused the simulation");
+    }
+
+    @Test
+    void chatMatchesMeetCommandDeterministicallyAndFailsClosedUntilGoalsExist() throws Exception {
+        User owner = persistUser("owner-agent-meet@example.com");
+        City city = persistCity("MeetCity", owner);
+        Human left = persistHuman(city, "Pierre", 0.1, 0.2);
+        Human right = persistHuman(city, "Lucas", 0.6, 0.8);
+
+        MvcResult result = mockMvc.perform(post("/api/agent/cities/{cityId}/chat", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("Tell Pierre to meet Lucas")))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(payload.get("executedActions").get(0).get("type").asText()).isEqualTo("MEET_HUMAN");
+        assertThat(payload.get("executedActions").get(0).get("status").asText()).isEqualTo("REJECTED");
+        assertThat(payload.path("referencedEntities").path("humanIds").toString())
+                .contains(left.getId().toString(), right.getId().toString());
+        assertThat(payload.get("message").asText()).contains("Sprint 22");
+    }
+
+    @Test
     void chatSupportsGuidedFocusCommandWithStableEffectAndStructuredData() throws Exception {
         User owner = persistUser("owner-agent-guided-focus@example.com");
         City city = persistCity("GuidedCity", owner);

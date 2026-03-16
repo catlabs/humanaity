@@ -1,5 +1,10 @@
 package eu.catlabs.humanaity.agent.application;
 
+import eu.catlabs.humanaity.agent.application.command.AgentChatCommand;
+import eu.catlabs.humanaity.agent.application.command.AgentChatCommandType;
+import eu.catlabs.humanaity.agent.application.command.DeterministicAgentCommandMatcher;
+import eu.catlabs.humanaity.agent.application.command.DeterministicCommandMatch;
+import eu.catlabs.humanaity.agent.application.command.DeterministicCommandMatchStatus;
 import eu.catlabs.humanaity.agent.api.dto.AgentActionOutput;
 import eu.catlabs.humanaity.agent.api.dto.AgentChatRequestInput;
 import eu.catlabs.humanaity.agent.api.dto.AgentChatResponseOutput;
@@ -57,6 +62,7 @@ public class AgentChatOrchestrationService {
     private final InventionRepository inventionRepository;
     private final HumanRepository humanRepository;
     private final DirectorInterventionRepository directorInterventionRepository;
+    private final DeterministicAgentCommandMatcher deterministicAgentCommandMatcher;
 
     public AgentChatOrchestrationService(
             CityRepository cityRepository,
@@ -66,7 +72,8 @@ public class AgentChatOrchestrationService {
             EventRepository eventRepository,
             InventionRepository inventionRepository,
             HumanRepository humanRepository,
-            DirectorInterventionRepository directorInterventionRepository
+            DirectorInterventionRepository directorInterventionRepository,
+            DeterministicAgentCommandMatcher deterministicAgentCommandMatcher
     ) {
         this.cityRepository = cityRepository;
         this.simulationApplicationService = simulationApplicationService;
@@ -76,6 +83,7 @@ public class AgentChatOrchestrationService {
         this.inventionRepository = inventionRepository;
         this.humanRepository = humanRepository;
         this.directorInterventionRepository = directorInterventionRepository;
+        this.deterministicAgentCommandMatcher = deterministicAgentCommandMatcher;
     }
 
     public AgentChatResponseOutput orchestrate(Long cityId, User currentUser, AgentChatRequestInput input) {
@@ -87,8 +95,6 @@ public class AgentChatOrchestrationService {
         ensureOwnership(city, currentUser);
 
         String normalizedMessage = input.getMessage().trim().toLowerCase(Locale.ROOT);
-        String intent = classifyIntent(normalizedMessage);
-
         AgentChatResponseOutput response = new AgentChatResponseOutput();
         response.setConversationId(resolveConversationId(input.getConversationId()));
         response.setCommandClass("SAFE_MVP");
@@ -96,6 +102,14 @@ public class AgentChatOrchestrationService {
         AgentReferencedEntitiesOutput referenced = new AgentReferencedEntitiesOutput();
         referenced.setCityId(cityId);
         response.setReferencedEntities(referenced);
+
+        DeterministicCommandMatch deterministicMatch = deterministicAgentCommandMatcher.match(cityId, input);
+        if (deterministicMatch.status() == DeterministicCommandMatchStatus.MATCHED) {
+            executeDeterministicCommand(cityId, input, deterministicMatch.command(), normalizedMessage, response);
+            return response;
+        }
+
+        String intent = classifyIntent(normalizedMessage);
 
         switch (intent) {
             case "move_human_to_place" -> {
@@ -137,6 +151,29 @@ public class AgentChatOrchestrationService {
         return response;
     }
 
+    private void executeDeterministicCommand(
+            Long cityId,
+            AgentChatRequestInput input,
+            AgentChatCommand command,
+            String normalizedMessage,
+            AgentChatResponseOutput response
+    ) {
+        AgentChatCommandType type = command.type();
+        switch (type) {
+            case STEP_SIMULATION -> executeStep(cityId, normalizedMessage, response);
+            case PAUSE_SIMULATION -> executePause(cityId, response);
+            case FOCUS_HUMAN -> {
+                response.setCommandClass("GUIDED");
+                executeFocusHuman(cityId, input, normalizedMessage, response);
+            }
+            case MOVE_TO_PLACE -> {
+                response.setCommandClass("GUIDED");
+                executeMoveHumanToPlace(cityId, input, normalizedMessage, response);
+            }
+            case MEET_HUMAN -> executeMeetHuman(command, response);
+        }
+    }
+
     private void executeStep(Long cityId, String normalizedMessage, AgentChatResponseOutput response) {
         int requestedCount = extractRequestedStepCount(normalizedMessage);
         int count = Math.max(1, Math.min(requestedCount, MAX_SAFE_STEPS));
@@ -157,6 +194,37 @@ public class AgentChatOrchestrationService {
         response.getUiEffects().add(refreshTimeline);
 
         response.setMessage("Advanced the city by " + count + " step(s). Current tick is " + run.getTick() + ".");
+    }
+
+    private void executePause(Long cityId, AgentChatResponseOutput response) {
+        SimulationRun run;
+        try {
+            run = simulationApplicationService.pauseRun(cityId);
+        } catch (EntityNotFoundException ex) {
+            simulationApplicationService.createRun(cityId);
+            run = simulationApplicationService.pauseRun(cityId);
+        }
+
+        response.getExecutedActions().add(new AgentActionOutput(
+                "PAUSE_SIMULATION",
+                "COMPLETED",
+                "Paused simulation at tick " + run.getTick()
+        ));
+        response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
+        response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_TIMELINE"));
+        response.setMessage("Paused the simulation at tick " + run.getTick() + ".");
+    }
+
+    private void executeMeetHuman(AgentChatCommand command, AgentChatResponseOutput response) {
+        response.getExecutedActions().add(new AgentActionOutput(
+                "MEET_HUMAN",
+                "REJECTED",
+                "Meeting commands are parsed deterministically but execute in Sprint 22 goal flows"
+        ));
+        response.getReferencedEntities().setHumanIds(List.of(command.primaryHumanId(), command.secondaryHumanId()));
+        response.setMessage("Parsed a meet command for humans "
+                + command.primaryHumanId() + " and " + command.secondaryHumanId()
+                + ", but meeting goals are not executed until Sprint 22.");
     }
 
     private void executeSnapshot(Long cityId, AgentChatResponseOutput response) {
