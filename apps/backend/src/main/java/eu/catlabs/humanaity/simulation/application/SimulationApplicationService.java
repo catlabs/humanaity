@@ -13,6 +13,8 @@ import eu.catlabs.humanaity.invention.application.InventionApplicationService;
 import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.invention.domain.InventionCategory;
 import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
+import eu.catlabs.humanaity.simulation.domain.HumanGoal;
+import eu.catlabs.humanaity.simulation.domain.HumanGoalType;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
 import eu.catlabs.humanaity.simulation.domain.SimulationRunStatus;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
@@ -44,6 +46,9 @@ public class SimulationApplicationService {
     private static final Logger logger = LoggerFactory.getLogger(SimulationApplicationService.class);
     private static final int MAX_STEPS_PER_REQUEST = 10_000;
     private static final double COLLISION_DISTANCE_THRESHOLD = 0.08;
+    private static final double GOAL_MOVEMENT_STEP = 0.035;
+    private static final double IDLE_MOVEMENT_STEP = 0.012;
+    private static final double GOAL_COMPLETION_DISTANCE = 0.03;
     private static final long RECENT_DIALOGUE_WINDOW_TICKS = 3L;
     private static final long RECENT_COLLISION_DISCOVERY_WINDOW_TICKS = 6L;
     private static final long REACHED_PLACE_COOLDOWN_TICKS = 5L;
@@ -74,6 +79,7 @@ public class SimulationApplicationService {
     private final EventApplicationService eventApplicationService;
     private final InventionApplicationService inventionApplicationService;
     private final SimulationReadModelQueryService simulationReadModelQueryService;
+    private final HumanGoalApplicationService humanGoalApplicationService;
 
     public SimulationApplicationService(
             HumanRepository humanRepository,
@@ -82,7 +88,8 @@ public class SimulationApplicationService {
             SimulationRunRepository simulationRunRepository,
             EventApplicationService eventApplicationService,
             InventionApplicationService inventionApplicationService,
-            SimulationReadModelQueryService simulationReadModelQueryService
+            SimulationReadModelQueryService simulationReadModelQueryService,
+            HumanGoalApplicationService humanGoalApplicationService
     ) {
         this.humanRepository = humanRepository;
         this.humanApplicationService = humanApplicationService;
@@ -91,6 +98,7 @@ public class SimulationApplicationService {
         this.eventApplicationService = eventApplicationService;
         this.inventionApplicationService = inventionApplicationService;
         this.simulationReadModelQueryService = simulationReadModelQueryService;
+        this.humanGoalApplicationService = humanGoalApplicationService;
     }
 
     public synchronized String startSimulation(Long cityId) {
@@ -294,57 +302,214 @@ public class SimulationApplicationService {
     }
 
     private void runSingleDeterministicTick(SimulationRun run) {
+        Long cityId = run.getCity().getId();
         if (run.getTick() == 0L) {
-            resetPlaceStayState(run.getCity().getId());
-            resetProximityGroupState(run.getCity().getId());
+            resetPlaceStayState(cityId);
+            resetProximityGroupState(cityId);
         }
-        List<Human> orderedHumans = new ArrayList<>(humanRepository.findByCityIdOrderByIdAsc(run.getCity().getId()));
+        List<Human> orderedHumans = new ArrayList<>(humanRepository.findByCityIdOrderByIdAsc(cityId));
         if (orderedHumans.isEmpty()) {
-            logger.debug("No humans found in city {}", run.getCity().getId());
+            logger.debug("No humans found in city {}", cityId);
             long nextTick = run.getTick() + 1;
             run.setTick(nextTick);
             simulationRunRepository.save(run);
-            emitMilestoneEvents(run.getCity().getId(), inventionApplicationService.deriveFromPersistedEvents(run.getCity().getId()));
+            emitMilestoneEvents(cityId, inventionApplicationService.deriveFromPersistedEvents(cityId));
             return;
         }
 
         Map<Long, String> previousPlaceByHuman = new HashMap<>();
+        Map<Long, Human> humansById = new HashMap<>();
         for (Human human : orderedHumans) {
+            humansById.put(human.getId(), human);
             previousPlaceByHuman.put(
                     human.getId(),
                     resolvePlaceForPosition(human.getX(), human.getY()).map(SimulationPlaceRegistry.SimulationPlace::id).orElse(null)
             );
         }
 
+        Map<Long, HumanGoal> activeGoalsByHuman = new HashMap<>();
+        for (HumanGoal goal : humanGoalApplicationService.listActiveGoalsByCity(cityId)) {
+            activeGoalsByHuman.put(goal.getHuman().getId(), goal);
+        }
+
+        List<GoalTickOutcome> goalOutcomes = new ArrayList<>();
         for (Human human : orderedHumans) {
             human.setBusy(false);
-            updateHumanPosition(run.getSeed(), run.getTick(), human);
+            HumanGoal goal = activeGoalsByHuman.get(human.getId());
+            GoalTickOutcome outcome = goal == null
+                    ? updateIdleHumanPosition(run.getSeed(), run.getTick(), human)
+                    : updateGoalDrivenHumanPosition(goal, run.getSeed(), run.getTick(), human, humansById);
+            goalOutcomes.add(outcome);
         }
 
         humanRepository.saveAll(orderedHumans);
         humanApplicationService.publishHumanUpdates(orderedHumans);
 
         long nextTick = run.getTick() + 1;
+        List<EventDraft> goalLifecycleDrafts = finalizeGoalOutcomes(goalOutcomes, nextTick);
         run.setTick(nextTick);
         simulationRunRepository.save(run);
 
-        List<EventDraft> stepEvents = buildStepEventDrafts(run, nextTick, orderedHumans, previousPlaceByHuman);
-        eventApplicationService.emitEventsAtTick(run.getCity().getId(), nextTick, stepEvents);
+        List<EventDraft> stepEvents = buildStepEventDrafts(run, nextTick, orderedHumans, previousPlaceByHuman, goalLifecycleDrafts);
+        eventApplicationService.emitEventsAtTick(cityId, nextTick, stepEvents);
 
-        List<Invention> createdInventions = inventionApplicationService.deriveFromPersistedEvents(run.getCity().getId());
-        emitMilestoneEvents(run.getCity().getId(), createdInventions);
+        List<Invention> createdInventions = inventionApplicationService.deriveFromPersistedEvents(cityId);
+        emitMilestoneEvents(cityId, createdInventions);
     }
 
-    private void updateHumanPosition(Long runSeed, Long tick, Human human) {
+    private GoalTickOutcome updateIdleHumanPosition(Long runSeed, Long tick, Human human) {
         Random tickHumanRandom = new Random(deriveDeterministicSeed(runSeed, tick, human.getId()));
-        double deltaX = (tickHumanRandom.nextDouble() - 0.5) * 0.1;
-        double deltaY = (tickHumanRandom.nextDouble() - 0.5) * 0.1;
+        double deltaX = (tickHumanRandom.nextDouble() - 0.5) * (IDLE_MOVEMENT_STEP * 2.0);
+        double deltaY = (tickHumanRandom.nextDouble() - 0.5) * (IDLE_MOVEMENT_STEP * 2.0);
+        human.setX(applyBoundary(human.getX() + deltaX));
+        human.setY(applyBoundary(human.getY() + deltaY));
+        return GoalTickOutcome.none();
+    }
 
-        double newX = Math.max(0, Math.min(1, human.getX() + deltaX));
-        double newY = Math.max(0, Math.min(1, human.getY() + deltaY));
+    private GoalTickOutcome updateGoalDrivenHumanPosition(
+            HumanGoal goal,
+            Long runSeed,
+            Long tick,
+            Human human,
+            Map<Long, Human> humansById
+    ) {
+        GoalTarget target = resolveGoalTarget(goal, humansById);
+        if (target == null) {
+            return GoalTickOutcome.cancel(goal, "TARGET_UNAVAILABLE");
+        }
 
-        human.setX(newX);
-        human.setY(newY);
+        moveToward(human, target.x(), target.y(), GOAL_MOVEMENT_STEP);
+        boolean reached = isGoalReached(goal, human, target, humansById);
+        if (reached) {
+            return GoalTickOutcome.complete(goal, "REACHED_TARGET");
+        }
+
+        Random jitter = new Random(deriveDeterministicSeed(runSeed, tick, human.getId()) ^ 0x4CF5AD432745937FL);
+        human.setX(applyBoundary(human.getX() + ((jitter.nextDouble() - 0.5) * 0.002)));
+        human.setY(applyBoundary(human.getY() + ((jitter.nextDouble() - 0.5) * 0.002)));
+        return GoalTickOutcome.none();
+    }
+
+    private void moveToward(Human human, double targetX, double targetY, double stepSize) {
+        double currentX = safeCoordinate(human.getX());
+        double currentY = safeCoordinate(human.getY());
+        double deltaX = targetX - currentX;
+        double deltaY = targetY - currentY;
+        double distance = Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
+        if (distance <= stepSize || distance <= GOAL_COMPLETION_DISTANCE) {
+            human.setX(applyBoundary(targetX));
+            human.setY(applyBoundary(targetY));
+            return;
+        }
+
+        double scale = stepSize / distance;
+        human.setX(applyBoundary(currentX + (deltaX * scale)));
+        human.setY(applyBoundary(currentY + (deltaY * scale)));
+    }
+
+    private double applyBoundary(double value) {
+        if (!Double.isFinite(value)) {
+            return 0.5;
+        }
+        if (value < 0.0) {
+            return Math.min(1.0, -value);
+        }
+        if (value > 1.0) {
+            return Math.max(0.0, 2.0 - value);
+        }
+        return value;
+    }
+
+    private double safeCoordinate(Double value) {
+        if (value == null || !Double.isFinite(value)) {
+            return 0.5;
+        }
+        return applyBoundary(value);
+    }
+
+    private GoalTarget resolveGoalTarget(HumanGoal goal, Map<Long, Human> humansById) {
+        if (goal.getGoalType() == HumanGoalType.MOVE_TO_PLACE) {
+            if (goal.getTargetX() != null && goal.getTargetY() != null) {
+                return new GoalTarget(goal.getTargetX(), goal.getTargetY(), goal.getTargetPlaceId());
+            }
+            if (goal.getTargetPlaceId() == null) {
+                return null;
+            }
+            return SimulationPlaceRegistry.byId(goal.getTargetPlaceId())
+                    .map(place -> new GoalTarget(place.x(), place.y(), place.id()))
+                    .orElse(null);
+        }
+        if (goal.getTargetHumanId() == null) {
+            return null;
+        }
+        Human targetHuman = humansById.get(goal.getTargetHumanId());
+        if (targetHuman == null) {
+            return null;
+        }
+        return new GoalTarget(safeCoordinate(targetHuman.getX()), safeCoordinate(targetHuman.getY()), null);
+    }
+
+    private boolean isGoalReached(HumanGoal goal, Human actor, GoalTarget target, Map<Long, Human> humansById) {
+        if (goal.getGoalType() == HumanGoalType.MOVE_TO_PLACE) {
+            if (target.placeId() != null) {
+                Optional<SimulationPlaceRegistry.SimulationPlace> place = SimulationPlaceRegistry.byId(target.placeId());
+                if (place.isPresent()) {
+                    return distanceTo(actor.getX(), actor.getY(), place.get().x(), place.get().y()) <= place.get().radius();
+                }
+            }
+            return distanceTo(actor.getX(), actor.getY(), target.x(), target.y()) <= GOAL_COMPLETION_DISTANCE;
+        }
+        Human targetHuman = humansById.get(goal.getTargetHumanId());
+        if (targetHuman == null) {
+            return false;
+        }
+        double distance = distance(actor, targetHuman);
+        if (goal.getGoalType() == HumanGoalType.FOLLOW_HUMAN) {
+            return distance <= (COLLISION_DISTANCE_THRESHOLD + 0.03);
+        }
+        return distance <= COLLISION_DISTANCE_THRESHOLD;
+    }
+
+    private List<EventDraft> finalizeGoalOutcomes(List<GoalTickOutcome> outcomes, long tick) {
+        List<EventDraft> drafts = new ArrayList<>();
+        for (GoalTickOutcome outcome : outcomes) {
+            if (outcome.goal() == null || outcome.result() == GoalTickResult.NONE) {
+                continue;
+            }
+            HumanGoal updatedGoal = switch (outcome.result()) {
+                case COMPLETED -> humanGoalApplicationService.completeGoal(outcome.goal(), tick);
+                case CANCELLED -> humanGoalApplicationService.cancelGoal(outcome.goal(), tick);
+                case NONE -> outcome.goal();
+            };
+            if (outcome.result() == GoalTickResult.COMPLETED) {
+                drafts.add(buildGoalCompletedDraft(updatedGoal, tick));
+            }
+        }
+        return drafts;
+    }
+
+    private EventDraft buildGoalCompletedDraft(HumanGoal goal, long tick) {
+        Map<String, String> payload = new HashMap<>();
+        payload.put("goalId", String.valueOf(goal.getId()));
+        payload.put("goalType", goal.getGoalType().name());
+        payload.put("source", goal.getSource().name());
+        if (goal.getTargetPlaceId() != null) {
+            payload.put("targetPlaceId", goal.getTargetPlaceId());
+        }
+        if (goal.getTargetHumanId() != null) {
+            payload.put("targetHumanId", String.valueOf(goal.getTargetHumanId()));
+        }
+        if (goal.getMetadataKey() != null) {
+            payload.put("metadataKey", goal.getMetadataKey());
+        }
+        String goalKey = "GOAL_COMPLETED:" + goal.getId() + ":" + tick;
+        return new EventDraft(
+                EventType.GOAL_COMPLETED,
+                List.of(goal.getHuman().getId()),
+                payload,
+                24,
+                goalKey
+        );
     }
 
     private long deriveDeterministicSeed(Long runSeed, Long tick, Long humanId) {
@@ -358,12 +523,14 @@ public class SimulationApplicationService {
             SimulationRun run,
             long tick,
             List<Human> orderedHumans,
-            Map<Long, String> previousPlaceByHuman
+            Map<Long, String> previousPlaceByHuman,
+            List<EventDraft> goalLifecycleDrafts
     ) {
         List<Human> humans = orderedHumans.stream()
                 .sorted(Comparator.comparing(Human::getId))
                 .toList();
         List<EventDraft> drafts = new ArrayList<>();
+        drafts.addAll(goalLifecycleDrafts);
         drafts.addAll(buildCollisionDrafts(tick, humans));
         drafts.addAll(buildDialogueDrafts(run.getCity().getId(), tick, humans));
         drafts.addAll(buildReachedPlaceDrafts(run.getCity().getId(), tick, humans, previousPlaceByHuman));
@@ -1017,6 +1184,29 @@ public class SimulationApplicationService {
             List<Event> events,
             List<Invention> inventions
     ) {
+    }
+
+    private record GoalTarget(double x, double y, String placeId) {
+    }
+
+    private record GoalTickOutcome(HumanGoal goal, GoalTickResult result, String reason) {
+        private static GoalTickOutcome none() {
+            return new GoalTickOutcome(null, GoalTickResult.NONE, "");
+        }
+
+        private static GoalTickOutcome complete(HumanGoal goal, String reason) {
+            return new GoalTickOutcome(goal, GoalTickResult.COMPLETED, reason);
+        }
+
+        private static GoalTickOutcome cancel(HumanGoal goal, String reason) {
+            return new GoalTickOutcome(goal, GoalTickResult.CANCELLED, reason);
+        }
+    }
+
+    private enum GoalTickResult {
+        NONE,
+        COMPLETED,
+        CANCELLED
     }
 
     private enum Trait {

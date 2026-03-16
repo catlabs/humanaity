@@ -35,42 +35,42 @@ public class HumanGoal {
     private Human human;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 40)
+    @Column(name = "goal_type", nullable = false, length = 40)
     private HumanGoalType goalType;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 24)
+    @Column(name = "status", nullable = false, length = 24)
     private HumanGoalStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 40)
+    @Column(name = "source", nullable = false, length = 40)
     private HumanGoalSource source;
 
-    @Column(nullable = false)
+    @Column(name = "assigned_tick", nullable = false)
     private Long assignedTick;
 
-    @Column
+    @Column(name = "completed_tick")
     private Long completedTick;
 
-    @Column(length = 64)
+    @Column(name = "target_place_id", length = 64)
     private String targetPlaceId;
 
-    @Column
+    @Column(name = "target_human_id")
     private Long targetHumanId;
 
-    @Column
+    @Column(name = "target_x")
     private Double targetX;
 
-    @Column
+    @Column(name = "target_y")
     private Double targetY;
 
-    @Column(length = 64)
+    @Column(name = "metadata_key", length = 64)
     private String metadataKey;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
     @PrePersist

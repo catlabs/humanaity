@@ -82,6 +82,13 @@ public class HumanGoalApplicationService {
         return humanGoalRepository.save(goal);
     }
 
+    @Transactional
+    public HumanGoal cancelGoal(HumanGoal goal, Long completedTick) {
+        goal.setStatus(HumanGoalStatus.CANCELLED);
+        goal.setCompletedTick(completedTick);
+        return humanGoalRepository.save(goal);
+    }
+
     public record GoalTarget(
             String targetPlaceId,
             Long targetHumanId,
