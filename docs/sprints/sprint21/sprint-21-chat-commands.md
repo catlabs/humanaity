@@ -4,14 +4,14 @@
 
 - Current phase: Planned
 - Active chunk: none
-- Next chunk: Task 2a
+- Next chunk: Task 3a
 - Blocked items: none
-- Last completed chunk: Task 1a (2026-03-16)
+- Last completed chunk: Task 2a (2026-03-16)
 
 | Chunk ID | Status | Notes |
 | --- | --- | --- |
 | Task 1a | done | Added structured command types and deterministic matcher coverage for step, pause, focus, move-to-place, and meet-human parsing with fail-closed resolution tests. |
-| Task 2a | todo | Add validated LLM fallback path with fail-closed semantics. |
+| Task 2a | done | Added LLM fallback for ambiguous move-style requests with schema validation, deterministic-first precedence, and refusal on invalid output. |
 | Task 3a | todo | Surface interpretation provenance in API, logs, and UI feedback. |
 
 ## Sprint intent

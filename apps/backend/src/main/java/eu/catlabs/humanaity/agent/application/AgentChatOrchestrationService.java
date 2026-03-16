@@ -5,6 +5,9 @@ import eu.catlabs.humanaity.agent.application.command.AgentChatCommandType;
 import eu.catlabs.humanaity.agent.application.command.DeterministicAgentCommandMatcher;
 import eu.catlabs.humanaity.agent.application.command.DeterministicCommandMatch;
 import eu.catlabs.humanaity.agent.application.command.DeterministicCommandMatchStatus;
+import eu.catlabs.humanaity.agent.application.command.FallbackCommandMatch;
+import eu.catlabs.humanaity.agent.application.command.FallbackCommandMatchStatus;
+import eu.catlabs.humanaity.agent.application.command.LlmFallbackCommandInterpreter;
 import eu.catlabs.humanaity.agent.api.dto.AgentActionOutput;
 import eu.catlabs.humanaity.agent.api.dto.AgentChatRequestInput;
 import eu.catlabs.humanaity.agent.api.dto.AgentChatResponseOutput;
@@ -63,6 +66,7 @@ public class AgentChatOrchestrationService {
     private final HumanRepository humanRepository;
     private final DirectorInterventionRepository directorInterventionRepository;
     private final DeterministicAgentCommandMatcher deterministicAgentCommandMatcher;
+    private final LlmFallbackCommandInterpreter llmFallbackCommandInterpreter;
 
     public AgentChatOrchestrationService(
             CityRepository cityRepository,
@@ -73,7 +77,8 @@ public class AgentChatOrchestrationService {
             InventionRepository inventionRepository,
             HumanRepository humanRepository,
             DirectorInterventionRepository directorInterventionRepository,
-            DeterministicAgentCommandMatcher deterministicAgentCommandMatcher
+            DeterministicAgentCommandMatcher deterministicAgentCommandMatcher,
+            LlmFallbackCommandInterpreter llmFallbackCommandInterpreter
     ) {
         this.cityRepository = cityRepository;
         this.simulationApplicationService = simulationApplicationService;
@@ -84,6 +89,7 @@ public class AgentChatOrchestrationService {
         this.humanRepository = humanRepository;
         this.directorInterventionRepository = directorInterventionRepository;
         this.deterministicAgentCommandMatcher = deterministicAgentCommandMatcher;
+        this.llmFallbackCommandInterpreter = llmFallbackCommandInterpreter;
     }
 
     public AgentChatResponseOutput orchestrate(Long cityId, User currentUser, AgentChatRequestInput input) {
@@ -106,6 +112,22 @@ public class AgentChatOrchestrationService {
         DeterministicCommandMatch deterministicMatch = deterministicAgentCommandMatcher.match(cityId, input);
         if (deterministicMatch.status() == DeterministicCommandMatchStatus.MATCHED) {
             executeDeterministicCommand(cityId, input, deterministicMatch.command(), normalizedMessage, response);
+            return response;
+        }
+
+        List<Human> cityHumans = humanRepository.findByCityIdOrderByIdAsc(cityId);
+        FallbackCommandMatch fallbackMatch = llmFallbackCommandInterpreter.interpret(normalizedMessage, cityHumans);
+        if (fallbackMatch.status() == FallbackCommandMatchStatus.MATCHED) {
+            executeDeterministicCommand(cityId, input, fallbackMatch.command(), normalizedMessage, response);
+            return response;
+        }
+        if (fallbackMatch.status() == FallbackCommandMatchStatus.INVALID) {
+            response.getExecutedActions().add(new AgentActionOutput(
+                    "UNSUPPORTED_REQUEST",
+                    "REJECTED",
+                    "LLM fallback could not validate a structured command"
+            ));
+            response.setMessage("I could not validate a safe structured command for that request.");
             return response;
         }
 
@@ -168,7 +190,7 @@ public class AgentChatOrchestrationService {
             }
             case MOVE_TO_PLACE -> {
                 response.setCommandClass("GUIDED");
-                executeMoveHumanToPlace(cityId, input, normalizedMessage, response);
+                executeMoveHumanToPlace(cityId, command, response);
             }
             case MEET_HUMAN -> executeMeetHuman(command, response);
         }
@@ -277,6 +299,45 @@ public class AgentChatOrchestrationService {
         response.setMessage("Recent summary: " + timeline.events().size() + " event(s), "
                 + timeline.inventions().size() + " invention(s). Latest event: " + latestEvent
                 + ". Latest invention: " + latestInvention + ".");
+    }
+
+    private void executeMoveHumanToPlace(
+            Long cityId,
+            AgentChatCommand command,
+            AgentChatResponseOutput response
+    ) {
+        PlaceTarget targetPlace = PLACE_REGISTRY.get(command.placeId());
+        Human targetHuman = humanRepository.findById(command.primaryHumanId())
+                .filter(human -> human.getCity() != null && human.getCity().getId().equals(cityId))
+                .orElse(null);
+        if (targetPlace == null || targetHuman == null) {
+            response.getExecutedActions().add(new AgentActionOutput(
+                    "MOVE_HUMAN_TO_PLACE",
+                    "REJECTED",
+                    "Structured move command could not be resolved against current city state"
+            ));
+            response.setMessage("I could not validate the resolved move command against the current city state.");
+            return;
+        }
+
+        targetHuman.setX(targetPlace.x);
+        targetHuman.setY(targetPlace.y);
+        humanRepository.save(targetHuman);
+
+        response.getExecutedActions().add(new AgentActionOutput(
+                "MOVE_HUMAN_TO_PLACE",
+                "COMPLETED",
+                "Moved human " + targetHuman.getId() + " to place " + targetPlace.id
+        ));
+        response.getReferencedEntities().setHumanIds(List.of(targetHuman.getId()));
+        response.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
+        AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
+        focus.setHumanId(targetHuman.getId());
+        response.getUiEffects().add(focus);
+        AgentUiEffectOutput highlightPlace = new AgentUiEffectOutput("HIGHLIGHT_PLACE");
+        highlightPlace.setPlaceId(targetPlace.id);
+        response.getUiEffects().add(highlightPlace);
+        response.setMessage("Moved " + targetHuman.getName() + " to " + targetPlace.label + ".");
     }
 
     private void executeMoveHumanToPlace(
