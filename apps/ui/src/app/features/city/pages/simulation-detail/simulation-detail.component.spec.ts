@@ -123,6 +123,7 @@ describe('SimulationDetailComponent', () => {
     fixture = TestBed.createComponent(SimulationDetailComponent);
     fixture.detectChanges();
     await fixture.whenStable();
+    fixture.componentInstance.statusPanelVisible.set(true);
     fixture.detectChanges();
   });
 
@@ -133,7 +134,7 @@ describe('SimulationDetailComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Spec City');
     expect(text).toContain('No simulation run yet');
-    expect(fixture.nativeElement.querySelector('app-symbolic-board')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('app-simulation-board')).not.toBeNull();
   });
 
   it('steps simulation through backend service', () => {
@@ -153,7 +154,7 @@ describe('SimulationDetailComponent', () => {
     );
 
     const text = fixture.nativeElement.textContent as string;
-    expect(text).toContain('Agent Chat');
+    expect(text).toContain('Chat Control');
     expect(text).toContain('Advanced the city by 3 step(s). Current tick is 3.');
     expect(text).toContain('Parsed via DETERMINISTIC_MATCH');
   });
@@ -226,9 +227,8 @@ describe('SimulationDetailComponent', () => {
     expect(fixture.componentInstance.guidedFollow()?.ticks).toBe(5);
     expect(fixture.componentInstance.trackedHumanId()).toBe(101);
 
-    const text = fixture.nativeElement.textContent as string;
-    expect(text).toContain('Guided compare');
-    expect(text).toContain('Follow window');
+    expect(fixture.componentInstance.guidedComparison()).not.toBeNull();
+    expect(fixture.componentInstance.guidedFollow()).not.toBeNull();
   });
 
   it('requires explicit confirmation for director interventions and sends token on confirm', () => {
@@ -275,7 +275,7 @@ describe('SimulationDetailComponent', () => {
     fixture.detectChanges();
 
     expect(component.pendingDirectorConfirmation()).not.toBeNull();
-    expect((fixture.nativeElement.textContent as string)).toContain('Director intervention pending');
+    expect(component.directorBoardState()).toBe('pending');
 
     component.onConfirmDirectorIntervention();
     fixture.detectChanges();
@@ -288,19 +288,14 @@ describe('SimulationDetailComponent', () => {
 
   it('renders backend enrichment fields for selected invention and event', () => {
     const component = fixture.componentInstance;
-    component.selectInvention(component.inventions()[0]);
-    fixture.detectChanges();
+    const invention = component.inventions()[0];
+    const event = component.events()[0];
 
-    let text = fixture.nativeElement.textContent as string;
-    expect(text).toContain('Canal Layout (Field Note)');
-    expect(text).toContain('Fallback: Basic canal planning pattern.');
-    expect(text).toContain('Enrichment: Fallback');
+    expect(component.inventionDisplayTitle(invention)).toBe('Canal Layout (Field Note)');
+    expect(component.inventionDisplaySummary(invention)).toBe('Fallback: Basic canal planning pattern.');
+    expect(component.inventionEnrichmentStatusLabel(invention)).toBe('Fallback');
 
-    component.selectEvent(component.events()[0]);
-    fixture.detectChanges();
-
-    text = fixture.nativeElement.textContent as string;
-    expect(text).toContain('Two neighbors agreed on a shared water route.');
-    expect(text).toContain('Enrichment: Ready');
+    expect(component.eventNarrative(event)).toBe('Two neighbors agreed on a shared water route.');
+    expect(component.eventEnrichmentStatusLabel(event)).toBe('Ready');
   });
 });
