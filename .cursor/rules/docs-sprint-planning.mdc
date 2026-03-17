@@ -1,19 +1,13 @@
 ---
-description: Keep sprint docs small, roadmap-aligned, and delegable.
-globs: docs/sprints/**/*.md
+description: Keep active docs concept-first, concise, and easy to scan.
+globs: docs/concepts/**/*.md
 alwaysApply: false
 ---
 
-# Sprint Planning
+# Concept Doc Planning
 
-- Keep each sprint focused on one coherent milestone.
-- Preserve roadmap alignment unless the user explicitly changes direction.
-- State `In scope` and `Out of scope` explicitly.
-- Keep the definition of done concrete and testable.
-- Break work into small delegable tasks for the user, Cursor, or Codex.
-- Prefer sprint docs that help the next implementation move, not broad strategy essays.
-
-## Naming
-
-- New sprint files should use `sprint-XX-theme.md`.
-- The theme should describe the sprint outcome, not a vague label.
+- Keep each concept file focused on one system block.
+- Prefer short, human-readable names and headings.
+- Use concise sections (`Scope`, `Covers`, `Source docs`) unless more detail is explicitly requested.
+- Point to `docs/specs/` for invariants and `docs/archive/` for history.
+- Avoid sprint/task backlogs in concept docs.

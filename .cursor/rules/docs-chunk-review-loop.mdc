@@ -1,27 +1,25 @@
 ---
-description: Enforce review, test, and handoff gates for sprint chunks.
-globs: docs/sprints/**/*.md
+description: Enforce review, validation, and handoff gates for concept/spec doc updates.
+globs: docs/concepts/**/*.md,docs/specs/**/*.md,docs/roadmap.md,docs/README.md
 alwaysApply: false
 ---
 
-# Sprint Chunk Review/Test/Handoff Loop
+# Docs Review/Test/Handoff Loop
 
-For each sprint chunk/sub-task, use the same minimum gate before moving to the next chunk.
+For each docs change set, use this gate before completion:
 
-1. Lock target scope:
-   - confirm active task ID, acceptance criteria, in-scope files, and out-of-scope boundaries
-2. Review implementation scope:
-   - ensure the diff stays inside the active task and does not introduce unrelated changes
-   - keep package placement/layering aligned with project conventions
-3. Run chunk-level validation:
-   - run tests for touched behavior first
-   - if contracts or persistence seams changed, run the nearest broader backend slice
-4. Compare against sprint outcomes:
-   - map results to task acceptance criteria and sprint Definition of Done invariants
+1. Lock scope:
+   - confirm target concept/spec docs and explicit out-of-scope files
+2. Review diff scope:
+   - ensure changes stay aligned with the requested docs restructure
+3. Validate references:
+   - confirm links/paths point to active locations (`docs/concepts`, `docs/specs`, `docs/archive`)
+4. Check readability:
+   - headings are concise and scanable
+   - filenames remain human-readable
 5. Prepare handoff notes:
-   - list files changed, tests run, intentionally deferred items, and open risks/questions
-   - update the active sprint doc's execution status block so current, next, blocked, and completed chunks remain visible without re-reading the whole plan
-6. Commit the chunk:
-   - one commit per task; stage only this task's changes; message format `<type>(<scope>): E<epic> T<task> <subject>`; do not push unless the user asks. In Cursor use `.cursor/skills/commit-message/SKILL.md`; for Codex or when the skill is unavailable use `docs/sprint-execution-contract.md`
-7. Apply go/no-go gate:
-   - proceed to next chunk only when scope is clean, tests pass, sprint/spec docs are synced, and the chunk commit is created
+   - list files changed and migration implications
+6. Commit:
+   - stage only this docs change set and create a clear commit message; do not push unless requested
+7. Go/no-go:
+   - proceed only when scope is clean, docs are internally consistent, and commit is created

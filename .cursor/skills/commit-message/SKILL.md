@@ -1,273 +1,43 @@
 ---
 name: commit-message
-description: Generate Conventional Commit messages for the Humanaity monorepo by analyzing git changes, preferring staged diffs and splitting unrelated work into separate commits. Use when the user asks for a commit message, wants help reviewing staged changes, or asks you to create commits.
+description: Generate Conventional Commit messages for the Humanaity monorepo by analyzing staged/unstaged changes and splitting unrelated work into focused commits.
 ---
 
 # Commit Message Generator
 
 ## Goal
+Create clear, human-readable Conventional Commit messages and make local commits when requested.
 
-Generate high-quality Conventional Commit messages for the Humanaity monorepo, **optimizing for human readability first**.
-Commit grouping should follow roadmap structure: `Epic` first, then `Task`.
-Prefer staged changes because they reflect what will actually be committed.
-When the user asks to commit changes, group the diff into coherent work subjects and create the commits in the command line instead of only proposing messages.
-When the user says `use commit skill` (or equivalent), treat it as explicit authorization to:
-
-1. stage focused commits,
-2. create the commit(s).
-
-Do not push, sync, or otherwise update the remote unless the user explicitly asks for it.
-
-## Source Of Truth
-
-Before drafting commit messages, read:
-
-- repository commit history (`git log`) and current diff (`git diff` / `git diff --staged`)
-- `docs/roadmap.md` to map the change to an epic number
-- the active sprint doc in `docs/sprints/` to map the change to a task number when available
-
-Then apply this skill's rules.
+## Source of truth
+Before writing a message, inspect:
+- `git status --porcelain`
+- `git diff --staged` (or `git diff` when nothing is staged)
+- related active docs (`docs/concepts/`, `docs/specs/`, `docs/roadmap.md`) when useful for context
 
 ## Format
-
-**Title (required):**
-
-```text
-<type>(<scope>): <concise human-readable summary>
-```
-
-**Body:** Use for context, rationale, and **always for epic/task when known** (e.g. `E1 T2b`). Epic and task numbers must still be recorded as before—in the body, not in the title.
-
-**Footer (optional):** Breaking changes, issue refs.
-
-- The commit **title** must be understandable without opening roadmap or sprint docs.
-- Do **not** start the title with internal planning identifiers such as `E10`, `T2a`, `Sprint-xx`, etc.
-- **Always** include epic and task in the **body** when the mapping is known (same traceability as before, just in the body).
-
-**Good example:**
+Title:
 
 ```text
-feat(ui): add symbolic simulation board with animated human markers
+<type>(<scope>): <concise summary>
 ```
 
-**Bad example:**
-
-```text
-feat(ui): E11 T3a Add symbolic board component and board-first layout integration
-```
+Body (optional): rationale, constraints, or traceability context.
 
 ## Rules
-
-- **Human readability first:** The title describes what changed and why it matters in plain language.
-- Keep the subject line under 72 characters.
-- Use imperative mood: `Add`, `Fix`, `Refactor`, `Improve`, `Update`.
-- Capitalize the first letter of the subject.
-- Do not end the subject with a period.
-- Prefer a single strong subject line.
-- **Do not** put internal planning identifiers (`E<epic>`, `T<task>`, Sprint-xx) in the title; put them in the body.
-- **Always include epic and task in the body** when the mapping is known (e.g. `E1 T2b`)—same traceability as before.
-- Prefer plain language over internal planning jargon in the title.
-- Add a body for epic/task when known; also add a body when the reason is not obvious.
-- Do not list changed files or implementation steps in the body.
-- Focus the title on the behavioral or product outcome, not the mechanical edit.
-- Prefer domain or technical scopes over repo labels like `frontend`, `backend`, or `mcp`.
+- Prioritize human readability.
+- Keep title under 72 chars.
+- Use imperative mood (`Add`, `Fix`, `Refactor`, `Update`).
+- Do not include internal planning IDs in the title.
+- Use scope when one area clearly dominates; omit for broad changes.
+- Split unrelated changes into separate commits when practical.
+- Do not push unless explicitly requested.
 
 ## Types
-
-Core:
-
-- `feat`
-- `fix`
-- `refactor`
-- `perf`
-- `test`
-- `docs`
-- `chore`
-- `style`
-
-Additional:
-
-- `build`
-- `ci`
-- `config`
-- `security`
-- `ui`
-- `ux`
-
-## Scope Guidance
-
-Prefer a scope when one area clearly dominates the change.
-
-Common domain scopes:
-
-- `auth`
-- `city`
-- `human`
-- `simulation`
-- `ai`
-
-UI-oriented scopes:
-
-- `component`
-- `guard`
-- `interceptor`
-- `route`
-- `style`
-
-Backend-oriented scopes:
-
-- `api`
-- `service`
-- `entity`
-- `dto`
-- `repository`
-- `security`
-- `config`
-
-MCP-oriented scopes:
-
-- `server`
-- `client`
-- `types`
-- `error`
-- `config`
-
-Omit the scope when the commit is truly project-wide or spans unrelated areas.
-
-## Epic And Task Mapping
-
-Before deciding commit boundaries, classify the work in this order:
-
-1. map each changed file or behavior to one roadmap epic in `docs/roadmap.md`
-2. within that epic, map the work to the most specific sprint task available in `docs/sprints/`
-3. if several changed files belong to different tasks, split them into separate commits whenever practical
-4. never mix changes from different epics in the same commit unless the user explicitly asks for a combined commit
-
-Grouping priority:
-
-- first by epic number
-- then by task number
-- then by coherent behavior within that task if more splitting is still needed
-
-**Epic and task in the body:** When epic/task mapping is known, **always** add it in the commit **body** (e.g. `E11 T3a` or `Epic 11, Task 3a`), not in the title. The title stays human-readable; epic and task numbers are still present in every commit that can be mapped, just in the body.
-If neither epic nor task can be mapped with confidence, use a human-readable title only; optionally note in the body that the work could not be mapped to a roadmap item.
-
-## Footer
-
-- Breaking changes: `BREAKING CHANGE: <description>`
-- Issue references, if supplied by the user: `Closes #123`, `Fixes #456`
+`feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `chore`, `style`, `build`, `ci`, `config`, `security`
 
 ## Procedure
-
-### 1. Detect changes
-
-Always inspect repo state first:
-
-```bash
-git status --porcelain
-```
-
-### 2. Decide whether work must be split
-
-- Review the full set of changes
-- Identify distinct work subjects
-- Map each subject to an epic number first, then a task number
-- If more than one subject exists, create multiple commits
-- Keep each commit focused on one logical change within one epic/task bucket
-
-### 3. Prefer staged diff
-
-If staged changes exist:
-
-```bash
-git diff --staged
-```
-
-Otherwise:
-
-```bash
-git diff
-```
-
-Mention relevant untracked files in your reasoning when needed.
-
-### 4. Analyze intent
-
-- Identify the main behavior or domain change
-- Identify the roadmap epic number that best matches the change
-- Identify the most specific task number available for that epic
-- Choose the most accurate `type`
-- Choose a scope only if one area clearly leads
-- Keep the message focused on why the change matters
-- Define commit boundaries before staging when several subjects exist
-
-### 5. Draft the message
-
-- Write the **title** first: `<type>(<scope>): <concise human-readable summary>`. No E/T or Sprint-xx in the title.
-- Focus the title on what changed and why it matters; use plain language.
-- **When epic/task are known, always add a body line** with `E<epic> T<task>` (e.g. `E11 T3a`). Add body for context or rationale when needed.
-- Add a footer only for breaking changes or issue references
-
-### 6. Commit when requested
-
-- Stage only one work subject at a time
-- Create each commit from the command line
-- Re-check `git status` after each commit
-- If the user only asked for a message, do not create a commit
-
-### 6b. Do not sync automatically
-
-- After creating commit(s), stop at the local commit step
-- Do not run `git push`, `git pull`, `git sync`, or any remote update command unless the user explicitly asks
-- Report local commit hash(es) and subject(s)
-
-### 7. Present the result
-
-- If no commit was created, return the final message in a fenced code block
-- If commits were created, return the commit subjects and hashes
-
-## Examples
-
-**Titles (human-readable, no internal IDs):**
-
-```text
-feat(simulation): add run lifecycle persistence
-```
-
-```text
-refactor(simulation): extract deterministic step flow
-```
-
-```text
-test(simulation): add same-seed reproducibility coverage
-```
-
-```text
-feat(api): expose simulation run lifecycle endpoints
-```
-
-```text
-feat(ui): add symbolic simulation board with animated human markers
-```
-
-```text
-ui(simulation): improve city simulation timeline layout
-```
-
-```text
-docs: document MCP smoke validation flow
-```
-
-**With epic/task in the body (include whenever mapping is known):**
-
-```text
-feat(simulation): add run lifecycle persistence
-
-E1 T2b
-```
-
-```text
-feat(ui): add symbolic simulation board with animated human markers
-
-E11 T3a
-```
+1. Detect changed files.
+2. Group by coherent intent.
+3. Draft one message per group.
+4. Stage each group and commit.
+5. Report local hashes and titles.

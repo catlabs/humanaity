@@ -1,37 +1,21 @@
 ---
-description: Require sprint execution status sync before marking chunk done
+description: Require docs sync and commit before marking documentation work complete
 alwaysApply: true
 ---
 
-# Sprint Chunk Completion Gate
+# Documentation Completion Gate
 
-When executing a sprint chunk, do not report "done" until this gate passes.
+Do not report docs work as complete until this gate passes.
 
-## Mandatory pre-completion checklist
+## Mandatory checklist
 
-Before marking the active chunk complete, the agent must:
+1. confirm active documentation scope (concept/spec/archive/navigation)
+2. verify diff stays within that scope
+3. run relevant checks (at minimum link/path/reference validation)
+4. ensure active docs reflect the requested structure (`docs/concepts` first, `docs/archive` historical)
+5. list deferred follow-up items explicitly
+6. commit the docs changes (no push unless explicitly asked)
 
-1. confirm the active chunk ID and target sprint file in `docs/sprints/`
-2. verify implementation stayed within chunk scope
-3. run relevant chunk-level validation (or explicitly state why not run)
-4. sync the sprint doc `## Execution status` block:
-   - update `Active chunk`
-   - update `Next chunk`
-   - update `Last completed chunk`
-   - update the chunk status table row(s)
-5. list intentionally deferred items for the next chunk(s)
-6. **commit the chunk's changes** using the commit-message workflow (see `.cursor/skills/commit-message/SKILL.md`): stage only files touched for this task, generate a Conventional Commit message with epic/task mapping, and create the commit; do not push unless the user explicitly asks
+## No sync, no completion
 
-## No status-sync, no completion
-
-- If code changes are finished but sprint execution status is stale, the chunk is still `in_progress`.
-- The agent must update the sprint status block in the same turn before declaring completion.
-
-## Response contract for chunk completion
-
-Any completion response must include:
-
-- sprint file updated
-- execution status synced
-- deferred follow-on work called out
-- commit created for the chunk (message follows commit-message skill; no push unless requested)
+- If docs were changed but active navigation/reference paths remain stale, the task is still in progress.
