@@ -31,9 +31,9 @@ Skills are primarily for Cursor and human operators. Do not assume Codex will di
 
 Use `docs/` for repo-visible product and domain context:
 
-- `docs/roadmap.md` for long-term direction
-- `docs/sprints/` for execution scope and delegation
+- `docs/concepts/` for active system-level documentation
 - `docs/specs/` for locked domain semantics and invariants
+- `docs/archive/` for historical sprint and legacy planning context
 
 If a constraint must be understood by Codex, it should live in `docs/` or `.cursor/rules/`, not only in a skill.
 
@@ -81,9 +81,9 @@ Keep a skill at the top level only when it is truly cross-cutting, such as `comm
 
 ## Current pairing recommendations
 
-- `docs/create-sprint` -> pair with `docs-sprint-planning.mdc`
-- `docs/implement-sprint-range` -> pair with `sprint-chunk-completion-gate.mdc`, `docs-chunk-review-loop.mdc`, and `docs/sprint-execution-contract.md` for Codex
-- `docs/sync-sprint-from-implementation` -> pair with `sprint-doc-sync.mdc`
+- `docs/concept-update` -> pair with `docs-*` rules for concise concept-level updates
+- `docs/spec-update` -> pair with domain-specific rules when invariants or schemas change
+- `docs/archive-maintenance` -> use only for historical corrections
 - `ui/feature-scaffold` -> pair with `ui-feature-architecture.mdc`
 - `ui/openapi-regenerate-adapt` -> pair with `ui-api-generated-client.mdc`
 - `ui/shared-ui-component-authoring` -> pair with `ui-shared-ui-boundaries.mdc`
@@ -96,12 +96,11 @@ Keep a skill at the top level only when it is truly cross-cutting, such as `comm
 
 For Codex tasks, always provide:
 
-1. the relevant sprint doc
-2. the relevant spec doc
+1. the relevant concept doc
+2. the relevant spec doc (if invariants/contracts are involved)
 3. the relevant rule files
 4. exact target files
 5. explicit out-of-scope items
-6. **for sprint implementation:** `docs/sprint-execution-contract.md` so Codex updates execution status and creates one commit per task (with format and no push)
 
 Do not rely on Codex discovering project skills.
 

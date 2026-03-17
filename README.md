@@ -42,14 +42,12 @@ The project treats MCP as a first-class consumption surface. Critical flows (aut
 
 ## Documentation & Methodology
 
-This project was built using **agile practices** with explicit documentation:
+This project uses lightweight documentation centered on core system concepts:
 
-- **`docs/roadmap.md`** — Product vision, epics, feature dependency map, implementation order
-- **`docs/sprints/`** — Sprint-by-sprint execution documents with intent, scope, task breakdown, and completion status
-- **`docs/specs/`** — Locked domain specs (deterministic simulation, history ledger, read model, etc.)
-- **Prompt packs** — Delegable task packs for Cursor/Codex with references to sprint and spec files
-
-Sprints define in-scope/out-of-scope, acceptance criteria, and chunk-level status. The documentation reflects what was actually executed, not aspirational planning.
+- **`docs/concepts/`** — Primary docs grouped by system blocks (`simulation-engine`, `commands`, `human-goals`, `tech-tree`, `ui-simulation`, `mcp`, `ci`)
+- **`docs/specs/`** — Locked domain/technical specs (determinism, read model, history ledger, orchestration)
+- **`docs/roadmap.md`** — Short docs-navigation roadmap and maintenance rules
+- **`docs/archive/`** — Historical sprint-by-sprint plans and legacy roadmap preserved for traceability
 
 ## Project Structure
 
@@ -60,9 +58,10 @@ humanaity/
 │   ├── ui/          # Angular frontend
 │   └── mcp/         # MCP server
 ├── docs/
-│   ├── roadmap.md
-│   ├── sprints/     # Sprint execution docs
-│   └── specs/       # Domain specs
+│   ├── concepts/    # Primary concept docs
+│   ├── roadmap.md   # Documentation navigation
+│   ├── specs/       # Locked technical/domain specs
+│   └── archive/     # Legacy sprint and roadmap docs
 └── .cursor/         # Rules and skills for AI-assisted development
 ```
 

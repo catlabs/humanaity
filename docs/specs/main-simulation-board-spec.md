@@ -3,7 +3,7 @@
 ## Status
 
 - Status: LOCKED for Sprint 15 planning
-- Scope anchor: `docs/sprints/sprint15/sprint-15-main-simulation-board-simplification.md`
+- Scope anchor: `docs/archive/sprints/sprint15/sprint-15-main-simulation-board-simplification.md`
 - Applies to: the authoritative `/cities/:id` simulation page in `apps/ui`
 - Historical note: `docs/specs/frontend-simulation-experience-spec.md` remains a Sprint 4 historical artifact and does not govern the Sprint 15 main-board direction
 

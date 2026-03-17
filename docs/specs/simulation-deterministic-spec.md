@@ -3,7 +3,7 @@
 ## Status
 
 - Status: LOCKED for Sprint 1 implementation
-- Scope anchor: `docs/sprints/sprint-01-foundation.md` (Feature 1 and Sprint Definition of Done)
+- Scope anchor: `docs/archive/sprints/sprint-01-foundation.md` (Feature 1 and Sprint Definition of Done)
 - Applies to: backend simulation core only
 
 ## Purpose
@@ -102,7 +102,7 @@ This task is complete only if all statements are true:
 - a developer can implement deterministic `step()` behavior from this doc without guessing ordering or RNG rules
 - deterministic versus deferred behavior is explicitly separated
 - canonical reproducibility outputs are listed for tests
-- this spec remains consistent with Sprint 1 Definition of Done in `docs/sprints/sprint-01-foundation.md`
+- this spec remains consistent with Sprint 1 Definition of Done in `docs/archive/sprints/sprint-01-foundation.md`
 
 ## Implementation Guardrails
 

@@ -1,38 +1,26 @@
-# Docs Structure
+# Docs structure
 
-This `docs/` folder organizes product direction, execution, and domain knowledge for the Humanaity project. It reflects the **agile methodology** used to build the application: roadmap-driven planning, sprint-based delivery, and locked specs for domain invariants.
+The `docs/` folder is organized around **system concepts** and kept intentionally lightweight.
 
-## Files and folders
+## Folders and files
 
-| File / folder | Purpose |
-|---------------|---------|
-| `roadmap.md` | Product vision, epics, feature dependency map, implementation order |
-| `sprints/` | Sprint-by-sprint execution documents with intent, scope, task breakdown, and completion status |
-| `specs/` | Locked domain specs (deterministic simulation, history ledger, read model, etc.) |
-| `agent-context.md` | How rules, skills, docs, and prompt packs are split for Cursor and Codex |
+| Path | Purpose |
+|---|---|
+| `concepts/` | Primary docs grouped by core system blocks (`simulation-engine`, `commands`, `human-goals`, etc.) |
+| `specs/` | Locked/technical reference specs with deeper invariants and contracts |
+| `roadmap.md` | Short docs-navigation roadmap and maintenance rule |
+| `archive/` | Historical sprint/legacy roadmap documents kept for traceability |
+| `agent-context.md` | How docs/rules/context are split for AI-assisted execution |
 
-## Methodology in practice
+## Working approach
 
-- **Roadmap** — Defines what comes next. Epics are broken into features and implementation tasks with dependencies.
-- **Sprints** — Each sprint has a clear intent, in-scope/out-of-scope, and chunk-level tasks. Execution status is kept up to date as work completes.
-- **Specs** — Domain semantics (e.g. determinism rules, event schema) are locked before implementation and referenced by sprints.
-- **Prompt packs** — Delegable task packs for Cursor/Codex point to sprint and spec files instead of restating the project.
+1. Start in `docs/concepts/`.
+2. Use `docs/specs/` only when exact rules or schemas are needed.
+3. Treat `docs/archive/` as read-only history.
 
-This documentation represents **what was actually executed**, not aspirational planning. Sprints include completion tables and handoff notes.
+## Design principles
 
-## Current workflow
-
-Use `roadmap.md` to decide **what comes next**.
-
-Use files in `sprints/` to decide:
-
-- what this sprint is trying to achieve
-- what is in and out of scope
-- which tasks can be delegated to Cursor or Codex
-- what acceptance criteria define “done”
-
-## Planned later additions
-
-If the project grows, this folder can later expand with:
-
-- `decisions/` for architecture and product ADR-style notes
+- short, human-readable filenames
+- easy to scan
+- low maintenance overhead
+- no sprint-by-sprint dependency for current understanding

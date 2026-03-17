@@ -3,7 +3,7 @@
 ## Status
 
 - Status: LOCKED for Sprint 5 planning
-- Scope anchor: `docs/sprints/sprint05/sprint-05-ai-history-enrichment.md`
+- Scope anchor: `docs/archive/sprints/sprint05/sprint-05-ai-history-enrichment.md`
 - Applies to: backend-owned AI enrichment for persisted history artifacts
 
 ## Purpose

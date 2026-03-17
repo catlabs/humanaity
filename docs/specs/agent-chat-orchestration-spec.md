@@ -3,11 +3,11 @@
 ## Status
 
 - Status: LOCKED for planning
-- Scope anchor: `docs/sprints/sprint08/sprint-08-agent-chat-mvp.md`
+- Scope anchor: `docs/archive/sprints/sprint08/sprint-08-agent-chat-mvp.md`
 - Follow-on anchors:
-  - `docs/sprints/sprint09/sprint-09-agentic-simulation-console.md`
-  - `docs/sprints/sprint10/sprint-10-guided-human-workflows.md`
-  - `docs/sprints/sprint11/sprint-11-controlled-director-interventions.md`
+  - `docs/archive/sprints/sprint09/sprint-09-agentic-simulation-console.md`
+  - `docs/archive/sprints/sprint10/sprint-10-guided-human-workflows.md`
+  - `docs/archive/sprints/sprint11/sprint-11-controlled-director-interventions.md`
 - Applies to: backend-owned agent orchestration and chat-driven simulation UX in `apps/backend` and `apps/ui`
 
 ## Purpose

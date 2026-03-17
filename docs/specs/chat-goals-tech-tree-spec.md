@@ -3,7 +3,7 @@
 ## Status
 
 - Status: LOCKED for future planning
-- Scope anchor: `docs/roadmap.md` Epics 16-19
+- Scope anchor: `docs/archive/roadmap-legacy.md` Epics 16-19
 - Applies to: backend command interpretation, simulation goal lifecycle, knowledge progression, and autonomous turn pacing
 
 ## Purpose

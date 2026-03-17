@@ -3,7 +3,7 @@
 ## Status
 
 - Status: LOCKED for Sprint 3 planning
-- Scope anchor: `docs/sprints/sprint03/sprint-03-simulation-read-model.md` (Feature 1 and Sprint Definition of Done)
+- Scope anchor: `docs/archive/sprints/sprint03/sprint-03-simulation-read-model.md` (Feature 1 and Sprint Definition of Done)
 - Applies to: backend-owned overview and snapshot contracts for UI and MCP consumers
 
 ## Purpose

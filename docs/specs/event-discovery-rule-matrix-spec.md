@@ -3,7 +3,7 @@
 ## Status
 
 - **Status:** LOCKED for Rule-based event and discovery system (Sprints 16–20)
-- **Scope anchor:** `docs/roadmap.md` Epic 15, `docs/sprints/sprint16/` through `docs/sprints/sprint20/`
+- **Scope anchor:** `docs/archive/roadmap-legacy.md` Epic 15, `docs/archive/sprints/sprint16/` through `docs/archive/sprints/sprint20/`
 - **Applies to:** Backend simulation triggers, domain event emission, discovery category assignment, and chat-orchestration boundaries
 
 ## Purpose

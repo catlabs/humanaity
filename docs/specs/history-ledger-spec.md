@@ -3,7 +3,7 @@
 ## Status
 
 - Status: LOCKED for Sprint 2 Task `1a`
-- Scope anchor: `docs/sprints/sprint02/sprint-02-history-ledger.md`
+- Scope anchor: `docs/archive/sprints/sprint02/sprint-02-history-ledger.md`
 - Applies to: backend event, invention, and timeline semantics for the Sprint 2 MVP
 
 ## Purpose
@@ -319,7 +319,7 @@ This task is complete only if all statements are true:
 - a developer can implement event persistence, invention persistence, and timeline metadata from this document without guessing semantics
 - deterministic behavior and deferred behavior are explicitly separated
 - same-seed reproducibility fields are listed without relying on database IDs or wall-clock timestamps
-- this spec remains aligned with Sprint 2 scope in `docs/sprints/sprint02/sprint-02-history-ledger.md`
+- this spec remains aligned with Sprint 2 scope in `docs/archive/sprints/sprint02/sprint-02-history-ledger.md`
 
 ## Implementation Guardrails
 
