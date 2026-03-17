@@ -54,3 +54,66 @@ jobs:
         env:
           CHROME_BIN: /usr/bin/google-chrome
         run: npm test -- --watch=false --browsers=ChromeHeadless
+
+  mcp:
+    name: MCP
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mcp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: apps/mcp/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start backend
+        working-directory: apps/backend
+        env:
+          OPENAI_API_KEY: test-key
+          HUMANAITY_H2_TCP_ENABLED: "false"
+          SPRING_DATASOURCE_URL: jdbc:h2:mem:devdb;MODE=LEGACY;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+          SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+        run: |
+          ./mvnw -q spring-boot:run > /tmp/humanaity-backend.log 2>&1 &
+
+      - name: Wait for backend
+        run: |
+          for i in {1..90}; do
+            if curl -sf http://localhost:8080/v3/api-docs > /dev/null; then
+              echo "Backend is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend did not become ready in time"
+          tail -n 200 /tmp/humanaity-backend.log || true
+          exit 1
+
+      - name: Check API contract drift
+        env:
+          HUMANAITY_API_BASE_URL: http://localhost:8080
+        run: npm run api:generate:check
+
+      - name: Build
+        run: npm run build
+
+      - name: MCP smoke
+        env:
+          HUMANAITY_API_BASE_URL: http://localhost:8080
+        run: npm run smoke:ci

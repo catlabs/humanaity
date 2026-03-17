@@ -8,6 +8,7 @@
     "dev": "tsx src/index.ts",
     "build": "tsc --project tsconfig.json",
     "start": "node dist/index.js",
+    "smoke:ci": "node scripts/ci-smoke.mjs",
     "api:generate": "mkdir -p src/generated && openapi-typescript \"${HUMANAITY_API_BASE_URL:-http://localhost:8080}/v3/api-docs\" -o src/generated/api-types.ts",
     "api:generate:check": "npm run api:generate && git diff --exit-code -- src/generated/api-types.ts"
   },
