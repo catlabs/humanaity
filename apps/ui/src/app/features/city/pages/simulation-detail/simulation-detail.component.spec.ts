@@ -102,6 +102,7 @@ describe('SimulationDetailComponent', () => {
         conversationId: 'conv-1',
         message: 'Advanced the city by 3 step(s). Current tick is 3.',
         commandClass: 'SAFE_MVP',
+        interpretationProvenance: 'DETERMINISTIC_MATCH',
         executedActions: [],
         referencedEntities: { cityId: 7 },
         uiEffects: [],
