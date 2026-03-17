@@ -244,6 +244,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agent/cities/{cityId}/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Process one city-scoped agent chat request */
+        post: operations["chat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/simulations/{cityId}/status": {
         parameters: {
             query?: never;
@@ -404,6 +421,7 @@ export interface components {
         HumanInput: {
             busy?: boolean;
             name?: string;
+            tribeId?: string;
             /** Format: double */
             x?: number;
             /** Format: double */
@@ -425,6 +443,7 @@ export interface components {
             /** Format: int64 */
             id: number;
             name: string;
+            tribeId?: string;
             /** Format: double */
             x: number;
             /** Format: double */
@@ -495,6 +514,58 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        AgentChatRequestInput: {
+            message?: string;
+            conversationId?: string;
+            /** Format: int64 */
+            selectedHumanId?: number;
+            /** Format: int64 */
+            selectedEventId?: number;
+            /** Format: int64 */
+            selectedInventionId?: number;
+            confirmationToken?: string;
+            confirmIntervention?: boolean;
+        };
+        AgentActionOutput: {
+            type?: string;
+            status?: string;
+            summary?: string;
+        };
+        AgentChatResponseOutput: {
+            conversationId?: string;
+            message?: string;
+            commandClass?: string;
+            interpretationProvenance?: string;
+            interpretedCommandSummary?: string;
+            executedActions?: components["schemas"]["AgentActionOutput"][];
+            referencedEntities?: components["schemas"]["AgentReferencedEntitiesOutput"];
+            uiEffects?: components["schemas"]["AgentUiEffectOutput"][];
+            structuredData?: {
+                [key: string]: unknown;
+            };
+        };
+        AgentReferencedEntitiesOutput: {
+            /** Format: int64 */
+            cityId?: number;
+            humanIds?: number[];
+            eventIds?: number[];
+            inventionIds?: number[];
+        };
+        AgentUiEffectOutput: {
+            type?: string;
+            /** Format: int64 */
+            humanId?: number;
+            /** Format: int64 */
+            eventId?: number;
+            /** Format: int64 */
+            inventionId?: number;
+            /** Format: int64 */
+            fromTick?: number;
+            panel?: string;
+            placeId?: string;
+            eventType?: string;
+            eventIds?: number[];
+        };
         EventOutput: {
             /** Format: int64 */
             id: number;
@@ -507,7 +578,7 @@ export interface components {
             /** @enum {string} */
             eventCategory: "LIFECYCLE" | "INTERACTION" | "DISCOVERY" | "DIALOGUE" | "MILESTONE";
             /** @enum {string} */
-            eventType: "SIMULATION_STARTED" | "SIMULATION_PAUSED" | "SIMULATION_RESUMED" | "SIMULATION_COMPLETED" | "HUMANS_COLLIDED" | "DISCOVERY_UNLOCKED" | "DIALOGUE_EXCHANGED" | "INVENTION_EMERGED";
+            eventType: "SIMULATION_STARTED" | "SIMULATION_PAUSED" | "SIMULATION_RESUMED" | "SIMULATION_COMPLETED" | "HUMANS_COLLIDED" | "GOAL_ASSIGNED" | "GOAL_COMPLETED" | "HUMAN_ACTION_PERFORMED" | "DISCOVERY_UNLOCKED" | "DIALOGUE_EXCHANGED" | "INVENTION_EMERGED";
             actorIds: number[];
             payload: {
                 [key: string]: string;
@@ -561,6 +632,11 @@ export interface components {
             /** Format: date-time */
             enrichmentUpdatedAt?: string;
         };
+        SimulationKnowledgeOutput: {
+            unlockedDiscoveries: string[];
+            unlockedInventions: string[];
+            unlockedApplications: string[];
+        };
         SimulationSnapshotBoundsOutput: {
             /** Format: double */
             minX?: number;
@@ -586,6 +662,7 @@ export interface components {
             /** Format: int64 */
             id: number;
             name: string;
+            tribeId?: string;
             /** Format: double */
             x?: number;
             /** Format: double */
@@ -610,6 +687,7 @@ export interface components {
             city: components["schemas"]["SimulationSnapshotCityOutput"];
             run: components["schemas"]["SimulationSnapshotRunOutput"];
             timelineSummary: components["schemas"]["SimulationTimelineSummaryOutput"];
+            knowledge: components["schemas"]["SimulationKnowledgeOutput"];
             humans: components["schemas"]["SimulationSnapshotHumanOutput"][];
             metrics: components["schemas"]["SimulationSnapshotMetricsOutput"];
             recentEvents: components["schemas"]["EventOutput"][];
@@ -640,10 +718,14 @@ export interface components {
             latestEventTick?: number;
             /** Format: int64 */
             latestInventionTick?: number;
+            /** Format: int64 */
+            latestKnowledgeUnlockTick?: number;
             /** Format: int32 */
             recentEventCount: number;
             /** Format: int32 */
             recentInventionCount: number;
+            /** Format: int32 */
+            recentKnowledgeUnlockCount: number;
         };
         TimelineOutput: {
             /** Format: int64 */
@@ -679,6 +761,12 @@ export interface components {
             inventionCount: number;
             /** Format: int32 */
             eventCount: number;
+            /** Format: int32 */
+            discoveryUnlockCount: number;
+            /** Format: int32 */
+            unlockedInventionCount: number;
+            /** Format: int32 */
+            applicationUnlockCount: number;
             /** Format: date-time */
             updatedAt?: string;
         };
@@ -786,7 +874,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                id: number;
             };
             cookie?: never;
         };
@@ -812,7 +900,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                id: number;
             };
             cookie?: never;
         };
@@ -1149,6 +1237,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CityOutput"];
+                };
+            };
+        };
+    };
+    chat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cityId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentChatRequestInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AgentChatResponseOutput"];
                 };
             };
         };
