@@ -5,7 +5,6 @@ import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
 import eu.catlabs.humanaity.event.application.EventApplicationService;
 import eu.catlabs.humanaity.event.domain.Event;
 import eu.catlabs.humanaity.invention.application.InventionApplicationService;
-import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.human.application.HumanApplicationService;
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
@@ -154,7 +153,8 @@ class SimulationApplicationServiceDeterminismTest {
                 humanGoalApplicationService,
                 knowledgeProgressionService,
                 knowledgeUnlockRepository,
-                humanActionCatalogService
+                humanActionCatalogService,
+                1_000L // scheduler period (ms) for wrapper wiring in these tests
         );
 
         City city = new City();
@@ -170,12 +170,19 @@ class SimulationApplicationServiceDeterminismTest {
         List<Human> humans = createOrderedHumans(city);
 
         when(simulationRunRepository.findByCityId(cityId)).thenReturn(Optional.of(run));
-        when(simulationRunRepository.save(any(SimulationRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(simulationRunRepository.save(any(SimulationRun.class))).thenReturn(run);
         when(humanRepository.findByCityIdOrderByIdAsc(cityId)).thenAnswer(invocation -> humans);
-        when(humanRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(humanRepository.saveAll(any())).thenReturn(humans);
         doNothing().when(humanApplicationService).publishHumanUpdates(any());
         when(eventApplicationService.emitEventsAtTick(anyLong(), anyLong(), any())).thenReturn(List.of());
-        when(eventApplicationService.emitLifecycleEvent(anyLong(), anyLong(), any(), any(), any(Map.class), anyInt()))
+        when(eventApplicationService.emitLifecycleEvent(
+                anyLong(),
+                anyLong(),
+                any(),
+                any(),
+                org.mockito.ArgumentMatchers.<Map<String, String>>any(),
+                anyInt()
+        ))
                 .thenReturn(new Event());
         when(inventionApplicationService.deriveFromPersistedEvents(anyLong())).thenReturn(List.of());
         when(inventionApplicationService.deriveFromPersistedEvents(anyLong(), anyBoolean())).thenReturn(List.of());
