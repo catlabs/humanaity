@@ -1,6 +1,6 @@
 ---
-description: Enforce review, validation, and handoff gates for concept/spec doc updates.
-globs: docs/concepts/**/*.md,docs/specs/**/*.md,docs/roadmap.md,docs/README.md
+description: Enforce review, validation, and handoff gates for active docs updates.
+globs: docs/concepts/**/*.md,docs/specs/**/*.md,docs/roadmap.md,docs/README.md,docs/milestones.md,docs/dev-log.md,docs/agent-context.md
 alwaysApply: false
 ---
 
@@ -13,12 +13,12 @@ For each docs change set, use this gate before completion:
 2. Review diff scope:
    - ensure changes stay aligned with the requested docs restructure
 3. Validate references:
-   - confirm links/paths point to active locations (`docs/concepts`, `docs/specs`, `docs/archive`)
+   - confirm links/paths point to active locations (`docs/concepts`, `docs/specs`, `docs/milestones.md`, `docs/dev-log.md`, `docs/archive`)
 4. Check readability:
    - headings are concise and scanable
    - filenames remain human-readable
 5. Prepare handoff notes:
-   - list files changed and migration implications
+   - list files changed, migration implications, and Codex-facing update obligations
 6. Commit:
    - stage only this docs change set and create a clear commit message; do not push unless requested
 7. Go/no-go:

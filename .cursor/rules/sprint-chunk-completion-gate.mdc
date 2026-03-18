@@ -9,12 +9,14 @@ Do not report docs work as complete until this gate passes.
 
 ## Mandatory checklist
 
-1. confirm active documentation scope (concept/spec/archive/navigation)
+1. confirm active documentation scope (concept/spec/milestones/dev-log/archive/navigation)
 2. verify diff stays within that scope
 3. run relevant checks (at minimum link/path/reference validation)
-4. ensure active docs reflect the requested structure (`docs/concepts` first, `docs/archive` historical)
-5. list deferred follow-up items explicitly
-6. commit the docs changes (no push unless explicitly asked)
+4. ensure active docs reflect the requested structure (`docs/concepts` first, `docs/milestones.md` for delivery order, `docs/dev-log.md` for execution notes, `docs/archive` historical)
+5. update `docs/milestones.md` if task status, task order, or execution plan changed
+6. append `docs/dev-log.md` if the work completed a meaningful slice
+7. list deferred follow-up items explicitly
+8. commit the docs changes (no push unless explicitly asked)
 
 ## No sync, no completion
 

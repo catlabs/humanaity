@@ -2,19 +2,20 @@
 
 ## Status
 
-- Status: LOCKED for planning
+- Status: LOCKED historical reference after the narration-only pivot
 - Scope anchor: `docs/archive/sprints/sprint08/sprint-08-agent-chat-mvp.md`
 - Follow-on anchors:
   - `docs/archive/sprints/sprint09/sprint-09-agentic-simulation-console.md`
   - `docs/archive/sprints/sprint10/sprint-10-guided-human-workflows.md`
   - `docs/archive/sprints/sprint11/sprint-11-controlled-director-interventions.md`
-- Applies to: backend-owned agent orchestration and chat-driven simulation UX in `apps/backend` and `apps/ui`
+- Applies to: historical backend-owned agent orchestration and chat-driven simulation UX in `apps/backend` and `apps/ui`
+- Historical note: retained for traceability while deterministic commands and AI narration-only behavior become the forward product direction
 
 ## Purpose
 
-This document fixes the product and architecture rules for HUMANAIty's agent chat direction.
+This document records the product and architecture rules for HUMANAIty's earlier agent chat direction.
 
-If implementation choices conflict with this spec during the new console and orchestration sprints, this spec is the source of truth.
+If implementation choices conflict with the current milestone docs or `docs/specs/deterministic-command-contract-spec.md`, the newer milestone-oriented docs win for forward planning. This file remains authoritative only when maintaining the legacy agent-chat path.
 
 ## Primary Product Goal
 

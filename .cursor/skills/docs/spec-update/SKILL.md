@@ -19,3 +19,4 @@ description: Sync `docs/specs/` when implementation changes domain invariants, c
 ## Guardrails
 - Specs are semantic anchors; avoid roadmap/planning language.
 - Keep examples and acceptance semantics deterministic and testable.
+- If a spec change materially changes the active execution order, sync `docs/milestones.md` separately instead of adding planning detail to the spec.

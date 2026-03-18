@@ -120,6 +120,7 @@ Start/resume, pause, or deeper console workflows may remain elsewhere in code, b
 - the page should read as board first, controls second
 - avoid multi-panel competition around the board
 - preserve mobile viability, but do not sacrifice the board-first hierarchy to keep every previous panel visible
+- the board container must fill remaining vertical space through a flex layout chain; do not rely on `height: 100%` percentage inheritance where parent height may be indefinite
 
 ## Empty, Loading, and Error Rules
 

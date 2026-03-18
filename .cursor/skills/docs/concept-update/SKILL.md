@@ -20,4 +20,5 @@ description: Create or update concept-first docs in `docs/concepts/` with short,
 ## Guardrails
 - Do not recreate sprint planning inside concept docs.
 - Keep concept docs as current-state documentation, not task backlogs.
+- Put task status and work splitting in `docs/milestones.md` instead of `docs/concepts/*.md`.
 - If semantics are ambiguous, update a spec instead of overloading concept docs.

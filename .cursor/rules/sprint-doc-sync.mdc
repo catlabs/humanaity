@@ -6,8 +6,12 @@ alwaysApply: true
 # Documentation Sync
 
 - Treat `docs/concepts/` as the active documentation surface.
+- Treat `docs/milestones.md` as the active delivery-order surface.
+- Treat `docs/dev-log.md` as the rolling execution log.
 - Keep `docs/specs/` aligned when semantics/contracts change.
 - Treat `docs/archive/` as historical context, not active planning.
 - When implementation changes system behavior, update the corresponding concept doc and spec (if needed) in the same turn.
+- When implementation changes milestone status, task order, or active delivery framing, update `docs/milestones.md` in the same turn.
+- After a meaningful implementation slice, append `docs/dev-log.md`.
 - Do not declare docs sync complete if active docs still reference obsolete structure paths.
 - Preserve concise, scanable naming and avoid over-structuring.

@@ -1,0 +1,51 @@
+---
+description: Keep new and updated tests aligned with the repository testing strategy.
+globs:
+  - apps/backend/**/*
+  - apps/ui/**/*
+  - apps/mcp/**/*
+  - docs/concepts/testing-strategy.md
+alwaysApply: false
+---
+
+# Testing Strategy Rule
+
+Before adding or changing tests, read [docs/concepts/testing-strategy.md](mdc:docs/concepts/testing-strategy.md).
+
+## Add or update tests when
+
+- a core flow changes: auth, city management, simulation, history, agent chat, MCP smoke path
+- a backend endpoint, DTO, OpenAPI contract, or authorization rule changes
+- a bug fix would be easy to re-break without a test
+- UI behavior with meaningful state or orchestration changes in a user-visible way
+- MCP tools change in a way that affects critical workflows or structured outputs
+
+## Prefer these tests
+
+- backend tests for business rules, determinism, contracts, and permissions
+- focused frontend tests for important page/service behavior
+- MCP smoke updates when critical cross-surface flows change
+
+## Avoid useless tests
+
+- do not add tests for trivial getters, setters, or framework behavior
+- do not duplicate the same assertion across backend, UI, and MCP without a clear reason
+- do not add large snapshot-style tests for unstable markup
+- do not test generated OpenAPI files directly; regenerate them instead
+- do not rely on live OpenAI calls in normal CI unless the repository explicitly adopts that as a deliberate strategy
+
+## Keep tests maintainable
+
+- update nearby existing tests before creating a new suite
+- keep fixtures small and readable
+- prefer deterministic data and explicit assertions
+- if a test is brittle and low-value, simplify or remove it instead of defending it
+
+## Document testing changes
+
+When you change code, mention testing impact in your summary:
+
+- what layer changed: backend, frontend, MCP, CI
+- what tests were added or updated
+- what commands were run
+- any important gaps that remain

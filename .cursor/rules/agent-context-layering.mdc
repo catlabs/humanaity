@@ -10,4 +10,7 @@ alwaysApply: true
 - Put task and domain semantics in repo-visible docs under `docs/`.
 - If a skill contains durable constraints about architecture, file placement, scope, or required validation, promote those constraints into a rule or doc.
 - Do not create 1:1 rule and skill duplicates by default. Mirror only the durable policy layer in rules.
-- When delegating work to Codex or another external agent, explicitly reference the relevant rule and doc files instead of relying on hidden skills.
+- For active work, external agents should be pointed to `docs/agent-context.md`, `docs/milestones.md`, the relevant concept/spec docs, and the relevant `.cursor/rules/*.mdc`.
+- When a task changes delivery status or task order, update `docs/milestones.md`.
+- After a meaningful implementation slice or workday, append `docs/dev-log.md`.
+- When delegating work to Codex or another external agent, explicitly reference the relevant rule and doc files, and pass relevant skill paths with a short summary instead of relying on hidden skill discovery.
