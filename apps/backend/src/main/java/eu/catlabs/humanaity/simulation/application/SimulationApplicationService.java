@@ -25,6 +25,7 @@ import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunR
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,6 +73,7 @@ public class SimulationApplicationService {
             "Public Assembly",
             "Oral Archive"
     };
+    private static final long DEFAULT_SCHEDULED_STEP_PERIOD_MS = 1_000L;
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(4);
     private final Map<Long, ScheduledFuture<?>> runningTasks = new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<String, String> lastPlaceByHuman = new java.util.concurrent.ConcurrentHashMap<>();
@@ -89,6 +91,7 @@ public class SimulationApplicationService {
     private final KnowledgeProgressionService knowledgeProgressionService;
     private final KnowledgeUnlockRepository knowledgeUnlockRepository;
     private final HumanActionCatalogService humanActionCatalogService;
+    private final long scheduledStepPeriodMs;
 
     public SimulationApplicationService(
             HumanRepository humanRepository,
@@ -101,7 +104,8 @@ public class SimulationApplicationService {
             HumanGoalApplicationService humanGoalApplicationService,
             KnowledgeProgressionService knowledgeProgressionService,
             KnowledgeUnlockRepository knowledgeUnlockRepository,
-            HumanActionCatalogService humanActionCatalogService
+            HumanActionCatalogService humanActionCatalogService,
+            @Value("${humanaity.simulation.scheduler.period-ms:" + DEFAULT_SCHEDULED_STEP_PERIOD_MS + "}") long scheduledStepPeriodMs
     ) {
         this.humanRepository = humanRepository;
         this.humanApplicationService = humanApplicationService;
@@ -114,6 +118,7 @@ public class SimulationApplicationService {
         this.knowledgeProgressionService = knowledgeProgressionService;
         this.knowledgeUnlockRepository = knowledgeUnlockRepository;
         this.humanActionCatalogService = humanActionCatalogService;
+        this.scheduledStepPeriodMs = scheduledStepPeriodMs <= 0 ? DEFAULT_SCHEDULED_STEP_PERIOD_MS : scheduledStepPeriodMs;
     }
 
     public synchronized String startSimulation(Long cityId) {
@@ -136,7 +141,7 @@ public class SimulationApplicationService {
         ScheduledFuture<?> task = executor.scheduleAtFixedRate(
                 () -> runScheduledStep(cityId),
                 0,
-                100,
+                scheduledStepPeriodMs,
                 TimeUnit.MILLISECONDS
         );
 
