@@ -44,3 +44,22 @@ Implemented:
 Trade-offs:
 
 - this slice fixes the board container collapse path only; it does not redesign panel composition or command/feed behavior
+
+## 2026-03-18
+
+Decision:
+
+- turn M1 into an explicit four-slice execution plan instead of keeping it as a three-line milestone summary
+- align the active UI concept/spec docs with the current board-left, right-rail, command-bottom page direction
+
+Implemented:
+
+- expanded `docs/milestones.md` M1 into execution slices with exit criteria, ordered tasks, and explicit M2/M3/M4 boundaries
+- updated `docs/concepts/ui-simulation.md` so the active concept framing matches the three-zone authoritative page layout
+- revised `docs/specs/main-simulation-board-spec.md` from the older Sprint 15 simplification framing to the active M1 page contract
+
+Trade-offs:
+
+- this slice clarifies planning and page semantics only; it does not change runtime UI implementation yet
+- `docs/specs/frontend-simulation-experience-spec.md` remains historical reference material rather than the active main-page contract
+

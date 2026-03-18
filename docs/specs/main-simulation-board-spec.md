@@ -2,25 +2,26 @@
 
 ## Status
 
-- Status: LOCKED for Sprint 15 planning
+- Status: ACTIVE for M1 Simulation UI planning
 - Scope anchor: `docs/archive/sprints/sprint15/sprint-15-main-simulation-board-simplification.md`
 - Applies to: the authoritative `/cities/:id` simulation page in `apps/ui`
-- Historical note: `docs/specs/frontend-simulation-experience-spec.md` remains a Sprint 4 historical artifact and does not govern the Sprint 15 main-board direction
+- Historical note: `docs/specs/frontend-simulation-experience-spec.md` remains a Sprint 4 historical artifact and does not govern the current authoritative main-page direction
 
 ## Purpose
 
-This document fixes the page-boundary and rendering semantics for the corrective simplification of the main simulation page.
+This document fixes the page-boundary and rendering semantics for the authoritative main simulation page as M1 planning proceeds.
 
-If implementation choices conflict with this spec during Sprint 15, this spec is the source of truth.
+If implementation choices conflict with milestone planning or legacy sprint history, this spec is the source of truth for the current page contract.
 
 ## Primary Product Goal
 
-Sprint 15 delivers one minimal but visibly working simulation board that:
+The authoritative simulation page should deliver one visibly readable workflow that:
 
 - loads real snapshot data from the backend
-- renders humans clearly as markers
-- shows visible movement after refresh or deterministic step actions
-- keeps the board as the dominant page element
+- renders humans clearly as markers on a dominant board
+- keeps selected-human state and simulation status visible beside the board
+- shows recent event context in the same page workspace
+- reserves a bottom command-console area for deterministic control flows
 - avoids heavy rendering-engine ownership on the authoritative main page
 
 ## Authoritative Page Rule
@@ -36,14 +37,15 @@ Rules:
 
 ## Required Page Sections
 
-The primary simulation page must include only:
+The primary simulation page must include:
 
 - a compact city/status header
-- minimal simulation controls
-- one symbolic board surface
-- a small status/debug strip with tick and human count
+- one dominant symbolic board surface
+- a right-side inspector/feed rail for selected-human context and recent activity
+- a bottom command-console area
+- compact status details such as tick, year, run state, and human count
 
-Secondary context, timeline, invention, or chat panels may be hidden or strongly reduced for this sprint if they compete with board readability.
+Panels may be visually reduced, but the board, right rail, and command-console zones must remain legible as one coherent page flow.
 
 ## Data Ownership Rules
 
@@ -107,20 +109,29 @@ Frontend mapping decision for Sprint 15:
 
 ## Control Rules
 
-Sprint 15 keeps only the minimum useful controls on the authoritative page:
+M1 keeps the authoritative page command-framed without pulling all of M2 forward.
 
-- refresh
-- deterministic step
-- compact status information
+Rules:
 
-Start/resume, pause, or deeper console workflows may remain elsewhere in code, but they are not required to stay visible on the simplified main board if they harm readability.
+- refresh and deterministic step remain available on the authoritative page
+- the bottom interaction area should read as the future command-console surface even if it still uses transitional controls
+- command-related labels should reduce agent-first framing and clarify the deterministic action path
+- visible state must refresh from backend data after control actions
 
 ## Layout Rules
 
-- the page should read as board first, controls second
+- the page should read as board first, context second, commands third
+- use a stable three-zone layout: compact top status/header, board-plus-right-rail workspace, bottom command-console area
 - avoid multi-panel competition around the board
 - preserve mobile viability, but do not sacrifice the board-first hierarchy to keep every previous panel visible
 - the board container must fill remaining vertical space through a flex layout chain; do not rely on `height: 100%` percentage inheritance where parent height may be indefinite
+
+## Inspector and Feed Rules
+
+- selected-human state should remain visible without requiring drawer navigation
+- the right rail should combine inspection and recent event context into one readable story
+- timeline/history endpoints remain the source of truth for event feed content
+- the right rail should stay secondary to the board, but primary over legacy auxiliary cards
 
 ## Empty, Loading, and Error Rules
 
@@ -148,12 +159,13 @@ Snapshot/control failures must be visible and recoverable.
 - parallel PixiJS and HTML board ownership on the main page
 - new frontend-only simulation semantics
 
-## Done Signals for Sprint 15
+## Done Signals for M1
 
-Sprint 15 is aligned with this spec only if:
+M1 is aligned with this spec only if:
 
-- the main simulation page shows one symbolic board
+- the main simulation page shows one symbolic board as the dominant surface
 - humans render from real backend snapshot coordinates
-- stepping or refreshing can visibly move markers
+- selected-human state and core simulation status stay visible without extra navigation
+- recent activity has a clear right-rail home on the main page
+- the page exposes a recognizable bottom command-console area
 - PixiJS is out of the main page surface and authoritative page references
-- the page is cleaner and more board-centric than before

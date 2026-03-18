@@ -22,13 +22,37 @@ Execution rhythm:
   - simplify `SimulationDetailComponent` around board, inspector/feed, and command console
   - keep `SimulationBoardComponent` and `BoardViewModelService` as the primary rendering path
   - reduce agent-specific framing on labels and panels
+- Execution plan:
+  - Slice 1 — Layout shell and information hierarchy
+    - move the authoritative page to a stable three-zone layout: compact header, board + right rail, bottom command console
+    - keep the board as the dominant surface and preserve the flex-fill board container work already landed
+    - exit criteria: the page reads correctly before any interaction and the board remains visually primary on common laptop widths
+  - Slice 2 — Inspector and simulation-status readability
+    - keep selected-human details, run status, tick/year, and human-count context visible without opening secondary drawers
+    - merge the right rail around one clear inspector/feed story instead of several competing cards
+    - exit criteria: after selecting a human, the user can identify who is selected and what state the simulation is in without extra navigation
+  - Slice 3 — Feed and command-console framing
+    - promote recent history into the right rail and relabel the bottom interaction area as a command-first console, even if M2 owns the backend command rewrite
+    - keep current controls usable while making the page read as `board -> context -> action`
+    - exit criteria: a demo viewer can see where events appear and where commands will be entered next
+  - Slice 4 — Demo-state polish and validation
+    - tighten no-run, loading, empty, and error states so the page stays readable when backend data is absent or in flight
+    - run a final demo pass focused on the 30-second comprehension goal and capture any deferred follow-ups for M2/M3
+    - exit criteria: no primary page state looks broken, collapsed, or ambiguous during the demo path
 - Ordered tasks:
   1. Reframe the page layout to board-left, inspector/feed-right, command-bottom.
   2. Keep selected-human state and basic simulation status visible without extra navigation.
-  3. Tighten no-run, loading, empty, and error states for demo readability.
+  3. Promote a clear right-rail event feed and a command-first bottom console without pulling M2 backend work forward.
+  4. Tighten no-run, loading, empty, and error states for demo readability.
+  5. Run a final M1 demo pass and capture explicit follow-ups for M2 and M3.
+- Deferred follow-up boundary:
+  - M1 does not introduce the new deterministic command endpoint; that remains M2 work
+  - M1 does not add AI narration cards; that remains M4 work
+  - M1 may reuse current history/timeline data, but deeper event semantics stay in M3
 - Recent slice updates:
   - 2026-03-18: fixed `SimulationDetailComponent` board container sizing so `.world-body` reliably fills available vertical space (flex-fill layout chain, no percentage-height collapse).
-- Done signal: a new user can identify the board, select a human, and understand the current simulation state in under 30 seconds.
+  - 2026-03-18: rewrote M1 as a four-slice execution plan with explicit exit criteria and M2/M3/M4 boundaries.
+- Done signal: a new user can identify the board, select a human, understand the current simulation state, and see where commands and recent events live in under 30 seconds.
 
 ## M2 — Command System
 
