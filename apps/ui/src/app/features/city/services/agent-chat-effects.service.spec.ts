@@ -26,4 +26,24 @@ describe('AgentChatEffectsService', () => {
     expect(resolved.selectedHumanId).toBeNull();
     expect(resolved.selectedInventionId).toBeNull();
   });
+
+  it('resolves drawer and place highlighting effects with filtered event ids', () => {
+    const effects: AgentUiEffectOutput[] = [
+      {
+        type: 'OPEN_EVENTS_DRAWER',
+        eventType: 'DISCOVERY_UNLOCKED',
+        eventIds: [11, 12, 'oops' as any],
+      },
+      { type: 'HIGHLIGHT_PLACE', placeId: 'river' },
+    ];
+
+    const resolved = service.resolve(effects);
+
+    expect(resolved.openEventsDrawer).toBeTrue();
+    expect(resolved.drawerEventType).toBe('DISCOVERY_UNLOCKED');
+    expect(resolved.drawerEventIds).toEqual([11, 12]);
+    expect(resolved.highlightedPlaceId).toBe('river');
+    expect(resolved.refreshSnapshot).toBeFalse();
+    expect(resolved.refreshTimeline).toBeFalse();
+  });
 });

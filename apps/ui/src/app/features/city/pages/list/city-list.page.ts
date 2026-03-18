@@ -138,10 +138,8 @@ export class CityListPage implements OnInit {
       });
       return;
     }
-    this.cityService.startSimulation(simulation.id).subscribe({
-      next: () => this.loadOverview(),
-      error: (error) => console.error('Error starting simulation:', error)
-    });
+    // UI does not start simulations; use "Step" inside the simulation page to begin,
+    // or start via backend tooling.
   }
 
   onDelete(simulation: SimulationRow, event: Event): void {

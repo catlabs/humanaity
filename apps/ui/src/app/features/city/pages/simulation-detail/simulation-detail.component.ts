@@ -229,8 +229,6 @@ export class SimulationDetailComponent
 
   eraLabel = computed(() => this.formatEnumLabel(this.currentEra()));
   phaseLabel = computed(() => this.formatEnumLabel(this.worldPhase()));
-  canStart = computed(() => !this.controlBusy() && !this.isRunning());
-  canPause = computed(() => !this.controlBusy() && this.isRunning());
   canStep = computed(() => !this.controlBusy() && !this.isRunning());
   noRunYet = computed(() => !this.snapshotLoading() && !this.hasRun());
   hasHumans = computed(() => this.populationTotal() > 0);
@@ -304,14 +302,6 @@ export class SimulationDetailComponent
 
   toggleFilter(state: string): void {
     this.filters.update((prev) => ({ ...prev, [state]: !prev[state] }));
-  }
-
-  onStart(): void {
-    this.runControlAction((cityId) => this.cityService.startSimulation(cityId));
-  }
-
-  onPause(): void {
-    this.runControlAction((cityId) => this.cityService.stopSimulation(cityId));
   }
 
   onStep(): void {

@@ -53,9 +53,10 @@
                     mat-icon-button
                     class="action-btn"
                     (click)="onToggleStatus(sim, $event)"
-                    [attr.aria-label]="sim.status === 'running' ? 'Pause' : 'Play'"
+                    [disabled]="sim.status !== 'running'"
+                    [attr.aria-label]="sim.status === 'running' ? 'Stop' : 'Stopped'"
                   >
-                    <mat-icon>{{ sim.status === 'running' ? 'pause' : 'play_arrow' }}</mat-icon>
+                    <mat-icon>{{ sim.status === 'running' ? 'stop' : 'do_not_disturb' }}</mat-icon>
                   </button>
                   <button
                     mat-icon-button
