@@ -54,15 +54,26 @@ async function run() {
     const healthPayload = health?.structuredContent ?? {};
     assert(healthPayload.status === "ok", "health_check did not report status=ok", healthPayload);
 
-    await callTool(client, "auth_signup", {
+    const signup = await callTool(client, "auth_signup", {
       email,
       password,
       confirmPassword: password,
     });
 
-    const login = await callTool(client, "auth_login", { email, password });
-    const accessToken = login.accessToken;
-    assert(typeof accessToken === "string" && accessToken.length > 0, "auth_login returned no accessToken", login);
+    let accessToken =
+      typeof signup.accessToken === "string" ? signup.accessToken : undefined;
+    if (!accessToken) {
+      // Signup can return only a status message depending on backend/tool versions.
+      // Wait a bit before login to avoid issuing two identical refresh tokens in the same second.
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      const login = await callTool(client, "auth_login", { email, password });
+      accessToken = login.accessToken;
+    }
+    assert(
+      typeof accessToken === "string" && accessToken.length > 0,
+      "Authentication returned no accessToken",
+      { signup },
+    );
 
     const mine = await callTool(client, "cities_mine", { accessToken });
     const mineCities = Array.isArray(mine.cities) ? mine.cities : [];

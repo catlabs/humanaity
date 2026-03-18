@@ -49,7 +49,12 @@ export function registerAuthTools(server: McpServer, backendClient: BackendClien
         const result = await backendClient.authSignup(email, password, confirmPassword);
         return {
           content: [{ type: "text", text: result.message }],
-          structuredContent: { ok: true, message: result.message },
+          structuredContent: {
+            ok: true,
+            message: result.message,
+            ...(result.accessToken ? { accessToken: result.accessToken } : {}),
+            ...(result.refreshToken ? { refreshToken: result.refreshToken } : {}),
+          },
         };
       } catch (error: unknown) {
         const normalized = toToolError(error);
