@@ -100,6 +100,26 @@ async function run() {
       accessToken,
     });
 
+    const snapshotResult = await callTool(client, "simulation_snapshot", {
+      cityId,
+      accessToken,
+    });
+    const snapshot = snapshotResult?.snapshot ?? {};
+    const knowledge = snapshot?.knowledge ?? {};
+    const timelineSummary = snapshot?.timelineSummary ?? {};
+    assert(snapshot?.city?.id === Number(cityId), "snapshot.city.id did not match cityId", snapshotResult);
+    assert(snapshot?.run?.hasRun === true, "snapshot.run.hasRun was not true after simulation_create", snapshotResult);
+    assert(typeof snapshot?.run?.tick === "number" && snapshot.run.tick >= 6, "snapshot.run.tick did not advance after stepping", snapshotResult);
+    assert(Array.isArray(snapshot?.humans), "snapshot.humans is not an array", snapshotResult);
+    assert(Array.isArray(snapshot?.recentEvents), "snapshot.recentEvents is not an array", snapshotResult);
+    assert(Array.isArray(snapshot?.recentInventions), "snapshot.recentInventions is not an array", snapshotResult);
+    assert(Array.isArray(knowledge?.unlockedDiscoveries), "snapshot.knowledge.unlockedDiscoveries is not an array", snapshotResult);
+    assert(Array.isArray(knowledge?.unlockedInventions), "snapshot.knowledge.unlockedInventions is not an array", snapshotResult);
+    assert(Array.isArray(knowledge?.unlockedApplications), "snapshot.knowledge.unlockedApplications is not an array", snapshotResult);
+    assert(typeof timelineSummary?.recentEventCount === "number", "snapshot.timelineSummary.recentEventCount is not a number", snapshotResult);
+    assert(typeof timelineSummary?.recentInventionCount === "number", "snapshot.timelineSummary.recentInventionCount is not a number", snapshotResult);
+    assert(typeof timelineSummary?.recentKnowledgeUnlockCount === "number", "snapshot.timelineSummary.recentKnowledgeUnlockCount is not a number", snapshotResult);
+
     const timeline = await callTool(client, "simulation_history_timeline", {
       cityId,
       fromTick: 0,
