@@ -209,6 +209,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/simulations/{cityId}/commands": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Execute one deterministic simulation command for a city */
+        post: operations["executeCommand"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/humans": {
         parameters: {
             query?: never;
@@ -514,6 +531,37 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        SimulationCommandInput: {
+            commandText?: string;
+        };
+        AgentUiEffectOutput: {
+            type?: string;
+            /** Format: int64 */
+            humanId?: number;
+            /** Format: int64 */
+            eventId?: number;
+            /** Format: int64 */
+            inventionId?: number;
+            /** Format: int64 */
+            fromTick?: number;
+            panel?: string;
+            placeId?: string;
+            eventType?: string;
+            eventIds?: number[];
+        };
+        SimulationCommandOutput: {
+            ok?: boolean;
+            commandType?: string;
+            message?: string;
+            mutated?: boolean;
+            referencedEntities?: components["schemas"]["SimulationCommandReferencedEntitiesOutput"];
+            uiEffects?: components["schemas"]["AgentUiEffectOutput"][];
+        };
+        SimulationCommandReferencedEntitiesOutput: {
+            /** Format: int64 */
+            humanId?: number;
+            placeId?: string;
+        };
         AgentChatRequestInput: {
             message?: string;
             conversationId?: string;
@@ -550,21 +598,6 @@ export interface components {
             humanIds?: number[];
             eventIds?: number[];
             inventionIds?: number[];
-        };
-        AgentUiEffectOutput: {
-            type?: string;
-            /** Format: int64 */
-            humanId?: number;
-            /** Format: int64 */
-            eventId?: number;
-            /** Format: int64 */
-            inventionId?: number;
-            /** Format: int64 */
-            fromTick?: number;
-            panel?: string;
-            placeId?: string;
-            eventType?: string;
-            eventIds?: number[];
         };
         EventOutput: {
             /** Format: int64 */
@@ -1169,6 +1202,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["SimulationRunOutput"];
+                };
+            };
+        };
+    };
+    executeCommand: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cityId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulationCommandInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SimulationCommandOutput"];
                 };
             };
         };
