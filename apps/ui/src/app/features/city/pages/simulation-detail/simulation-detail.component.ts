@@ -427,6 +427,10 @@ export class SimulationDetailComponent
     return `Tick ${event.tick} • Year ${event.year} • ${this.formatEnumLabel(event.era)}`;
   }
 
+  eventCanonicalSummary(event: EventOutput): string {
+    return `${this.eventDescription(event)} • ${this.formatEnumLabel(event.eventCategory)}`;
+  }
+
   eventActorSummary(event: EventOutput): string | null {
     if (!Array.isArray(event.actorIds) || event.actorIds.length === 0) {
       return null;
@@ -447,6 +451,40 @@ export class SimulationDetailComponent
     return event.enrichedSnippet?.trim() || null;
   }
 
+  eventNarrationLabel(event: EventOutput): string {
+    switch (event.enrichmentStatus) {
+      case 'READY':
+        return 'AI narration ready';
+      case 'FALLBACK':
+        return 'Fallback narration';
+      default:
+        return this.eventSupportsNarration(event)
+          ? 'Narration pending'
+          : 'No narration target';
+    }
+  }
+
+  eventNarrationCopy(event: EventOutput): string {
+    const narrative = this.eventNarrative(event);
+    if (narrative) {
+      return narrative;
+    }
+    return this.eventSupportsNarration(event)
+      ? 'AI narration is not available for this event yet.'
+      : 'This event type stays canonical-only and does not currently receive narration.';
+  }
+
+  eventNarrationTone(event: EventOutput): 'ready' | 'fallback' | 'muted' {
+    switch (event.enrichmentStatus) {
+      case 'READY':
+        return 'ready';
+      case 'FALLBACK':
+        return 'fallback';
+      default:
+        return 'muted';
+    }
+  }
+
   eventEnrichmentStatusLabel(event: EventOutput): string {
     return this.formatEnumLabel(event.enrichmentStatus);
   }
@@ -465,6 +503,46 @@ export class SimulationDetailComponent
 
   inventionDisplaySummary(invention: InventionOutput): string {
     return invention.enrichedSummary?.trim() || invention.summary;
+  }
+
+  inventionNarratedTitle(invention: InventionOutput): string | null {
+    const narratedTitle = invention.enrichedTitle?.trim();
+    if (!narratedTitle || narratedTitle === invention.title) {
+      return null;
+    }
+    return narratedTitle;
+  }
+
+  inventionNarrationLabel(invention: InventionOutput): string {
+    switch (invention.enrichmentStatus) {
+      case 'READY':
+        return 'AI narration ready';
+      case 'FALLBACK':
+        return 'Fallback narration';
+      default:
+        return 'Narration pending';
+    }
+  }
+
+  inventionNarrationCopy(invention: InventionOutput): string {
+    const narrative = invention.enrichedSummary?.trim();
+    if (narrative) {
+      return narrative;
+    }
+    return 'AI narration is not available for this discovery yet.';
+  }
+
+  inventionNarrationTone(
+    invention: InventionOutput
+  ): 'ready' | 'fallback' | 'muted' {
+    switch (invention.enrichmentStatus) {
+      case 'READY':
+        return 'ready';
+      case 'FALLBACK':
+        return 'fallback';
+      default:
+        return 'muted';
+    }
   }
 
   inventionEnrichmentStatusLabel(invention: InventionOutput): string {
@@ -675,6 +753,13 @@ export class SimulationDetailComponent
       return `${commandMessage} · ${deltaLabel}`;
     }
     return `Live timeline updated with ${deltaLabel}.`;
+  }
+
+  private eventSupportsNarration(event: EventOutput): boolean {
+    return (
+      event.eventCategory === 'DIALOGUE' ||
+      event.eventType === 'DIALOGUE_EXCHANGED'
+    );
   }
 
   private runControlAction(action: (cityId: number) => Observable<unknown>): void {

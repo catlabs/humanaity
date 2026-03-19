@@ -142,6 +142,8 @@ describe('SimulationDetailComponent', () => {
     expect(text).toContain('Recent activity');
     expect(text).toContain('Command console');
     expect(text).toContain('No simulation run yet');
+    expect(text).toContain('AI narration ready');
+    expect(text).toContain('Fallback narration');
     expect(fixture.nativeElement.querySelector('app-simulation-board')).not.toBeNull();
   });
 
@@ -267,6 +269,47 @@ describe('SimulationDetailComponent', () => {
     expect(fixture.componentInstance.selectedEventId()).toBe(99);
     expect(fixture.componentInstance.isFreshEvent(99)).toBeTrue();
     expect(fixture.nativeElement.textContent as string).toContain('Latest delta');
+  });
+
+  it('renders explicit narration states for canonical and fallback history items', () => {
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('Tick 4 • Year 1 • Founding • Dialogue');
+    expect(text).toContain('AI narration ready');
+    expect(text).toContain('Two neighbors agreed on a shared water route.');
+    expect(text).toContain('Fallback narration');
+    expect(text).toContain('Impact 42');
+    expect(text).toContain('Basic canal planning pattern.');
+  });
+
+  it('returns explicit empty-state narration copy when enrichment is unavailable', () => {
+    const component = fixture.componentInstance;
+    const unsupportedEvent = {
+      ...snapshot.recentEvents[0],
+      eventCategory: 'INTERACTION',
+      eventType: 'HUMANS_COLLIDED',
+      enrichmentStatus: 'NONE',
+      enrichmentFallback: false,
+      enrichedSnippet: undefined,
+    } as any;
+    const uninrichedInvention = {
+      ...snapshot.recentInventions[0],
+      enrichmentStatus: 'NONE',
+      enrichmentFallback: false,
+      enrichedTitle: undefined,
+      enrichedSummary: undefined,
+    } as any;
+
+    expect(component.eventNarrationLabel(unsupportedEvent)).toBe('No narration target');
+    expect(component.eventNarrationCopy(unsupportedEvent)).toContain(
+      'does not currently receive narration'
+    );
+    expect(component.inventionNarrationLabel(uninrichedInvention)).toBe(
+      'Narration pending'
+    );
+    expect(component.inventionNarrationCopy(uninrichedInvention)).toContain(
+      'not available for this discovery yet'
+    );
   });
 
   it('renders rejected deterministic commands clearly', () => {

@@ -7,6 +7,7 @@ Read-only AI text enrichment for simulation events and related history.
 - narrative text built from backend-owned deterministic event and invention records
 - explicit `ready`, `fallback`, and absent states for enriched text
 - UI rendering that keeps canonical facts primary and narration supplemental
+- main-page narration surfaces that label ready/fallback/unavailable states explicitly instead of inventing local fallback prose
 - the rule that AI does not parse commands or change simulation state in the primary product path
 
 ## Source docs

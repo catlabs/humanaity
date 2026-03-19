@@ -136,6 +136,8 @@ Rules:
 - timeline/history endpoints remain the source of truth for event feed content
 - board event markers and feed entries should be visibly linked through shared selection/highlight behavior
 - newly arrived timeline entries after a command-triggered refresh should be called out explicitly in the right rail
+- narration shown in feed/discovery surfaces must come directly from backend enrichment fields and label ready/fallback/unavailable states explicitly
+- canonical facts should stay readable even when narration is absent or fallback-generated
 - the right rail should stay secondary to the board, but primary over legacy auxiliary cards
 
 ## Empty, Loading, and Error Rules

@@ -111,7 +111,7 @@ Execution rhythm:
 
 ## M4 — AI Narrative Layer
 
-- Status: READY
+- Status: COMPLETE
 - Goal: Add AI value as narration only.
 - Current baseline: backend event enrichment already exists and `EventOutput` already exposes enrichment fields.
 - Visible UI outcome: events can show natural-language narration beside deterministic facts, with clear fallback behavior.
@@ -127,6 +127,9 @@ Execution rhythm:
   1. Reuse existing enrichment fields as the first-class narrative contract.
   2. Add narrative presentation to the main event feed.
   3. Verify the UI remains useful when narration is missing or fallback-generated.
+- Recent slice updates:
+  - 2026-03-19: rendered backend-owned narration status explicitly in the main event feed, recent discoveries list, and event drawer instead of silently collapsing to raw copy.
+  - 2026-03-19: kept canonical facts primary while showing `ready`, `fallback`, and unavailable narration states directly from `EventOutput` and `InventionOutput`.
 - Done signal: narration improves readability without becoming required for command execution or simulation understanding.
 
 ## M5 — Product Coherence

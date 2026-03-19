@@ -16,6 +16,7 @@ Primary simulation UI experience for the authoritative city simulation page.
 - The primary command console should submit exact deterministic commands through `POST /api/simulations/{cityId}/commands`.
 - Deterministic command feedback should be rendered directly from backend command responses rather than inferred from AI narration or best-effort client interpretation.
 - Recent activity entries and board event markers should stay visibly linked so selecting either surface makes the latest simulation delta easier to read.
+- Event and discovery narration should remain supplemental to canonical facts, with explicit ready/fallback/unavailable states rendered directly from backend enrichment fields.
 - The simulation board container should fill remaining page height via flex layout (`flex: 1` + `min-height: 0`) rather than relying on percentage-height inheritance chains.
 - Empty/loading overlays should be layered within the same board container so they do not collapse or displace the world surface.
 - Legacy agent-chat affordances may remain elsewhere in the repo for historical or secondary flows, but they are not the authoritative command path for this page.

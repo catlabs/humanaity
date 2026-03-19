@@ -234,11 +234,15 @@
                 @if (eventActorSummary(event); as actorSummary) {
                   <div class="feed-actors">{{ actorSummary }}</div>
                 }
-                @if (eventNarrative(event); as narrative) {
-                  <div class="feed-copy">{{ narrative }}</div>
-                } @else {
-                  <div class="feed-copy">{{ eventDescription(event) }}</div>
-                }
+                <div class="feed-facts">{{ eventCanonicalSummary(event) }}</div>
+                <div class="narration-block">
+                  <div class="narration-row">
+                    <span class="narration-chip" [class.narration-chip--fallback]="eventNarrationTone(event) === 'fallback'" [class.narration-chip--muted]="eventNarrationTone(event) === 'muted'">
+                      {{ eventNarrationLabel(event) }}
+                    </span>
+                  </div>
+                  <div class="narration-copy" [class.narration-copy--muted]="eventNarrationTone(event) === 'muted'">{{ eventNarrationCopy(event) }}</div>
+                </div>
               </button>
             } @empty {
               <div class="empty-block">
@@ -258,13 +262,21 @@
                 (click)="selectInvention(invention)"
               >
                 <div class="discovery-copy">
-                  <strong>{{ inventionDisplayTitle(invention) }}</strong>
-                  @if (inventionDisplaySummary(invention); as summary) {
-                    <small>{{ summary }}</small>
+                  <strong>{{ invention.title }}</strong>
+                  <small>{{ invention.summary }}</small>
+                  @if (inventionNarratedTitle(invention); as narratedTitle) {
+                    <div class="discovery-narrated-title">{{ narratedTitle }}</div>
                   }
+                  <div class="narration-row">
+                    <span class="narration-chip" [class.narration-chip--fallback]="inventionNarrationTone(invention) === 'fallback'" [class.narration-chip--muted]="inventionNarrationTone(invention) === 'muted'">
+                      {{ inventionNarrationLabel(invention) }}
+                    </span>
+                  </div>
+                  <div class="narration-copy" [class.narration-copy--muted]="inventionNarrationTone(invention) === 'muted'">{{ inventionNarrationCopy(invention) }}</div>
                 </div>
                 <div class="discovery-meta">
                   <span>{{ inventionCategoryLabel(invention) }}</span>
+                  <span>Impact {{ invention.impactScore }}</span>
                   @if (isFreshInvention(invention.id)) {
                     <span class="delta-chip delta-chip--discovery">New</span>
                   }
@@ -299,11 +311,14 @@
           <button type="button" class="drawer-event-item" (click)="selectEvent(event)">
             <div class="drawer-event-title">{{ eventTitle(event) }}</div>
             <div class="drawer-event-meta">
-              Tick {{ event.tick }} · Year {{ event.year }}
+              {{ eventCanonicalSummary(event) }}
             </div>
-            @if (eventNarrative(event); as narrative) {
-              <div class="drawer-event-snippet">{{ narrative }}</div>
-            }
+            <div class="drawer-event-status">
+              {{ eventNarrationLabel(event) }}
+            </div>
+            <div class="drawer-event-snippet" [class.drawer-event-snippet--muted]="eventNarrationTone(event) === 'muted'">
+              {{ eventNarrationCopy(event) }}
+            </div>
           </button>
         } @empty {
           <div class="empty">No events for this filter.</div>
