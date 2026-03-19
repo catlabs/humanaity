@@ -10,7 +10,7 @@ Execution rhythm:
 
 ## M1 — Simulation UI
 
-- Status: IN PROGRESS
+- Status: COMPLETE
 - Goal: Make the simulation visually understandable in under 30 seconds.
 - Current baseline: `GET /api/simulations/{cityId}/snapshot`, the city simulation page, the board component, human selection, and timeline loading already exist.
 - Visible UI outcome: board-first page with the board on the left, a right-side inspector/feed, and a bottom command console that reads clearly at a glance.
@@ -52,13 +52,14 @@ Execution rhythm:
 - Recent slice updates:
   - 2026-03-18: fixed `SimulationDetailComponent` board container sizing so `.world-body` reliably fills available vertical space (flex-fill layout chain, no percentage-height collapse).
   - 2026-03-18: rewrote M1 as a four-slice execution plan with explicit exit criteria and M2/M3/M4 boundaries.
+  - 2026-03-19: implemented the authoritative three-zone simulation page with a dominant board, right-rail inspector/feed, and bottom command console on `/cities/:id`.
 - Done signal: a new user can identify the board, select a human, understand the current simulation state, and see where commands and recent events live in under 30 seconds.
 
 ## M2 — Command System
 
-- Status: READY
+- Status: COMPLETE
 - Goal: Replace the primary agent-chat control loop with explicit deterministic commands.
-- Current baseline: the repo already has a chat strip, deterministic matching pieces, and a legacy agent orchestration endpoint.
+- Current baseline: the repo now has an M1 board-first page and a legacy agent orchestration endpoint, but the primary console path still needed to move to the deterministic command contract.
 - Visible UI outcome: the bottom input reads as a command console and accepts only explicit supported commands with clear feedback.
 - Backend/API work:
   - add `POST /api/simulations/{cityId}/commands` as the primary command surface
@@ -72,6 +73,9 @@ Execution rhythm:
   1. Implement the request and response DTOs from `docs/specs/deterministic-command-contract-spec.md`.
   2. Reuse deterministic backend command pieces where possible, but remove LLM fallback from the primary path.
   3. Wire the UI to the new endpoint and keep command errors explicit.
+- Recent slice updates:
+  - 2026-03-19: implemented `POST /api/simulations/{cityId}/commands`, wired the main command console to it, and removed agent-chat parsing from the primary control loop.
+  - 2026-03-19: reconciled milestone/spec doc wording so the authoritative page docs consistently describe the deterministic command console as the primary control path.
 - Done signal: valid commands execute deterministically, invalid commands fail clearly, and mutation commands visibly refresh the board and feed.
 
 ## M3 — Event System
