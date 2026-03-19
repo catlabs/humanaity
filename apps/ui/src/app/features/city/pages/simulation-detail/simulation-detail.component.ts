@@ -269,6 +269,13 @@ export class SimulationDetailComponent
   activityFeed = computed(() => this.displayedEvents().slice(0, 8));
   recentDiscoveries = computed(() => this.displayedInventions().slice(0, 3));
   latestCommandResult = signal<SimulationCommandOutput | null>(null);
+  recentDeltaEventIds = signal<number[]>([]);
+  recentDeltaInventionIds = signal<number[]>([]);
+  latestTimelineDeltaMessage = signal<string | null>(null);
+  private pendingTimelineCommand: SimulationCommandOutput | null = null;
+  headerRunSummary = computed(
+    () => `Era ${this.eraLabel()} · Year ${this.currentYear()}`
+  );
   commandConsoleHint = computed(() => {
     if (this.chatBusy()) {
       return 'Sending command…';
@@ -353,8 +360,12 @@ export class SimulationDetailComponent
 
   selectEvent(event: EventOutput): void {
     this.selectedEventId.set(event.id);
-    this.selectedHumanId.set(null);
     this.selectedInventionId.set(null);
+
+    const primaryActorId = event.actorIds.find((actorId) =>
+      this.humans().some((human) => human.id === actorId)
+    );
+    this.selectedHumanId.set(primaryActorId ?? null);
   }
 
   selectEventById(eventId: number): void {
@@ -416,6 +427,22 @@ export class SimulationDetailComponent
     return `Tick ${event.tick} • Year ${event.year} • ${this.formatEnumLabel(event.era)}`;
   }
 
+  eventActorSummary(event: EventOutput): string | null {
+    if (!Array.isArray(event.actorIds) || event.actorIds.length === 0) {
+      return null;
+    }
+
+    const names = event.actorIds
+      .map((actorId) => this.humans().find((human) => human.id === actorId)?.name)
+      .filter((name): name is string => !!name);
+
+    if (names.length === 0) {
+      return null;
+    }
+
+    return names.join(' · ');
+  }
+
   eventNarrative(event: EventOutput): string | null {
     return event.enrichedSnippet?.trim() || null;
   }
@@ -446,6 +473,14 @@ export class SimulationDetailComponent
 
   humanBusyLabel(isBusy: boolean): string {
     return isBusy ? 'Busy' : 'Active';
+  }
+
+  isFreshEvent(eventId: number): boolean {
+    return this.recentDeltaEventIds().includes(eventId);
+  }
+
+  isFreshInvention(inventionId: number): boolean {
+    return this.recentDeltaInventionIds().includes(inventionId);
   }
 
   private refreshAll(showLoading = true): void {
@@ -482,6 +517,8 @@ export class SimulationDetailComponent
     if (!cityId) {
       return;
     }
+    const previousEvents = this.events();
+    const previousInventions = this.inventions();
 
     if (showLoading) {
       this.historyLoading.set(true);
@@ -495,6 +532,13 @@ export class SimulationDetailComponent
         this.totalEvents.set(timeline.eventCount);
         this.totalInventions.set(timeline.inventionCount);
         this.syncBoardEventEntries(timeline.events);
+        this.captureTimelineDelta(
+          previousEvents,
+          previousInventions,
+          timeline.events,
+          timeline.inventions,
+          showLoading
+        );
         this.historyLoading.set(false);
       },
       error: (error) => {
@@ -546,15 +590,91 @@ export class SimulationDetailComponent
         this.chatBusy.set(false);
         this.latestCommandResult.set(response);
         if (response.ok) {
+          this.pendingTimelineCommand = this.hasTimelineRefreshEffect(response)
+            ? response
+            : null;
           this.applyUiEffects(response.uiEffects ?? []);
         }
       },
       error: (error) => {
         this.chatBusy.set(false);
+        this.pendingTimelineCommand = null;
         this.chatError.set('Command request failed.');
         console.error('Simulation command request failed:', error);
       },
     });
+  }
+
+  private hasTimelineRefreshEffect(response: SimulationCommandOutput): boolean {
+    return (response.uiEffects ?? []).some((effect) => effect.type === 'REFRESH_TIMELINE');
+  }
+
+  private captureTimelineDelta(
+    previousEvents: EventOutput[],
+    previousInventions: InventionOutput[],
+    nextEvents: EventOutput[],
+    nextInventions: InventionOutput[],
+    showLoading: boolean
+  ): void {
+    if (showLoading) {
+      return;
+    }
+
+    const previousEventIds = new Set(previousEvents.map((event) => event.id));
+    const previousInventionIds = new Set(previousInventions.map((invention) => invention.id));
+
+    const newEvents = nextEvents.filter((event) => !previousEventIds.has(event.id));
+    const newInventions = nextInventions.filter(
+      (invention) => !previousInventionIds.has(invention.id)
+    );
+
+    if (newEvents.length === 0 && newInventions.length === 0) {
+      this.recentDeltaEventIds.set([]);
+      this.recentDeltaInventionIds.set([]);
+      if (this.pendingTimelineCommand) {
+        this.latestTimelineDeltaMessage.set(this.pendingTimelineCommand.message ?? null);
+      }
+      this.pendingTimelineCommand = null;
+      return;
+    }
+
+    this.recentDeltaEventIds.set(newEvents.slice(-6).map((event) => event.id));
+    this.recentDeltaInventionIds.set(
+      newInventions.slice(-3).map((invention) => invention.id)
+    );
+
+    const newestEvent = newEvents[newEvents.length - 1];
+    if (newestEvent) {
+      this.selectEvent(newestEvent);
+    }
+
+    this.latestTimelineDeltaMessage.set(
+      this.summarizeTimelineDelta(newEvents.length, newInventions.length)
+    );
+    this.pendingTimelineCommand = null;
+  }
+
+  private summarizeTimelineDelta(
+    eventCount: number,
+    inventionCount: number
+  ): string {
+    const parts: string[] = [];
+
+    if (eventCount > 0) {
+      parts.push(`${eventCount} new ${eventCount === 1 ? 'event' : 'events'}`);
+    }
+    if (inventionCount > 0) {
+      parts.push(
+        `${inventionCount} new ${inventionCount === 1 ? 'discovery' : 'discoveries'}`
+      );
+    }
+
+    const deltaLabel = parts.join(' and ');
+    const commandMessage = this.pendingTimelineCommand?.message?.trim();
+    if (commandMessage) {
+      return `${commandMessage} · ${deltaLabel}`;
+    }
+    return `Live timeline updated with ${deltaLabel}.`;
   }
 
   private runControlAction(action: (cityId: number) => Observable<unknown>): void {

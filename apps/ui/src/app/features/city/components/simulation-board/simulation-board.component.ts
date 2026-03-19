@@ -26,8 +26,11 @@ export class SimulationBoardComponent {
   @Input() places: BoardPlaceViewModel[] = [];
   @Input() eventMarkers: SimulationBoardEventMarker[] = [];
   @Input() selectedHumanId: number | null = null;
+  @Input() selectedEventId: number | null = null;
+  @Input() freshEventIds: number[] = [];
   @Input() highlightedPlaceId: string | null = null;
   @Output() markerSelected = new EventEmitter<number>();
+  @Output() eventMarkerSelected = new EventEmitter<number>();
 
   trackByMarkerId(_: number, marker: BoardMarkerViewModel): number {
     return marker.id;
@@ -35,5 +38,9 @@ export class SimulationBoardComponent {
 
   onMarkerClick(markerId: number): void {
     this.markerSelected.emit(markerId);
+  }
+
+  onEventMarkerClick(eventId: number): void {
+    this.eventMarkerSelected.emit(eventId);
   }
 }

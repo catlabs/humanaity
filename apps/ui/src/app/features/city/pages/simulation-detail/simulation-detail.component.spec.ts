@@ -137,7 +137,7 @@ describe('SimulationDetailComponent', () => {
 
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Spec City');
-    expect(text).toContain('Simulation board');
+    expect(text).toContain('Era Founding · Year 1');
     expect(text).toContain('Selected human');
     expect(text).toContain('Recent activity');
     expect(text).toContain('Command console');
@@ -192,6 +192,81 @@ describe('SimulationDetailComponent', () => {
 
     expect(fixture.componentInstance.selectedHumanId()).toBe(12);
     expect(fixture.componentInstance.highlightedPlaceId()).toBe('forest');
+  });
+
+  it('keeps the primary actor focused when selecting an event', () => {
+    fixture.componentInstance.humans.set([
+      { id: 1, name: 'Ada', busy: false, x: 0.1, y: 0.2 },
+      { id: 2, name: 'Ben', busy: true, x: 0.3, y: 0.4 },
+    ] as any);
+
+    fixture.componentInstance.selectEvent(snapshot.recentEvents[0] as any);
+
+    expect(fixture.componentInstance.selectedEventId()).toBe(12);
+    expect(fixture.componentInstance.selectedHumanId()).toBe(1);
+  });
+
+  it('surfaces the latest timeline delta after a command-triggered refresh', async () => {
+    const refreshedSnapshot = {
+      ...snapshot,
+      run: {
+        ...snapshot.run,
+        hasRun: true,
+        tick: 1,
+      },
+      metrics: {
+        ...snapshot.metrics,
+        eventCount: 2,
+      },
+      timelineSummary: {
+        recentEventCount: 2,
+        recentInventionCount: 0,
+      },
+    } as any;
+    const newEvent = {
+      id: 99,
+      cityId: 7,
+      tick: 5,
+      sequenceInTick: 1,
+      eventCategory: 'MOVEMENT',
+      eventType: 'HUMANS_COLLIDED',
+      actorIds: [1],
+      payload: {},
+      importance: 1,
+      year: 1,
+      era: 'FOUNDING',
+      eventKey: 'HUMANS_COLLIDED:5:1',
+      createdAt: '2026-01-01T00:00:01Z',
+      enrichmentStatus: 'READY',
+      enrichmentFallback: false,
+      enrichedSnippet: 'Ada collided with another traveler.',
+    } as any;
+    const refreshedTimeline = {
+      ...timeline,
+      eventCount: 2,
+      events: [...snapshot.recentEvents, newEvent],
+    } as any;
+
+    cityService.getSimulationSnapshot.and.returnValues(of(snapshot), of(refreshedSnapshot));
+    cityService.getSimulationTimeline.and.returnValues(of(timeline), of(refreshedTimeline));
+    fixture = TestBed.createComponent(SimulationDetailComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.humans.set([
+      { id: 1, name: 'Ada', busy: false, x: 0.1, y: 0.2 },
+    ] as any);
+
+    fixture.componentInstance.onStep();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.latestTimelineDeltaMessage()).toContain(
+      '1 new event'
+    );
+    expect(fixture.componentInstance.selectedEventId()).toBe(99);
+    expect(fixture.componentInstance.isFreshEvent(99)).toBeTrue();
+    expect(fixture.nativeElement.textContent as string).toContain('Latest delta');
   });
 
   it('renders rejected deterministic commands clearly', () => {

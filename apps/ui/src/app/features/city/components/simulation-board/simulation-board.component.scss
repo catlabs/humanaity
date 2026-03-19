@@ -133,7 +133,9 @@
   border: 1px solid rgb(15 23 42 / 0.18);
   font-size: 0.85rem;
   z-index: 4;
-  pointer-events: none;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .event-marker--collision {
@@ -146,6 +148,19 @@
 
 .event-marker--discovery {
   box-shadow: 0 0 0 4px rgb(249 115 22 / 20%);
+}
+
+.event-marker--selected {
+  transform: translate(-50%, -50%) scale(1.14);
+  box-shadow:
+    0 0 0 5px rgb(37 99 235 / 18%),
+    0 8px 22px rgb(15 23 42 / 16%);
+}
+
+.event-marker--fresh {
+  box-shadow:
+    0 0 0 6px rgb(16 185 129 / 18%),
+    0 10px 22px rgb(15 23 42 / 12%);
 }
 
 @keyframes collision-pulse {

@@ -41,11 +41,10 @@ The primary simulation page must include:
 
 - a compact city/status header
 - one dominant symbolic board surface
-- a right-side inspector/feed rail for selected-human context and recent activity
-- a bottom command-console area
+- a right-side command/context rail for commands, selected-human context, recent activity, and discoveries
 - compact status details such as tick, year, run state, and human count
 
-Panels may be visually reduced, but the board, right rail, and command-console zones must remain legible as one coherent page flow.
+Panels may be visually reduced, but the board and right-side command/context rail must remain legible as one coherent page flow.
 
 ## Data Ownership Rules
 
@@ -114,7 +113,7 @@ The authoritative page is command-first, with deterministic commands as the prim
 Rules:
 
 - refresh and deterministic step remain available on the authoritative page
-- the bottom interaction area should read as the primary deterministic command-console surface
+- the command console should live at the top of the right-side context rail as the primary deterministic control surface
 - the authoritative page should submit exact commands through `POST /api/simulations/{cityId}/commands` rather than the legacy agent-chat endpoint
 - command-related labels should reduce agent-first framing and clarify the deterministic action path
 - visible state must refresh from backend data after control actions
@@ -123,7 +122,9 @@ Rules:
 ## Layout Rules
 
 - the page should read as board first, context second, commands third
-- use a stable three-zone layout: compact top status/header, board-plus-right-rail workspace, bottom command-console area
+- use a stable header-plus-workspace layout: compact top status/header, dominant board surface, right-side command/context rail
+- the board surface should not carry an internal title bar; era/year context belongs in the page header
+- the right-side command/context rail should be the primary vertical scroll container on desktop
 - avoid multi-panel competition around the board
 - preserve mobile viability, but do not sacrifice the board-first hierarchy to keep every previous panel visible
 - the board container must fill remaining vertical space through a flex layout chain; do not rely on `height: 100%` percentage inheritance where parent height may be indefinite
@@ -131,8 +132,10 @@ Rules:
 ## Inspector and Feed Rules
 
 - selected-human state should remain visible without requiring drawer navigation
-- the right rail should combine inspection and recent event context into one readable story
+- the right rail should combine commands, inspection, recent event context, and discoveries into one readable story
 - timeline/history endpoints remain the source of truth for event feed content
+- board event markers and feed entries should be visibly linked through shared selection/highlight behavior
+- newly arrived timeline entries after a command-triggered refresh should be called out explicitly in the right rail
 - the right rail should stay secondary to the board, but primary over legacy auxiliary cards
 
 ## Empty, Loading, and Error Rules
@@ -169,6 +172,6 @@ The authoritative page is aligned with this spec only if:
 - humans render from real backend snapshot coordinates
 - selected-human state and core simulation status stay visible without extra navigation
 - recent activity has a clear right-rail home on the main page
-- the page exposes a recognizable bottom command-console area
-- the bottom command-console path uses deterministic backend command execution as the primary control surface
+- the page exposes a recognizable right-rail command console at the top of the context column
+- the command-console path uses deterministic backend command execution as the primary control surface
 - PixiJS is out of the main page surface and authoritative page references

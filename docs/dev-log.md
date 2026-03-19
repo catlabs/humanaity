@@ -122,3 +122,37 @@ Trade-offs:
 Implemented:
 
 - fixed `SimulationCommandsApiContractTest` bearer helper to use `JwtService.generateAccessToken(user.getEmail())` so `spring-boot:run` test-compile matches other API contract tests and local backend startup succeeds
+
+## 2026-03-19
+
+Decision:
+
+- complete M3 by turning the right-side activity feed into the primary readable event surface and moving the command console into the top of that same context rail
+- keep the board as a pure full-height map surface while making feed entries and board event markers read as one linked event story
+
+Implemented:
+
+- reworked `SimulationDetailComponent` so the page header carries era/year context, the board no longer renders internal title chrome, and the right zone becomes one scrollable command/status/human/activity/discovery column
+- made board event markers selectable, synchronized feed selection with actor focus on the board, and highlighted freshly arrived timeline entries after command-driven refreshes
+- updated the simulation-detail focused spec and synced `docs/milestones.md`, `docs/concepts/ui-simulation.md`, and `docs/specs/main-simulation-board-spec.md` to the new M3 page contract
+
+Trade-offs:
+
+- the event drawer remains as a secondary deep-history surface, but the on-page feed is now the primary readable event path
+- the current M3 slice improves event readability and layout coherence without changing backend history contracts
+
+## 2026-03-19
+
+Decision:
+
+- treat the M3 frontend scope as the authority for the new right-zone-first simulation layout constraints
+
+Implemented:
+
+- updated `docs/milestones.md` M3 frontend work/tasks to require the command console at the top of the right zone
+- captured that the simulation board must be map-only (no board title), with `Era Expansion · Year 32` in the main page header
+- captured full-height non-scrollable map behavior and a single merged right-zone block (status/human/activity/discoveries) as the page's only vertical scroll container
+
+Trade-offs:
+
+- this slice is documentation-only and does not yet implement the M3 UI layout changes in Angular

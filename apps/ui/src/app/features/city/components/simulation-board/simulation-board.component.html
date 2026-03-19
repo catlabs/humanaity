@@ -31,17 +31,21 @@
   }
 
   @for (eventMarker of eventMarkers; track eventMarker.eventId) {
-    <div
+    <button
+      type="button"
       class="event-marker"
       [class.event-marker--collision]="eventMarker.kind === 'collision'"
       [class.event-marker--dialogue]="eventMarker.kind === 'dialogue'"
       [class.event-marker--discovery]="eventMarker.kind === 'discovery'"
+      [class.event-marker--selected]="selectedEventId === eventMarker.eventId"
+      [class.event-marker--fresh]="freshEventIds.includes(eventMarker.eventId)"
       [style.left.%]="eventMarker.leftPct"
       [style.top.%]="eventMarker.topPct"
+      (click)="onEventMarkerClick(eventMarker.eventId)"
       [attr.aria-label]="eventMarker.label"
       [title]="eventMarker.label"
     >
       <span>{{ eventMarker.icon }}</span>
-    </div>
+    </button>
   }
 </div>

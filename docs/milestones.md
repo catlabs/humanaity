@@ -80,7 +80,7 @@ Execution rhythm:
 
 ## M3 — Event System
 
-- Status: READY
+- Status: COMPLETE
 - Goal: Make simulation changes readable as a coherent event flow.
 - Current baseline: event history endpoints, timeline loading, event drawer behavior, and board event markers already exist.
 - Visible UI outcome: the right-side feed makes recent movement, interaction, and discovery activity readable without opening secondary tools.
@@ -92,10 +92,21 @@ Execution rhythm:
   - promote a clear chronological feed on the main page
   - synchronize feed focus with board markers and selected entities
   - surface recent event outcomes immediately after step or move commands
+  - move the command console to the top of the right zone (no bottom console on the page)
+  - remove the in-board title; show `Era Expansion · Year 32` in the main page header
+  - make the simulation board a pure map surface that fills all available vertical space with no internal map scrolling
+  - merge simulation status, selected human, recent activity, and recent discoveries into one right-zone block without cards
+  - make that merged right-zone block the only vertically scrollable region on the page
 - Ordered tasks:
   1. Turn the current event drawer behavior into a clearer primary feed.
   2. Keep recent board activity and feed entries visually linked.
   3. Ensure stepping or moving produces an obvious event delta in the UI.
+  4. Restructure the right zone so command input is at the top and status/human/activity/discoveries are one non-card block.
+  5. Remove board title framing, move era/year to the page header, and enforce full-height non-scrollable map behavior.
+- Recent slice updates:
+  - 2026-03-19: moved the deterministic command console to the top of the right zone and merged status, selected-human context, activity, and discoveries into one scrollable side column.
+  - 2026-03-19: linked the primary activity feed to selectable board event markers and highlighted newly arrived timeline entries after command-driven refreshes.
+  - 2026-03-19: removed the in-board title chrome so the main header carries the era/year context and the symbolic board can remain a pure full-height map surface.
 - Done signal: a step or move action produces visible board and feed updates that can be understood without explanation.
 
 ## M4 — AI Narrative Layer

@@ -1,11 +1,8 @@
 <div class="page">
   <mat-toolbar class="info-bar app-surface-bg">
     <div class="title-block">
-      <div class="eyebrow">Simulation UI</div>
       <div class="title-main">{{ city.name || "Simulation" }}</div>
-      <div class="title-sub">
-        Board-first view of the current city run, recent activity, and next action.
-      </div>
+      <div class="title-sub">{{ headerRunSummary() }} · {{ phaseLabel() }}</div>
     </div>
 
     <div class="toolbar-status" aria-label="Simulation status">
@@ -57,19 +54,6 @@
   <div class="content">
     <section class="workspace">
       <article class="board-panel app-surface-bg">
-        <div class="panel-header">
-          <div>
-            <div class="panel-title">Simulation board</div>
-            <div class="panel-subtitle">
-              Era {{ eraLabel() }} · Year {{ currentYear() }} · {{ phaseLabel() }}
-            </div>
-          </div>
-          <div class="board-summary">
-            <span>{{ recentEventCount() }} recent events</span>
-            <span>{{ recentInventionCount() }} recent discoveries</span>
-          </div>
-        </div>
-
         <div class="world-body">
           <app-simulation-board
             class="world-board"
@@ -77,8 +61,11 @@
             [eventMarkers]="boardEventMarkers()"
             [places]="boardPlaces()"
             [selectedHumanId]="selectedHumanId()"
+            [selectedEventId]="selectedEventId()"
+            [freshEventIds]="recentDeltaEventIds()"
             [highlightedPlaceId]="highlightedPlaceId()"
             (markerSelected)="selectHumanById($event)"
+            (eventMarkerSelected)="selectEventById($event)"
           ></app-simulation-board>
 
           @if (showWorldOverlay()) {
@@ -100,8 +87,59 @@
         </div>
       </article>
 
-      <aside class="right-rail">
-        <section class="rail-card app-surface-bg">
+      <aside class="right-zone app-surface-bg">
+        <section class="right-zone-section">
+          <div class="section-header">
+            <div>
+              <div class="section-title">Command console</div>
+              <div class="section-subtitle">Use exact commands: `advance &lt;count&gt;`, `focus &lt;human&gt;`, or `move &lt;human&gt; &lt;place&gt;`.</div>
+            </div>
+          </div>
+
+          <div class="console-examples">
+            @for (example of commandExamples; track example) {
+              <span>{{ example }}</span>
+            }
+          </div>
+
+          <div class="chat-row">
+            <input
+              #chatBox
+              class="chat-input"
+              type="text"
+              [value]="chatInput()"
+              (input)="onChatInput(chatBox.value)"
+              (keydown.enter)="onSendChat()"
+              placeholder="advance 5"
+            />
+            <button
+              type="button"
+              class="chat-send"
+              [disabled]="!canSendChat()"
+              (click)="onSendChat()"
+            >
+              Send
+            </button>
+          </div>
+
+          <div class="console-feedback">
+            <div class="console-status" [class.console-status--error]="commandConsoleHasError()">{{ commandConsoleHint() }}</div>
+            @if (latestCommandResult(); as latestResult) {
+              <div class="chat-meta">
+                {{ eventTypeLabel(latestResult.commandType ?? 'UNSUPPORTED') }}
+                · {{ latestResult.mutated ? "State changed" : "Read only" }}
+                @if (latestResult.referencedEntities?.humanId) {
+                  · human {{ latestResult.referencedEntities?.humanId }}
+                }
+                @if (latestResult.referencedEntities?.placeId) {
+                  · place {{ latestResult.referencedEntities?.placeId }}
+                }
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="right-zone-section">
           <div class="section-title">Simulation status</div>
           <div class="status-grid">
             <div class="pill">
@@ -119,7 +157,7 @@
           </div>
         </section>
 
-        <section class="rail-card app-surface-bg">
+        <section class="right-zone-section">
           <div class="section-header">
             <div>
               <div class="section-title">Selected human</div>
@@ -156,14 +194,21 @@
           </div>
         </section>
 
-        <section class="rail-card app-surface-bg">
+        <section class="right-zone-section">
           <div class="section-header">
             <div>
               <div class="section-title">Recent activity</div>
-              <div class="section-subtitle">History-driven feed from the latest timeline window.</div>
+              <div class="section-subtitle">History-driven feed from the latest timeline window, linked to the board markers.</div>
             </div>
             <button type="button" class="text-button" (click)="openAllEventsDrawer()">Open all</button>
           </div>
+
+          @if (latestTimelineDeltaMessage(); as deltaMessage) {
+            <div class="delta-banner">
+              <div class="delta-banner-title">Latest delta</div>
+              <div class="delta-banner-copy">{{ deltaMessage }}</div>
+            </div>
+          }
 
           <div class="feed-list">
             @for (event of activityFeed(); track event.id) {
@@ -171,6 +216,7 @@
                 type="button"
                 class="feed-item"
                 [class.feed-item--selected]="selectedEventId() === event.id"
+                [class.feed-item--fresh]="isFreshEvent(event.id)"
                 (click)="selectEvent(event)"
               >
                 <div class="feed-item-header">
@@ -179,6 +225,15 @@
                   </span>
                   <span class="feed-meta">Tick {{ event.tick }} · Year {{ event.year }}</span>
                 </div>
+                <div class="feed-title-row">
+                  <strong>{{ eventTitle(event) }}</strong>
+                  @if (isFreshEvent(event.id)) {
+                    <span class="delta-chip">New</span>
+                  }
+                </div>
+                @if (eventActorSummary(event); as actorSummary) {
+                  <div class="feed-actors">{{ actorSummary }}</div>
+                }
                 @if (eventNarrative(event); as narrative) {
                   <div class="feed-copy">{{ narrative }}</div>
                 } @else {
@@ -199,10 +254,21 @@
                 type="button"
                 class="discovery-item"
                 [class.discovery-item--selected]="selectedInventionId() === invention.id"
+                [class.discovery-item--fresh]="isFreshInvention(invention.id)"
                 (click)="selectInvention(invention)"
               >
-                <strong>{{ inventionDisplayTitle(invention) }}</strong>
-                <span>{{ inventionCategoryLabel(invention) }}</span>
+                <div class="discovery-copy">
+                  <strong>{{ inventionDisplayTitle(invention) }}</strong>
+                  @if (inventionDisplaySummary(invention); as summary) {
+                    <small>{{ summary }}</small>
+                  }
+                </div>
+                <div class="discovery-meta">
+                  <span>{{ inventionCategoryLabel(invention) }}</span>
+                  @if (isFreshInvention(invention.id)) {
+                    <span class="delta-chip delta-chip--discovery">New</span>
+                  }
+                </div>
               </button>
             } @empty {
               <div class="empty">No discoveries yet.</div>
@@ -210,56 +276,6 @@
           </div>
         </section>
       </aside>
-    </section>
-
-    <section class="command-console app-surface-bg">
-      <div class="section-header">
-        <div>
-          <div class="section-title">Command console</div>
-          <div class="section-subtitle">Use exact commands: `advance &lt;count&gt;`, `focus &lt;human&gt;`, or `move &lt;human&gt; &lt;place&gt;`.</div>
-        </div>
-        <div class="console-examples">
-          @for (example of commandExamples; track example) {
-            <span>{{ example }}</span>
-          }
-        </div>
-      </div>
-
-      <div class="chat-row">
-        <input
-          #chatBox
-          class="chat-input"
-          type="text"
-          [value]="chatInput()"
-          (input)="onChatInput(chatBox.value)"
-          (keydown.enter)="onSendChat()"
-          placeholder="advance 5"
-        />
-        <button
-          type="button"
-          class="chat-send"
-          [disabled]="!canSendChat()"
-          (click)="onSendChat()"
-        >
-          Send
-        </button>
-      </div>
-
-      <div class="console-feedback">
-        <div class="console-status" [class.console-status--error]="commandConsoleHasError()">{{ commandConsoleHint() }}</div>
-        @if (latestCommandResult(); as latestResult) {
-          <div class="chat-meta">
-            {{ eventTypeLabel(latestResult.commandType ?? 'UNSUPPORTED') }}
-            · {{ latestResult.mutated ? "State changed" : "Read only" }}
-            @if (latestResult.referencedEntities?.humanId) {
-              · human {{ latestResult.referencedEntities?.humanId }}
-            }
-            @if (latestResult.referencedEntities?.placeId) {
-              · place {{ latestResult.referencedEntities?.placeId }}
-            }
-          </div>
-        }
-      </div>
     </section>
   </div>
 
