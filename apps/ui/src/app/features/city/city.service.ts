@@ -14,6 +14,8 @@ import {
   CityOutput,
   HumanOutput,
   CityOverviewOutput,
+  SimulationCommandInput,
+  SimulationCommandOutput,
   SimulationSnapshotOutput
 } from '@api';
 import {parseApiResponse} from '@core';
@@ -132,6 +134,15 @@ export class CityService {
   ): Observable<AgentChatResponseOutput> {
     return this.agentChatService.chat(cityId, request).pipe(
       switchMap(parseApiResponse<AgentChatResponseOutput>)
+    );
+  }
+
+  sendSimulationCommand(
+    cityId: number,
+    request: SimulationCommandInput
+  ): Observable<SimulationCommandOutput> {
+    return this.simulationsService.executeCommand(cityId, request).pipe(
+      switchMap(parseApiResponse<SimulationCommandOutput>)
     );
   }
 

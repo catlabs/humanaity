@@ -3,7 +3,10 @@ package eu.catlabs.humanaity.simulation.api;
 import eu.catlabs.humanaity.ai.domain.AiEnrichmentStatus;
 import eu.catlabs.humanaity.event.domain.Event;
 import eu.catlabs.humanaity.invention.domain.Invention;
+import eu.catlabs.humanaity.auth.domain.User;
+import eu.catlabs.humanaity.auth.infrastructure.persistence.UserRepository;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
+import eu.catlabs.humanaity.simulation.application.SimulationCommandService;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService.TimelineHistory;
 import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
 import eu.catlabs.humanaity.simulation.api.dto.CityOverviewOutput;
@@ -13,6 +16,8 @@ import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotBoundsOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotCentroidOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotCityOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotHumanOutput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationCommandInput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationCommandOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationKnowledgeOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotMetricsOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotOutput;
@@ -23,10 +28,13 @@ import eu.catlabs.humanaity.simulation.api.dto.SimulationRunOutput;
 import eu.catlabs.humanaity.simulation.api.dto.TimelineOutput;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -37,12 +45,21 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/simulations")
 @Tag(name = "Simulations", description = "Simulation management API")
+@SecurityRequirement(name = "bearer-jwt")
 public class SimulationController {
 
     private final SimulationApplicationService simulationApplicationService;
+    private final SimulationCommandService simulationCommandService;
+    private final UserRepository userRepository;
 
-    public SimulationController(SimulationApplicationService simulationApplicationService) {
+    public SimulationController(
+            SimulationApplicationService simulationApplicationService,
+            SimulationCommandService simulationCommandService,
+            UserRepository userRepository
+    ) {
         this.simulationApplicationService = simulationApplicationService;
+        this.simulationCommandService = simulationCommandService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/{cityId}")
@@ -103,6 +120,25 @@ public class SimulationController {
             return ResponseEntity.ok(toOutput(run, cityId));
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        }
+    }
+
+    @PostMapping("/{cityId}/commands")
+    @Operation(summary = "Execute one deterministic simulation command for a city")
+    public ResponseEntity<SimulationCommandOutput> executeCommand(
+            @PathVariable Long cityId,
+            @RequestBody SimulationCommandInput input,
+            Authentication authentication
+    ) {
+        try {
+            User currentUser = resolveCurrentUser(authentication);
+            return ResponseEntity.ok(simulationCommandService.execute(cityId, currentUser, input));
+        } catch (UnauthorizedException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
         }
     }
     @PostMapping("/{cityId}/start")
@@ -218,6 +254,14 @@ public class SimulationController {
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         }
+    }
+
+    private User resolveCurrentUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedException();
+        }
+        return userRepository.findByEmail(authentication.getName())
+                .orElseThrow(UnauthorizedException::new);
     }
 
     private void validateTickRange(Long fromTick, Long toTick) {
@@ -385,5 +429,8 @@ public class SimulationController {
                         .map(invention -> toInventionOutput(city.id(), invention))
                         .toList()
         );
+    }
+
+    private static class UnauthorizedException extends RuntimeException {
     }
 }

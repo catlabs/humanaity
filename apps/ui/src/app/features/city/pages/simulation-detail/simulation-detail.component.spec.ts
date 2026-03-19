@@ -89,6 +89,7 @@ describe('SimulationDetailComponent', () => {
       'startSimulation',
       'stopSimulation',
       'stepSimulation',
+      'sendSimulationCommand',
       'sendAgentChat',
     ]);
 
@@ -97,17 +98,20 @@ describe('SimulationDetailComponent', () => {
     cityService.startSimulation.and.returnValue(of(void 0));
     cityService.stopSimulation.and.returnValue(of(void 0));
     cityService.stepSimulation.and.returnValue(of(void 0));
-    cityService.sendAgentChat.and.returnValue(
+    cityService.sendSimulationCommand.and.returnValue(
       of({
-        conversationId: 'conv-1',
-        message: 'Advanced the city by 3 step(s). Current tick is 3.',
-        commandClass: 'SAFE_MVP',
-        interpretationProvenance: 'DETERMINISTIC_MATCH',
-        executedActions: [],
-        referencedEntities: { cityId: 7 },
-        uiEffects: [],
+        ok: true,
+        commandType: 'ADVANCE',
+        message: 'Advanced city by 3 steps.',
+        mutated: true,
+        referencedEntities: { humanId: null, placeId: null },
+        uiEffects: [
+          { type: 'REFRESH_SNAPSHOT' },
+          { type: 'REFRESH_TIMELINE' },
+        ],
       } as any)
     );
+    cityService.sendAgentChat.and.returnValue(of({} as any));
 
     await TestBed.configureTestingModule({
       imports: [SimulationDetailComponent],
@@ -124,7 +128,6 @@ describe('SimulationDetailComponent', () => {
     fixture = TestBed.createComponent(SimulationDetailComponent);
     fixture.detectChanges();
     await fixture.whenStable();
-    fixture.componentInstance.statusPanelVisible.set(true);
     fixture.detectChanges();
   });
 
@@ -134,169 +137,83 @@ describe('SimulationDetailComponent', () => {
 
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Spec City');
+    expect(text).toContain('Simulation board');
+    expect(text).toContain('Selected human');
+    expect(text).toContain('Recent activity');
+    expect(text).toContain('Command console');
     expect(text).toContain('No simulation run yet');
     expect(fixture.nativeElement.querySelector('app-simulation-board')).not.toBeNull();
   });
 
-  it('steps simulation through backend service', () => {
+  it('submits advance 1 through the deterministic command endpoint from the step button', () => {
     fixture.componentInstance.onStep();
-    expect(cityService.stepSimulation).toHaveBeenCalledWith(7);
+
+    expect(cityService.sendSimulationCommand).toHaveBeenCalledWith(
+      7,
+      jasmine.objectContaining({ commandText: 'advance 1' })
+    );
   });
 
-  it('submits chat requests and renders the backend reply', () => {
+  it('submits deterministic command requests and renders the backend reply', () => {
     const component = fixture.componentInstance;
-    component.onChatInput('advance by 3 steps');
+    component.onChatInput('advance 3');
     component.onSendChat();
     fixture.detectChanges();
 
-    expect(cityService.sendAgentChat).toHaveBeenCalledWith(
+    expect(cityService.sendSimulationCommand).toHaveBeenCalledWith(
       7,
-      jasmine.objectContaining({ message: 'advance by 3 steps' })
+      jasmine.objectContaining({ commandText: 'advance 3' })
     );
 
     const text = fixture.nativeElement.textContent as string;
-    expect(text).toContain('Chat Control');
-    expect(text).toContain('Advanced the city by 3 step(s). Current tick is 3.');
-    expect(text).toContain('Parsed via DETERMINISTIC_MATCH');
+    expect(text).toContain('Command console');
+    expect(text).toContain('Advanced city by 3 steps.');
+    expect(text).toContain('Advance');
   });
 
-  it('applies uiEffects refresh and highlight signals from backend chat responses', () => {
-    cityService.sendAgentChat.and.returnValue(
+  it('applies uiEffects from deterministic command responses', () => {
+    cityService.sendSimulationCommand.and.returnValue(
       of({
-        conversationId: 'conv-2',
-        message: 'Refreshed and highlighted latest event.',
-        commandClass: 'SAFE_MVP',
-        interpretationProvenance: 'DETERMINISTIC_MATCH',
-        interpretedCommandSummary: 'EXPLAIN_EVENT',
-        executedActions: [],
-        referencedEntities: { cityId: 7, eventIds: [12] },
+        ok: true,
+        commandType: 'MOVE_HUMAN_TO_PLACE',
+        message: 'Assigned Ada to move toward forest.',
+        mutated: true,
+        referencedEntities: { humanId: 12, placeId: 'forest' },
         uiEffects: [
-          { type: 'REFRESH_SNAPSHOT' },
-          { type: 'REFRESH_TIMELINE' },
-          { type: 'HIGHLIGHT_EVENT', eventId: 12 },
+          { type: 'FOCUS_HUMAN', humanId: 12 },
+          { type: 'HIGHLIGHT_PLACE', placeId: 'forest' },
         ],
       } as any)
     );
 
-    const beforeSnapshotCalls = cityService.getSimulationSnapshot.calls.count();
-    const beforeTimelineCalls = cityService.getSimulationTimeline.calls.count();
-
-    fixture.componentInstance.onChatInput('explain event 12');
+    fixture.componentInstance.onChatInput('move 12 forest');
     fixture.componentInstance.onSendChat();
     fixture.detectChanges();
 
-    expect(cityService.getSimulationSnapshot.calls.count()).toBeGreaterThan(
-      beforeSnapshotCalls
-    );
-    expect(cityService.getSimulationTimeline.calls.count()).toBeGreaterThan(
-      beforeTimelineCalls
-    );
-    expect(fixture.componentInstance.selectedEventId()).toBe(12);
+    expect(fixture.componentInstance.selectedHumanId()).toBe(12);
+    expect(fixture.componentInstance.highlightedPlaceId()).toBe('forest');
   });
 
-  it('renders guided compare and follow context from structured backend data', () => {
-    cityService.sendAgentChat.and.returnValue(
+  it('renders rejected deterministic commands clearly', () => {
+    cityService.sendSimulationCommand.and.returnValue(
       of({
-        conversationId: 'conv-guided',
-        message: 'Compared and followed selected humans.',
-        commandClass: 'GUIDED',
-        executedActions: [],
-        referencedEntities: { cityId: 7, humanIds: [101, 202] },
-        uiEffects: [{ type: 'FOCUS_HUMAN', humanId: 101 }],
-        structuredData: {
-          compareHumans: {
-            left: { id: 101, name: 'Ada', busy: false, x: 0.1, y: 0.2 },
-            right: { id: 202, name: 'Ben', busy: true, x: 0.3, y: 0.4 },
-          },
-          followHuman: {
-            human: { id: 101, name: 'Ada', busy: false, x: 0.1, y: 0.2 },
-            ticks: 5,
-            fromTick: 20,
-            resultTick: 24,
-            eventWindow: [],
-            inventionWindow: [],
-          },
-        },
-      } as any)
-    );
-
-    fixture.componentInstance.onChatInput('follow ada for 5 ticks');
-    fixture.componentInstance.onSendChat();
-    fixture.detectChanges();
-
-    expect(fixture.componentInstance.guidedComparison()).not.toBeNull();
-    expect(fixture.componentInstance.guidedFollow()?.ticks).toBe(5);
-    expect(fixture.componentInstance.trackedHumanId()).toBe(101);
-
-    expect(fixture.componentInstance.guidedComparison()).not.toBeNull();
-    expect(fixture.componentInstance.guidedFollow()).not.toBeNull();
-  });
-
-  it('requires explicit confirmation for director interventions and sends token on confirm', () => {
-    cityService.sendAgentChat.and.returnValues(
-      of({
-        conversationId: 'conv-director-1',
-        message: 'Director command requested.',
-        commandClass: 'DIRECTOR',
-        executedActions: [{ type: 'INTERVENTION_CONFIRMATION_REQUIRED', status: 'PENDING', summary: '' }],
-        referencedEntities: { cityId: 7, humanIds: [12, 34] },
+        ok: false,
+        commandType: 'UNSUPPORTED',
+        message:
+          'Unsupported command. Use `advance <count>`, `focus <human>`, or `move <human> <place>`.',
+        mutated: false,
+        referencedEntities: { humanId: null, placeId: null },
         uiEffects: [],
-        structuredData: {
-          directorConfirmation: {
-            interventionId: 77,
-            commandType: 'DIRECTOR_MEET_HUMANS',
-            confirmationToken: 'token-abc',
-            expiresAt: '2026-03-14T14:30:00Z',
-            humanIds: [12, 34],
-          },
-        },
-      } as any),
-      of({
-        conversationId: 'conv-director-1',
-        message: 'Intervention executed.',
-        commandClass: 'DIRECTOR',
-        executedActions: [{ type: 'INTERVENTION_EXECUTED', status: 'COMPLETED', summary: '' }],
-        referencedEntities: { cityId: 7, humanIds: [12, 34] },
-        uiEffects: [{ type: 'REFRESH_SNAPSHOT' }],
-        structuredData: {
-          directorIntervention: {
-            id: 77,
-            status: 'EXECUTED',
-            commandType: 'DIRECTOR_MEET_HUMANS',
-            humanIds: [12, 34],
-            executedTick: 9,
-          },
-        },
       } as any)
     );
 
-    const component = fixture.componentInstance;
-    component.onChatInput('director make 12 and 34 meet');
-    component.onSendChat();
+    fixture.componentInstance.onChatInput('advance by 3 steps');
+    fixture.componentInstance.onSendChat();
     fixture.detectChanges();
 
-    expect(component.pendingDirectorConfirmation()).not.toBeNull();
-    expect(component.directorBoardState()).toBe('pending');
-
-    component.onConfirmDirectorIntervention();
-    fixture.detectChanges();
-
-    expect(cityService.sendAgentChat.calls.count()).toBe(2);
-    const secondCall = cityService.sendAgentChat.calls.argsFor(1)[1] as any;
-    expect(secondCall.confirmIntervention).toBeTrue();
-    expect(secondCall.confirmationToken).toBe('token-abc');
-  });
-
-  it('renders backend enrichment fields for selected invention and event', () => {
-    const component = fixture.componentInstance;
-    const invention = component.inventions()[0];
-    const event = component.events()[0];
-
-    expect(component.inventionDisplayTitle(invention)).toBe('Canal Layout (Field Note)');
-    expect(component.inventionDisplaySummary(invention)).toBe('Fallback: Basic canal planning pattern.');
-    expect(component.inventionEnrichmentStatusLabel(invention)).toBe('Fallback');
-
-    expect(component.eventNarrative(event)).toBe('Two neighbors agreed on a shared water route.');
-    expect(component.eventEnrichmentStatusLabel(event)).toBe('Ready');
+    expect(fixture.componentInstance.commandConsoleHasError()).toBeTrue();
+    expect((fixture.nativeElement.textContent as string)).toContain(
+      'Unsupported command.'
+    );
   });
 });

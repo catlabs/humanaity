@@ -1,10 +1,25 @@
 <div class="page">
   <mat-toolbar class="info-bar app-surface-bg">
     <div class="title-block">
+      <div class="eyebrow">Simulation UI</div>
       <div class="title-main">{{ city.name || "Simulation" }}</div>
       <div class="title-sub">
-        Era: {{ eraLabel() }} · Year: {{ currentYear() }} · Tick: {{ currentTick() }} ·
-        Phase: {{ phaseLabel() }}
+        Board-first view of the current city run, recent activity, and next action.
+      </div>
+    </div>
+
+    <div class="toolbar-status" aria-label="Simulation status">
+      <div class="toolbar-pill">
+        <span>Run</span>
+        <strong>{{ hasRun() ? (isRunning() ? "Running" : "Paused") : "Not started" }}</strong>
+      </div>
+      <div class="toolbar-pill">
+        <span>Tick</span>
+        <strong>{{ currentTick() }}</strong>
+      </div>
+      <div class="toolbar-pill">
+        <span>People</span>
+        <strong>{{ populationTotal() }}</strong>
       </div>
     </div>
 
@@ -35,120 +50,217 @@
   @if (noRunYet()) {
     <div class="state-banner">
       <mat-icon>info</mat-icon>
-      <span>No simulation run yet. Step to begin.</span>
+      <span>No simulation run yet. Step once to create the first readable board state.</span>
     </div>
   }
 
   <div class="content">
-    <div class="world-body">
-      <app-simulation-board
-        class="world-board"
-        [markers]="boardMarkers()"
-        [eventMarkers]="boardEventMarkers()"
-        [places]="boardPlaces()"
-        [selectedHumanId]="selectedHumanId()"
-        [highlightedPlaceId]="highlightedPlaceId()"
-        (markerSelected)="selectHumanById($event)"
-      ></app-simulation-board>
-
-      @if (showWorldOverlay()) {
-        <div class="world-overlay">
-          <mat-icon>public</mat-icon>
+    <section class="workspace">
+      <article class="board-panel app-surface-bg">
+        <div class="panel-header">
           <div>
-            {{ noRunYet() ? "No run started yet." : "No humans available yet." }}
+            <div class="panel-title">Simulation board</div>
+            <div class="panel-subtitle">
+              Era {{ eraLabel() }} · Year {{ currentYear() }} · {{ phaseLabel() }}
+            </div>
+          </div>
+          <div class="board-summary">
+            <span>{{ recentEventCount() }} recent events</span>
+            <span>{{ recentInventionCount() }} recent discoveries</span>
           </div>
         </div>
-      }
 
-      @if (snapshotLoading()) {
-        <div class="world-loading">
-          <mat-spinner diameter="24"></mat-spinner>
-          <span>Loading simulation...</span>
+        <div class="world-body">
+          <app-simulation-board
+            class="world-board"
+            [markers]="boardMarkers()"
+            [eventMarkers]="boardEventMarkers()"
+            [places]="boardPlaces()"
+            [selectedHumanId]="selectedHumanId()"
+            [highlightedPlaceId]="highlightedPlaceId()"
+            (markerSelected)="selectHumanById($event)"
+          ></app-simulation-board>
+
+          @if (showWorldOverlay()) {
+            <div class="world-overlay">
+              <mat-icon>public</mat-icon>
+              <div class="overlay-title">{{ noRunYet() ? "Board ready for first run" : "Board ready for people" }}</div>
+              <div class="overlay-copy">
+                {{ noRunYet() ? "Step the simulation to populate the board and start the event feed." : "No humans are available in this snapshot yet." }}
+              </div>
+            </div>
+          }
+
+          @if (snapshotLoading()) {
+            <div class="world-loading">
+              <mat-spinner diameter="24"></mat-spinner>
+              <span>Loading simulation…</span>
+            </div>
+          }
         </div>
-      }
+      </article>
 
-      @if (statusPanelVisible()) {
-        <section class="status-panel app-surface-bg">
+      <aside class="right-rail">
+        <section class="rail-card app-surface-bg">
+          <div class="section-title">Simulation status</div>
           <div class="status-grid">
             <div class="pill">
-              <span>Status</span><strong>{{ isRunning() ? "Running" : "Paused" }}</strong>
+              <span>Run</span><strong>{{ hasRun() ? (isRunning() ? "Running" : "Paused") : "Not started" }}</strong>
             </div>
             <div class="pill">
-              <span>Active</span><strong>{{ populationActive() }}</strong>
+              <span>Year</span><strong>{{ currentYear() }}</strong>
             </div>
             <div class="pill">
               <span>Busy</span><strong>{{ populationBusy() }}</strong>
             </div>
             <div class="pill">
-              <span>Recent</span><strong>{{ recentEventCount() }}e / {{ recentInventionCount() }}i</strong>
+              <span>Events</span><strong>{{ totalEvents() }}</strong>
             </div>
           </div>
+        </section>
 
-          <div class="human-strip">
-            <div class="section-title">Humans</div>
-            @if (selectedHumanSummary(); as summary) {
-              <div class="selection-summary">{{ summary }}</div>
+        <section class="rail-card app-surface-bg">
+          <div class="section-header">
+            <div>
+              <div class="section-title">Selected human</div>
+              <div class="section-subtitle">Keep one person in focus while reading the board.</div>
+            </div>
+            @if (selectedHuman()) {
+              <button type="button" class="text-button" (click)="clearSelection()">Clear</button>
             }
-            <div class="human-list">
-              @for (human of filteredHumans(); track human.id) {
-                <button
-                  type="button"
-                  class="human-pill"
-                  [class.human-pill--selected]="selectedHumanId() === human.id"
-                  (click)="selectHuman(human)"
-                >
-                  {{ human.name }}
-                </button>
-              } @empty {
-                <div class="empty">No humans available.</div>
-              }
-            </div>
           </div>
 
-          <div class="chat-strip">
-            <div class="section-title">Chat Control</div>
-            <div class="chat-row">
-              <input
-                #chatBox
-                class="chat-input"
-                type="text"
-                [value]="chatInput()"
-                (input)="onChatInput(chatBox.value)"
-                (keydown.enter)="onSendChat()"
-                placeholder="Ask to step, focus, compare, or summarize"
-              />
+          @if (selectedHuman(); as human) {
+            <div class="inspector-card inspector-card--selected">
+              <div class="inspector-name">{{ human.name }}</div>
+              <div class="inspector-meta">{{ humanBusyLabel(human.busy) }} · {{ selectedHumanCoordinates() }}</div>
+            </div>
+          } @else {
+            <div class="empty-block">Select a marker on the board or a name below to inspect that human.</div>
+          }
+
+          <div class="human-list">
+            @for (human of filteredHumans(); track human.id) {
               <button
                 type="button"
-                class="chat-send"
-                [disabled]="!canSendChat()"
-                (click)="onSendChat()"
+                class="human-pill"
+                [class.human-pill--selected]="selectedHumanId() === human.id"
+                (click)="selectHuman(human)"
               >
-                Send
+                <span>{{ human.name }}</span>
+                <small>{{ humanBusyLabel(human.busy) }}</small>
               </button>
-            </div>
-            @if (chatBusy()) {
-              <div class="chat-meta">Sending...</div>
-            }
-            @if (chatError(); as errorMessage) {
-              <div class="chat-meta chat-meta--error">{{ errorMessage }}</div>
-            }
-            @if (latestAgentMessage(); as reply) {
-              <div class="chat-reply">{{ reply }}</div>
-            }
-            @if (latestAgentEntry(); as latestEntry) {
-              @if (latestEntry.interpretationProvenance || latestEntry.interpretedCommandSummary) {
-                <div class="chat-meta">
-                  Parsed via {{ latestEntry.interpretationProvenance ?? 'unknown' }}
-                  @if (latestEntry.interpretedCommandSummary) {
-                    · {{ latestEntry.interpretedCommandSummary }}
-                  }
-                </div>
-              }
+            } @empty {
+              <div class="empty">No humans available.</div>
             }
           </div>
         </section>
-      }
-    </div>
+
+        <section class="rail-card app-surface-bg">
+          <div class="section-header">
+            <div>
+              <div class="section-title">Recent activity</div>
+              <div class="section-subtitle">History-driven feed from the latest timeline window.</div>
+            </div>
+            <button type="button" class="text-button" (click)="openAllEventsDrawer()">Open all</button>
+          </div>
+
+          <div class="feed-list">
+            @for (event of activityFeed(); track event.id) {
+              <button
+                type="button"
+                class="feed-item"
+                [class.feed-item--selected]="selectedEventId() === event.id"
+                (click)="selectEvent(event)"
+              >
+                <div class="feed-item-header">
+                  <span class="feed-tag" [class.feed-tag--invention]="eventType(event) === 'invention'" [class.feed-tag--warning]="eventType(event) === 'warning'">
+                    {{ eventTypeLabel(event.eventType) }}
+                  </span>
+                  <span class="feed-meta">Tick {{ event.tick }} · Year {{ event.year }}</span>
+                </div>
+                @if (eventNarrative(event); as narrative) {
+                  <div class="feed-copy">{{ narrative }}</div>
+                } @else {
+                  <div class="feed-copy">{{ eventDescription(event) }}</div>
+                }
+              </button>
+            } @empty {
+              <div class="empty-block">
+                {{ historyLoading() ? "Loading recent activity…" : "No recent events yet. Step the simulation to populate the feed." }}
+              </div>
+            }
+          </div>
+
+          <div class="discovery-strip">
+            <div class="section-title">Recent discoveries</div>
+            @for (invention of recentDiscoveries(); track invention.id) {
+              <button
+                type="button"
+                class="discovery-item"
+                [class.discovery-item--selected]="selectedInventionId() === invention.id"
+                (click)="selectInvention(invention)"
+              >
+                <strong>{{ inventionDisplayTitle(invention) }}</strong>
+                <span>{{ inventionCategoryLabel(invention) }}</span>
+              </button>
+            } @empty {
+              <div class="empty">No discoveries yet.</div>
+            }
+          </div>
+        </section>
+      </aside>
+    </section>
+
+    <section class="command-console app-surface-bg">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Command console</div>
+          <div class="section-subtitle">Use exact commands: `advance &lt;count&gt;`, `focus &lt;human&gt;`, or `move &lt;human&gt; &lt;place&gt;`.</div>
+        </div>
+        <div class="console-examples">
+          @for (example of commandExamples; track example) {
+            <span>{{ example }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="chat-row">
+        <input
+          #chatBox
+          class="chat-input"
+          type="text"
+          [value]="chatInput()"
+          (input)="onChatInput(chatBox.value)"
+          (keydown.enter)="onSendChat()"
+          placeholder="advance 5"
+        />
+        <button
+          type="button"
+          class="chat-send"
+          [disabled]="!canSendChat()"
+          (click)="onSendChat()"
+        >
+          Send
+        </button>
+      </div>
+
+      <div class="console-feedback">
+        <div class="console-status" [class.console-status--error]="commandConsoleHasError()">{{ commandConsoleHint() }}</div>
+        @if (latestCommandResult(); as latestResult) {
+          <div class="chat-meta">
+            {{ eventTypeLabel(latestResult.commandType ?? 'UNSUPPORTED') }}
+            · {{ latestResult.mutated ? "State changed" : "Read only" }}
+            @if (latestResult.referencedEntities?.humanId) {
+              · human {{ latestResult.referencedEntities?.humanId }}
+            }
+            @if (latestResult.referencedEntities?.placeId) {
+              · place {{ latestResult.referencedEntities?.placeId }}
+            }
+          </div>
+        }
+      </div>
+    </section>
   </div>
 
   @if (eventsDrawerOpen()) {

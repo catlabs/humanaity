@@ -1,13 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  Component,
-  HostListener,
-  OnDestroy,
-  OnInit,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -20,6 +12,7 @@ import {
   CityOutput,
   EventOutput,
   InventionOutput,
+  SimulationCommandOutput,
   SimulationSnapshotOutput,
 } from '@api';
 import { EventType } from '@shared';
@@ -102,7 +95,6 @@ export class SimulationDetailComponent
   eventsDrawerType = signal<string | null>(null);
   eventsDrawerIds = signal<number[] | null>(null);
   highlightedPlaceId = signal<string | null>(null);
-  statusPanelVisible = signal(false);
 
   snapshotLoading = signal(true);
   historyLoading = signal(true);
@@ -260,6 +252,39 @@ export class SimulationDetailComponent
     }
     return null;
   });
+  commandExamples = ['advance 5', 'focus Ada', 'move Ada forest'] as const;
+  selectedHumanCoordinates = computed(() => {
+    const human = this.selectedHuman();
+    if (!human) {
+      return null;
+    }
+
+    const format = (value: number | null | undefined) =>
+      typeof value === 'number' && Number.isFinite(value)
+        ? `${Math.round(value * 100)}%`
+        : 'n/a';
+
+    return `${format(human.x)} x · ${format(human.y)} y`;
+  });
+  activityFeed = computed(() => this.displayedEvents().slice(0, 8));
+  recentDiscoveries = computed(() => this.displayedInventions().slice(0, 3));
+  latestCommandResult = signal<SimulationCommandOutput | null>(null);
+  commandConsoleHint = computed(() => {
+    if (this.chatBusy()) {
+      return 'Sending command…';
+    }
+    if (this.chatError()) {
+      return this.chatError();
+    }
+    const latest = this.latestCommandResult();
+    if (latest?.message) {
+      return latest.message;
+    }
+    return 'Use exact commands: advance <count>, focus <human>, move <human> <place>.';
+  });
+  commandConsoleHasError = computed(
+    () => !!this.chatError() || this.latestCommandResult()?.ok === false
+  );
   canSendChat = computed(
     () => !this.chatBusy() && this.chatInput().trim().length > 0
   );
@@ -277,35 +302,15 @@ export class SimulationDetailComponent
     this.pollingSubscription?.unsubscribe();
   }
 
-  @HostListener('window:keydown', ['$event'])
-  onWindowKeydown(event: KeyboardEvent): void {
-    if (event.code !== 'Space') {
-      return;
-    }
-
-    const target = event.target;
-    if (target instanceof HTMLElement) {
-      const tagName = target.tagName;
-      if (
-        target.isContentEditable ||
-        tagName === 'INPUT' ||
-        tagName === 'TEXTAREA' ||
-        tagName === 'SELECT'
-      ) {
-        return;
-      }
-    }
-
-    event.preventDefault();
-    this.statusPanelVisible.update((visible) => !visible);
-  }
-
   toggleFilter(state: string): void {
     this.filters.update((prev) => ({ ...prev, [state]: !prev[state] }));
   }
 
   onStep(): void {
-    this.runControlAction((cityId) => this.cityService.stepSimulation(cityId));
+    if (!this.canStep()) {
+      return;
+    }
+    this.submitSimulationCommand('advance 1');
   }
 
   onRefresh(): void {
@@ -320,46 +325,11 @@ export class SimulationDetailComponent
   }
 
   onSendChat(): void {
-    const cityId = this.requireCityId();
     const message = this.chatInput().trim();
-    if (!cityId || !message || this.chatBusy()) {
+    if (!message) {
       return;
     }
-
-    this.chatBusy.set(true);
-    this.chatError.set(null);
-    this.chatInput.set('');
-    this.chatEntries.update((entries) => [
-      ...entries,
-      {
-        role: 'user',
-        content: message,
-        timestamp: new Date().toISOString(),
-        commandClass: null,
-        interpretationProvenance: null,
-        interpretedCommandSummary: null,
-      },
-    ]);
-
-    this.cityService
-      .sendAgentChat(cityId, {
-        message,
-        conversationId: this.chatConversationId() ?? undefined,
-        selectedHumanId: this.selectedHumanId() ?? undefined,
-        selectedEventId: this.selectedEventId() ?? undefined,
-        selectedInventionId: this.selectedInventionId() ?? undefined,
-      })
-      .subscribe({
-        next: (response) => {
-          this.chatBusy.set(false);
-          this.applyChatResponse(response);
-        },
-        error: (error) => {
-          this.chatBusy.set(false);
-          this.chatError.set('Agent request failed.');
-          console.error('Agent chat request failed:', error);
-        },
-      });
+    this.submitSimulationCommand(message);
   }
 
   selectHuman(human: SimulationSnapshotOutput['humans'][number]): void {
@@ -403,6 +373,12 @@ export class SimulationDetailComponent
 
   closeEventsDrawer(): void {
     this.eventsDrawerOpen.set(false);
+  }
+
+  openAllEventsDrawer(): void {
+    this.eventsDrawerType.set(null);
+    this.eventsDrawerIds.set(null);
+    this.eventsDrawerOpen.set(true);
   }
 
   humanState(human: SimulationSnapshotOutput['humans'][number]): string {
@@ -553,6 +529,32 @@ export class SimulationDetailComponent
     if (this.inventions().length === 0 && snapshot.recentInventions.length > 0) {
       this.inventions.set(snapshot.recentInventions);
     }
+  }
+
+  private submitSimulationCommand(commandText: string): void {
+    const cityId = this.requireCityId();
+    if (!cityId || this.chatBusy()) {
+      return;
+    }
+
+    this.chatBusy.set(true);
+    this.chatError.set(null);
+    this.chatInput.set('');
+
+    this.cityService.sendSimulationCommand(cityId, { commandText }).subscribe({
+      next: (response) => {
+        this.chatBusy.set(false);
+        this.latestCommandResult.set(response);
+        if (response.ok) {
+          this.applyUiEffects(response.uiEffects ?? []);
+        }
+      },
+      error: (error) => {
+        this.chatBusy.set(false);
+        this.chatError.set('Command request failed.');
+        console.error('Simulation command request failed:', error);
+      },
+    });
   }
 
   private runControlAction(action: (cityId: number) => Observable<unknown>): void {

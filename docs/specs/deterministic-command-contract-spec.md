@@ -2,7 +2,7 @@
 
 ## Status
 
-- Status: PLANNED for milestone-oriented implementation
+- Status: ACTIVE and implemented for milestone-oriented execution
 - Applies to: backend-owned simulation command execution and the primary command-console UX in `apps/backend` and `apps/ui`
 - Replaces forward-planning reliance on `/api/agent/cities/{cityId}/chat` for the main simulation control loop
 

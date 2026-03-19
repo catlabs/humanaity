@@ -23,6 +23,10 @@ import { EventOutput } from '../model/eventOutput';
 // @ts-ignore
 import { InventionOutput } from '../model/inventionOutput';
 // @ts-ignore
+import { SimulationCommandInput } from '../model/simulationCommandInput';
+// @ts-ignore
+import { SimulationCommandOutput } from '../model/simulationCommandOutput';
+// @ts-ignore
 import { SimulationRunInput } from '../model/simulationRunInput';
 // @ts-ignore
 import { SimulationRunOutput } from '../model/simulationRunOutput';
@@ -740,6 +744,73 @@ export class SimulationsService extends BaseService {
         return this.httpClient.request<SimulationRunOutput>('post', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Execute one deterministic simulation command for a city
+     * @endpoint post /api/simulations/{cityId}/commands
+     * @param cityId
+     * @param simulationCommandInput
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     */
+    public executeCommand(cityId: number, simulationCommandInput: SimulationCommandInput, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<SimulationCommandOutput>;
+    public executeCommand(cityId: number, simulationCommandInput: SimulationCommandInput, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<SimulationCommandOutput>>;
+    public executeCommand(cityId: number, simulationCommandInput: SimulationCommandInput, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<SimulationCommandOutput>>;
+    public executeCommand(cityId: number, simulationCommandInput: SimulationCommandInput, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (cityId === null || cityId === undefined) {
+            throw new Error('Required parameter cityId was null or undefined when calling executeCommand.');
+        }
+        if (simulationCommandInput === null || simulationCommandInput === undefined) {
+            throw new Error('Required parameter simulationCommandInput was null or undefined when calling executeCommand.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            '*/*'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? false;
+
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/api/simulations/${this.configuration.encodeParam({name: "cityId", value: cityId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}/commands`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<SimulationCommandOutput>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: simulationCommandInput,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,

@@ -24,3 +24,6 @@ export * from './simulationSnapshotOutput';
 export * from './simulationSnapshotRunOutput';
 export * from './simulationTimelineSummaryOutput';
 export * from './timelineOutput';
+export * from './simulationCommandInput';
+export * from './simulationCommandOutput';
+export * from './simulationCommandReferencedEntitiesOutput';

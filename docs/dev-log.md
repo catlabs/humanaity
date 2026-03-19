@@ -116,3 +116,9 @@ Implemented:
 Trade-offs:
 
 - this slice is documentation-only; it does not change the already-implemented UI or backend command behavior
+
+## 2026-03-19
+
+Implemented:
+
+- fixed `SimulationCommandsApiContractTest` bearer helper to use `JwtService.generateAccessToken(user.getEmail())` so `spring-boot:run` test-compile matches other API contract tests and local backend startup succeeds

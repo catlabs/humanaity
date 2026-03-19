@@ -1,0 +1,233 @@
+package eu.catlabs.humanaity.simulation.application;
+
+import eu.catlabs.humanaity.agent.api.dto.AgentUiEffectOutput;
+import eu.catlabs.humanaity.auth.domain.User;
+import eu.catlabs.humanaity.city.domain.City;
+import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
+import eu.catlabs.humanaity.event.application.EventApplicationService;
+import eu.catlabs.humanaity.event.application.EventDraft;
+import eu.catlabs.humanaity.event.domain.EventType;
+import eu.catlabs.humanaity.human.domain.Human;
+import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationCommandInput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationCommandOutput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationCommandReferencedEntitiesOutput;
+import eu.catlabs.humanaity.simulation.domain.HumanGoal;
+import eu.catlabs.humanaity.simulation.domain.HumanGoalSource;
+import eu.catlabs.humanaity.simulation.domain.HumanGoalType;
+import eu.catlabs.humanaity.simulation.domain.SimulationRun;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+@Service
+public class SimulationCommandService {
+
+    private static final Pattern ADVANCE_PATTERN = Pattern.compile("^advance\\s+(\\d+)$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern FOCUS_PATTERN = Pattern.compile("^focus\\s+(.+)$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern MOVE_PATTERN = Pattern.compile("^move\\s+(.+)\\s+(forest|river|church|campfire|house)$", Pattern.CASE_INSENSITIVE);
+    private static final int MAX_ADVANCE_COUNT = 20;
+
+    private final CityRepository cityRepository;
+    private final HumanRepository humanRepository;
+    private final SimulationApplicationService simulationApplicationService;
+    private final HumanGoalApplicationService humanGoalApplicationService;
+    private final EventApplicationService eventApplicationService;
+
+    public SimulationCommandService(
+            CityRepository cityRepository,
+            HumanRepository humanRepository,
+            SimulationApplicationService simulationApplicationService,
+            HumanGoalApplicationService humanGoalApplicationService,
+            EventApplicationService eventApplicationService
+    ) {
+        this.cityRepository = cityRepository;
+        this.humanRepository = humanRepository;
+        this.simulationApplicationService = simulationApplicationService;
+        this.humanGoalApplicationService = humanGoalApplicationService;
+        this.eventApplicationService = eventApplicationService;
+    }
+
+    public SimulationCommandOutput execute(Long cityId, User currentUser, SimulationCommandInput input) {
+        City city = cityRepository.findById(cityId)
+                .orElseThrow(() -> new EntityNotFoundException("City not found with id: " + cityId));
+        ensureOwnership(city, currentUser);
+
+        String commandText = input == null || input.getCommandText() == null
+                ? ""
+                : input.getCommandText().trim();
+        if (commandText.isBlank()) {
+            return reject("Command is blank. Use `advance <count>`, `focus <human>`, or `move <human> <place>`.");
+        }
+
+        Matcher advanceMatcher = ADVANCE_PATTERN.matcher(commandText);
+        if (advanceMatcher.matches()) {
+            return executeAdvance(cityId, Integer.parseInt(advanceMatcher.group(1)));
+        }
+
+        Matcher focusMatcher = FOCUS_PATTERN.matcher(commandText);
+        if (focusMatcher.matches()) {
+            return executeFocus(cityId, focusMatcher.group(1).trim());
+        }
+
+        Matcher moveMatcher = MOVE_PATTERN.matcher(commandText);
+        if (moveMatcher.matches()) {
+            return executeMove(cityId, moveMatcher.group(1).trim(), moveMatcher.group(2).trim().toLowerCase(Locale.ROOT));
+        }
+
+        return reject("Unsupported command. Use `advance <count>`, `focus <human>`, or `move <human> <place>`." );
+    }
+
+    private SimulationCommandOutput executeAdvance(Long cityId, int count) {
+        if (count < 1 || count > MAX_ADVANCE_COUNT) {
+            return reject("`advance` count must be between 1 and 20.");
+        }
+
+        SimulationRun run = simulationApplicationService.step(cityId, count);
+        long fromTick = Math.max(0L, run.getTick() - count + 1);
+
+        SimulationCommandOutput output = success("ADVANCE", "Advanced city by " + count + " steps.", true);
+        AgentUiEffectOutput refreshSnapshot = new AgentUiEffectOutput("REFRESH_SNAPSHOT");
+        AgentUiEffectOutput refreshTimeline = new AgentUiEffectOutput("REFRESH_TIMELINE");
+        refreshTimeline.setFromTick(fromTick);
+        output.getUiEffects().add(refreshSnapshot);
+        output.getUiEffects().add(refreshTimeline);
+        return output;
+    }
+
+    private SimulationCommandOutput executeFocus(Long cityId, String humanToken) {
+        Human human = resolveExactHuman(cityId, humanToken);
+        if (human == null) {
+            return reject("Could not resolve a single human for `focus`. Use an exact human id or exact name.");
+        }
+
+        SimulationCommandOutput output = success("FOCUS_HUMAN", "Focused " + human.getName() + ".", false);
+        output.getReferencedEntities().setHumanId(human.getId());
+        AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
+        focus.setHumanId(human.getId());
+        output.getUiEffects().add(focus);
+        return output;
+    }
+
+    private SimulationCommandOutput executeMove(Long cityId, String humanToken, String placeId) {
+        Human human = resolveExactHuman(cityId, humanToken);
+        if (human == null) {
+            return reject("Could not resolve a single human for `move`. Use an exact human id or exact name.");
+        }
+
+        SimulationPlaceRegistry.SimulationPlace place = SimulationPlaceRegistry.byId(placeId).orElse(null);
+        if (place == null) {
+            return reject("Unsupported place. Use one of: forest, river, church, campfire, house.");
+        }
+
+        long assignedTick = currentTickForGoalAssignment(cityId);
+        HumanGoal goal = humanGoalApplicationService.assignGoal(
+                cityId,
+                human.getId(),
+                HumanGoalType.MOVE_TO_PLACE,
+                HumanGoalSource.CHAT_COMMAND,
+                assignedTick,
+                new HumanGoalApplicationService.GoalTarget(place.id(), null, place.x(), place.y(), "command:move")
+        );
+        emitGoalAssignedEvent(cityId, goal, assignedTick);
+
+        SimulationCommandOutput output = success("MOVE_HUMAN_TO_PLACE", "Assigned " + human.getName() + " to move toward " + place.id() + ".", true);
+        output.getReferencedEntities().setHumanId(human.getId());
+        output.getReferencedEntities().setPlaceId(place.id());
+
+        output.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
+        output.getUiEffects().add(new AgentUiEffectOutput("REFRESH_TIMELINE"));
+
+        AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
+        focus.setHumanId(human.getId());
+        output.getUiEffects().add(focus);
+
+        AgentUiEffectOutput highlightPlace = new AgentUiEffectOutput("HIGHLIGHT_PLACE");
+        highlightPlace.setPlaceId(place.id());
+        output.getUiEffects().add(highlightPlace);
+        return output;
+    }
+
+    private Human resolveExactHuman(Long cityId, String token) {
+        List<Human> humans = humanRepository.findByCityIdOrderByIdAsc(cityId);
+        if (token.chars().allMatch(Character::isDigit)) {
+            Long id = Long.parseLong(token);
+            return humans.stream().filter(human -> human.getId().equals(id)).findFirst().orElse(null);
+        }
+
+        List<Human> matches = humans.stream()
+                .filter(human -> human.getName() != null && human.getName().equalsIgnoreCase(token))
+                .toList();
+        return matches.size() == 1 ? matches.get(0) : null;
+    }
+
+    private long currentTickForGoalAssignment(Long cityId) {
+        try {
+            return simulationApplicationService.loadRun(cityId).getTick();
+        } catch (EntityNotFoundException notFound) {
+            return simulationApplicationService.createRun(cityId).getTick();
+        }
+    }
+
+    private void emitGoalAssignedEvent(Long cityId, HumanGoal goal, long assignedTick) {
+        Map<String, String> payload = new LinkedHashMap<>();
+        payload.put("goalId", String.valueOf(goal.getId()));
+        payload.put("goalType", goal.getGoalType().name());
+        payload.put("source", goal.getSource().name());
+        if (goal.getTargetPlaceId() != null) {
+            payload.put("targetPlaceId", goal.getTargetPlaceId());
+        }
+        if (goal.getTargetHumanId() != null) {
+            payload.put("targetHumanId", String.valueOf(goal.getTargetHumanId()));
+        }
+        if (goal.getMetadataKey() != null) {
+            payload.put("metadataKey", goal.getMetadataKey());
+        }
+
+        String eventKey = "GOAL_ASSIGNED:" + goal.getId() + ":" + assignedTick;
+        eventApplicationService.emitEventsAtTick(
+                cityId,
+                assignedTick,
+                List.of(new EventDraft(
+                        EventType.GOAL_ASSIGNED,
+                        List.of(goal.getHuman().getId()),
+                        payload,
+                        40,
+                        eventKey
+                ))
+        );
+    }
+
+    private SimulationCommandOutput success(String commandType, String message, boolean mutated) {
+        SimulationCommandOutput output = new SimulationCommandOutput();
+        output.setOk(true);
+        output.setCommandType(commandType);
+        output.setMessage(message);
+        output.setMutated(mutated);
+        output.setReferencedEntities(new SimulationCommandReferencedEntitiesOutput());
+        return output;
+    }
+
+    private SimulationCommandOutput reject(String message) {
+        SimulationCommandOutput output = new SimulationCommandOutput();
+        output.setOk(false);
+        output.setCommandType("UNSUPPORTED");
+        output.setMessage(message);
+        output.setMutated(false);
+        output.setReferencedEntities(new SimulationCommandReferencedEntitiesOutput());
+        return output;
+    }
+
+    private void ensureOwnership(City city, User currentUser) {
+        if (city.getOwner() == null || currentUser == null || !city.getOwner().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("City does not belong to current user");
+        }
+    }
+}
