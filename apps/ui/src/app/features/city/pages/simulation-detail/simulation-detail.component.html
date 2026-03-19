@@ -91,8 +91,8 @@
         <section class="right-zone-section">
           <div class="section-header">
             <div>
-              <div class="section-title">Command console</div>
-              <div class="section-subtitle">Use exact commands: `advance &lt;count&gt;`, `focus &lt;human&gt;`, or `move &lt;human&gt; &lt;place&gt;`.</div>
+              <div class="section-title">Command</div>
+              <div class="section-subtitle">Use exact commands, then read the resulting state, events, and narration in the same rail.</div>
             </div>
           </div>
 
@@ -137,10 +137,19 @@
               </div>
             }
           </div>
+
+          <div class="flow-strip" aria-label="Product flow summary">
+            @for (step of flowSummary(); track step.label) {
+              <div class="flow-step">
+                <span>{{ step.label }}</span>
+                <strong>{{ step.value }}</strong>
+              </div>
+            }
+          </div>
         </section>
 
         <section class="right-zone-section">
-          <div class="section-title">Simulation status</div>
+          <div class="section-title">Simulation state</div>
           <div class="status-grid">
             <div class="pill">
               <span>Run</span><strong>{{ hasRun() ? (isRunning() ? "Running" : "Paused") : "Not started" }}</strong>
@@ -197,7 +206,37 @@
         <section class="right-zone-section">
           <div class="section-header">
             <div>
-              <div class="section-title">Recent activity</div>
+              <div class="section-title">Story focus</div>
+              <div class="section-subtitle">The current event or discovery narrative stays aligned with canonical facts.</div>
+            </div>
+          </div>
+
+          @if (storyFocus(); as focus) {
+            <div class="story-focus">
+              <div class="story-focus-label">{{ focus.label }}</div>
+              <div class="story-focus-title">{{ focus.title }}</div>
+              <div class="story-focus-meta">{{ focus.meta }}</div>
+              @if (focus.actorSummary) {
+                <div class="story-focus-actors">{{ focus.actorSummary }}</div>
+              }
+              <div class="narration-row">
+                <span class="narration-chip" [class.narration-chip--fallback]="focus.narrationTone === 'fallback'" [class.narration-chip--muted]="focus.narrationTone === 'muted'">
+                  {{ focus.narrationLabel }}
+                </span>
+              </div>
+              <div class="story-focus-copy" [class.story-focus-copy--muted]="focus.narrationTone === 'muted'">
+                {{ focus.narrationCopy }}
+              </div>
+            </div>
+          } @else {
+            <div class="empty-block">Select an event or discovery to read the current story focus.</div>
+          }
+        </section>
+
+        <section class="right-zone-section">
+          <div class="section-header">
+            <div>
+              <div class="section-title">Timeline</div>
               <div class="section-subtitle">History-driven feed from the latest timeline window, linked to the board markers.</div>
             </div>
             <button type="button" class="text-button" (click)="openAllEventsDrawer()">Open all</button>
@@ -252,7 +291,7 @@
           </div>
 
           <div class="discovery-strip">
-            <div class="section-title">Recent discoveries</div>
+            <div class="section-title">Discoveries</div>
             @for (invention of recentDiscoveries(); track invention.id) {
               <button
                 type="button"

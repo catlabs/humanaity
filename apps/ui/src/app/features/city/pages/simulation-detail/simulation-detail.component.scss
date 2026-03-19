@@ -562,6 +562,34 @@
   gap: map.get($spacing-scale, 1);
 }
 
+.flow-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: map.get($spacing-scale, 2);
+}
+
+.flow-step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: map.get($spacing-scale, 2);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  background: var(--mat-sys-surface-container-low);
+
+  span {
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  strong {
+    color: var(--mat-sys-on-surface);
+    font-size: 0.86rem;
+  }
+}
+
 .console-status {
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: $radius-sm;
@@ -573,6 +601,50 @@
 
 .console-status--error {
   color: #ef4444;
+}
+
+.story-focus {
+  display: flex;
+  flex-direction: column;
+  gap: map.get($spacing-scale, 1.5);
+  padding: map.get($spacing-scale, 3);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  background: color-mix(
+    in srgb,
+    var(--mat-sys-surface-container-low) 88%,
+    rgb(37 99 235 / 6%)
+  );
+}
+
+.story-focus-label {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.story-focus-title {
+  color: var(--mat-sys-on-surface);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.story-focus-meta,
+.story-focus-actors {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.8rem;
+}
+
+.story-focus-copy {
+  color: var(--mat-sys-on-surface);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.story-focus-copy--muted {
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .state-banner {
@@ -714,7 +786,8 @@
 
   .toolbar-status,
   .console-examples,
-  .feed-item-header {
+  .feed-item-header,
+  .flow-strip {
     width: 100%;
   }
 
@@ -730,6 +803,10 @@
   .section-header,
   .feed-title-row {
     flex-direction: column;
+  }
+
+  .flow-strip {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .chat-send {

@@ -161,6 +161,22 @@ Trade-offs:
 
 Decision:
 
+- complete M5 by tightening the right-rail hierarchy so the main page reads as one coherent command -> simulation -> events -> narration flow during a short demo
+
+Implemented:
+
+- added a compact flow summary and story-focus panel to the right rail so command outcome, timeline change, and narration can be read in one place
+- tightened section labels and supporting copy across the simulation page to reduce the feeling of separate adjacent widgets
+- synced milestones and active page-contract docs so the completed coherence pass is reflected in the repo-visible guidance
+
+Trade-offs:
+
+- this slice favors demo readability and panel hierarchy polish over new domain capability; the underlying backend contracts remain unchanged
+
+## 2026-03-19
+
+Decision:
+
 - treat the M3 frontend scope as the authority for the new right-zone-first simulation layout constraints
 
 Implemented:

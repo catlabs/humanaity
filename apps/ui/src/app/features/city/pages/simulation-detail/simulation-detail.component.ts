@@ -276,6 +276,62 @@ export class SimulationDetailComponent
   headerRunSummary = computed(
     () => `Era ${this.eraLabel()} · Year ${this.currentYear()}`
   );
+  flowSummary = computed(() => [
+    {
+      label: 'Command',
+      value: this.latestCommandResult()
+        ? this.eventTypeLabel(this.latestCommandResult()?.commandType ?? 'UNSUPPORTED')
+        : 'Ready',
+    },
+    {
+      label: 'Simulation',
+      value: `Tick ${this.currentTick()}`,
+    },
+    {
+      label: 'Events',
+      value:
+        this.recentDeltaEventIds().length > 0
+          ? `${this.recentDeltaEventIds().length} new`
+          : `${this.recentEventCount()} recent`,
+    },
+    {
+      label: 'Narration',
+      value: this.storyFocus()?.narrationLabel ?? 'Awaiting focus',
+    },
+  ]);
+  storyFocus = computed<StoryFocusCard | null>(() => {
+    const selectedEvent = this.selectedEvent();
+    if (selectedEvent) {
+      return this.storyFocusFromEvent(selectedEvent);
+    }
+
+    const selectedInvention = this.selectedInvention();
+    if (selectedInvention) {
+      return this.storyFocusFromInvention(selectedInvention);
+    }
+
+    const latestFreshEvent = this.activityFeed().find((event) =>
+      this.isFreshEvent(event.id)
+    );
+    if (latestFreshEvent) {
+      return this.storyFocusFromEvent(latestFreshEvent);
+    }
+
+    const latestFreshInvention = this.recentDiscoveries().find((invention) =>
+      this.isFreshInvention(invention.id)
+    );
+    if (latestFreshInvention) {
+      return this.storyFocusFromInvention(latestFreshInvention);
+    }
+
+    const latestEvent = this.activityFeed()[0];
+    if (latestEvent) {
+      return this.storyFocusFromEvent(latestEvent);
+    }
+
+    const latestInvention = this.recentDiscoveries()[0];
+    return latestInvention ? this.storyFocusFromInvention(latestInvention) : null;
+  });
   commandConsoleHint = computed(() => {
     if (this.chatBusy()) {
       return 'Sending command…';
@@ -762,6 +818,34 @@ export class SimulationDetailComponent
     );
   }
 
+  private storyFocusFromEvent(event: EventOutput): StoryFocusCard {
+    return {
+      kind: 'event',
+      label: 'Event',
+      title: this.eventTitle(event),
+      meta: this.eventCanonicalSummary(event),
+      actorSummary: this.eventActorSummary(event),
+      narrationLabel: this.eventNarrationLabel(event),
+      narrationTone: this.eventNarrationTone(event),
+      narrationCopy: this.eventNarrationCopy(event),
+    };
+  }
+
+  private storyFocusFromInvention(
+    invention: InventionOutput
+  ): StoryFocusCard {
+    return {
+      kind: 'discovery',
+      label: 'Discovery',
+      title: this.inventionNarratedTitle(invention) ?? invention.title,
+      meta: `${this.inventionCategoryLabel(invention)} • Impact ${invention.impactScore} • Year ${invention.yearCreated}`,
+      actorSummary: invention.title,
+      narrationLabel: this.inventionNarrationLabel(invention),
+      narrationTone: this.inventionNarrationTone(invention),
+      narrationCopy: this.inventionNarrationCopy(invention),
+    };
+  }
+
   private runControlAction(action: (cityId: number) => Observable<unknown>): void {
     const cityId = this.requireCityId();
     if (!cityId || this.controlBusy()) {
@@ -1118,4 +1202,15 @@ type BoardEventEntry = {
   expiresAtMs: number;
   tone: 'milestone' | 'interaction';
   label: string;
+};
+
+type StoryFocusCard = {
+  kind: 'event' | 'discovery';
+  label: string;
+  title: string;
+  meta: string;
+  actorSummary: string | null;
+  narrationLabel: string;
+  narrationTone: 'ready' | 'fallback' | 'muted';
+  narrationCopy: string;
 };

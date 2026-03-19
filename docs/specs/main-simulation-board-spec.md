@@ -21,7 +21,8 @@ The authoritative simulation page should deliver one visibly readable workflow t
 - renders humans clearly as markers on a dominant board
 - keeps selected-human state and simulation status visible beside the board
 - shows recent event context in the same page workspace
-- uses a bottom command-console area for deterministic control flows
+- uses a right-rail command console as the primary deterministic control surface
+- makes command outcome, state change, event history, and narration read as one coherent product flow
 - avoids heavy rendering-engine ownership on the authoritative main page
 
 ## Authoritative Page Rule
@@ -118,6 +119,7 @@ Rules:
 - command-related labels should reduce agent-first framing and clarify the deterministic action path
 - visible state must refresh from backend data after control actions
 - backend command feedback should be displayed explicitly rather than inferred from conversational agent responses
+- the page may summarize the command -> simulation -> events -> narration flow explicitly when that helps demo readability
 
 ## Layout Rules
 
@@ -138,6 +140,7 @@ Rules:
 - newly arrived timeline entries after a command-triggered refresh should be called out explicitly in the right rail
 - narration shown in feed/discovery surfaces must come directly from backend enrichment fields and label ready/fallback/unavailable states explicitly
 - canonical facts should stay readable even when narration is absent or fallback-generated
+- one focused narrative summary area may surface the currently selected or freshest event/discovery, provided canonical facts remain visible
 - the right rail should stay secondary to the board, but primary over legacy auxiliary cards
 
 ## Empty, Loading, and Error Rules

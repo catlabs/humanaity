@@ -138,9 +138,10 @@ describe('SimulationDetailComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Spec City');
     expect(text).toContain('Era Founding · Year 1');
-    expect(text).toContain('Selected human');
-    expect(text).toContain('Recent activity');
-    expect(text).toContain('Command console');
+    expect(text).toContain('Command');
+    expect(text).toContain('Simulation state');
+    expect(text).toContain('Story focus');
+    expect(text).toContain('Timeline');
     expect(text).toContain('No simulation run yet');
     expect(text).toContain('AI narration ready');
     expect(text).toContain('Fallback narration');
@@ -168,7 +169,7 @@ describe('SimulationDetailComponent', () => {
     );
 
     const text = fixture.nativeElement.textContent as string;
-    expect(text).toContain('Command console');
+    expect(text).toContain('Command');
     expect(text).toContain('Advanced city by 3 steps.');
     expect(text).toContain('Advance');
   });
@@ -280,6 +281,22 @@ describe('SimulationDetailComponent', () => {
     expect(text).toContain('Fallback narration');
     expect(text).toContain('Impact 42');
     expect(text).toContain('Basic canal planning pattern.');
+  });
+
+  it('surfaces the selected event in the story focus panel', () => {
+    fixture.componentInstance.humans.set([
+      { id: 1, name: 'Ada', busy: false, x: 0.1, y: 0.2 },
+      { id: 2, name: 'Ben', busy: true, x: 0.3, y: 0.4 },
+    ] as any);
+
+    fixture.componentInstance.selectEvent(snapshot.recentEvents[0] as any);
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Story focus');
+    expect(text).toContain('Event');
+    expect(text).toContain('Dialogue Exchanged');
+    expect(text).toContain('Two neighbors agreed on a shared water route.');
   });
 
   it('returns explicit empty-state narration copy when enrichment is unavailable', () => {

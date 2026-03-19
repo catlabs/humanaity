@@ -13,6 +13,7 @@ Primary simulation UI experience for the authoritative city simulation page.
 - The authoritative `/cities/:id` page should read as a compact status/header above a two-column workspace: one dominant board surface and one right-side command/context rail.
 - The board remains the dominant surface and should read as a pure map area without an internal title bar or competing scroll container.
 - The right rail should keep the primary deterministic command console at the top, then flow into simulation status, selected-human context, recent activity, and discoveries in one readable scrollable column.
+- The overall page should read as one product path: `Command -> Simulation -> Events -> Narration`.
 - The primary command console should submit exact deterministic commands through `POST /api/simulations/{cityId}/commands`.
 - Deterministic command feedback should be rendered directly from backend command responses rather than inferred from AI narration or best-effort client interpretation.
 - Recent activity entries and board event markers should stay visibly linked so selecting either surface makes the latest simulation delta easier to read.

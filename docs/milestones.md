@@ -134,7 +134,7 @@ Execution rhythm:
 
 ## M5 — Product Coherence
 
-- Status: READY
+- Status: COMPLETE
 - Goal: Make the full system demo understandable in under two minutes.
 - Current baseline: the repo already contains the main pieces, but the UI and docs still reflect an older agentic framing.
 - Visible UI outcome: the page reads as one coherent product flow from command to state change to event to narration.
@@ -149,4 +149,8 @@ Execution rhythm:
   1. Remove lingering agent-first copy from the main page.
   2. Tighten panel hierarchy so board, feed, and command console read as one flow.
   3. Run an end-to-end demo pass and fix the most visible confusion points.
+- Recent slice updates:
+  - 2026-03-19: added a lightweight command → simulation → events → narration flow summary to the right rail so the page reads as one product story instead of several adjacent widgets.
+  - 2026-03-19: introduced a story-focus panel that keeps the currently selected or freshest event/discovery narrative aligned with canonical facts in one place.
+  - 2026-03-19: tightened section labels and hierarchy so the authoritative simulation page reads as one coherent demo path in under two minutes.
 - Done signal: the system can be demonstrated as `Command -> Simulation -> Events -> Narration -> UI` in under two minutes.
