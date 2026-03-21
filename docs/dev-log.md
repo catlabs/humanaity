@@ -156,3 +156,12 @@ Implemented:
 Trade-offs:
 
 - this slice is documentation-only and does not yet implement the M3 UI layout changes in Angular
+
+## 2026-03-21
+
+Implemented:
+
+- added `GET /api/simulations/assistant/commands` returning deterministic assistant command descriptors aligned with `SimulationAssistantCommandInterpreter`
+- wired the simulation assistant UI to load that catalog from the API (no client-side command fallback on failure), added a command `<select>` plus sticky control strip and scrollable results thread, and fixed chat entry `@for` tracking with stable ids
+- updated `docs/concepts/ui-simulation.md` to describe the assistant catalog + layout behavior
+- fixed `CityService` assistant HTTP calls to use the same `BASE_PATH` as the generated OpenAPI client (relative `/api/...` was hitting the Angular dev server on port 4200 instead of Spring on 8080 in local dev)

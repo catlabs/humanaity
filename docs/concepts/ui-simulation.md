@@ -21,6 +21,7 @@ Primary simulation UI experience for the authoritative city simulation page.
 - The simulation board container should fill remaining page height via flex layout (`flex: 1` + `min-height: 0`) rather than relying on percentage-height inheritance chains.
 - Empty/loading overlays should be layered within the same board container so they do not collapse or displace the world surface.
 - Legacy agent-chat affordances may remain elsewhere in the repo for historical or secondary flows, but they are not the authoritative command path for this page.
+- The simulation assistant panel should expose the backend command catalog (`GET /api/simulations/assistant/commands`) in a select plus quick chips, keep input + status in a non-scrolling control strip, and show the conversation/results in a dedicated scroll region below.
 
 ## Source docs
 - `docs/specs/main-simulation-board-spec.md`
