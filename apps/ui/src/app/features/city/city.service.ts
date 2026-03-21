@@ -1,12 +1,10 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Observable, interval } from 'rxjs';
 import { switchMap, startWith, map } from 'rxjs/operators';
 import {
   AgentChatRequestInput,
   AgentChatResponseOutput,
   AgentChatService,
-  BASE_PATH,
   CitiesService,
   EventOutput,
   HumansService,
@@ -17,22 +15,17 @@ import {
   HumanOutput,
   CityOverviewOutput,
   SimulationCommandInput,
+  SimulationCommandBuilderOutput,
   SimulationCommandOutput,
   SimulationSnapshotOutput,
+  SimulationAssistantResponseOutput,
 } from '@api';
 import { parseApiResponse } from '@core';
-import {
-  SimulationAssistantCommandDescriptor,
-  SimulationAssistantResponse,
-} from './simulation-assistant.models';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CityService {
-  private http = inject(HttpClient);
-  /** Same origin as generated OpenAPI clients; relative `/api` would hit the dev server (4200), not Spring. */
-  private apiBase = inject(BASE_PATH);
   private agentChatService = inject(AgentChatService);
   private citiesService = inject(CitiesService);
   private humansService = inject(HumansService);
@@ -157,26 +150,21 @@ export class CityService {
       .pipe(switchMap(parseApiResponse<SimulationCommandOutput>));
   }
 
-  getSimulationAssistantCommands(): Observable<
-    SimulationAssistantCommandDescriptor[]
-  > {
-    return this.http
-      .get(`${this.apiBase}/api/simulations/assistant/commands`)
-      .pipe(
-        switchMap(parseApiResponse<SimulationAssistantCommandDescriptor[]>),
-      );
+  getSimulationCommandBuilder(
+    cityId: number,
+  ): Observable<SimulationCommandBuilderOutput> {
+    return this.simulationsService
+      .getCommandBuilder(cityId)
+      .pipe(switchMap(parseApiResponse<SimulationCommandBuilderOutput>));
   }
 
   sendSimulationAssistantCommand(
     cityId: number,
     commandText: string,
-  ): Observable<SimulationAssistantResponse> {
-    return this.http
-      .post(
-        `${this.apiBase}/api/simulations/${cityId}/assistant`,
-        { commandText },
-      )
-      .pipe(switchMap(parseApiResponse<SimulationAssistantResponse>));
+  ): Observable<SimulationAssistantResponseOutput> {
+    return this.simulationsService
+      .queryAssistant(cityId, { commandText })
+      .pipe(switchMap(parseApiResponse<SimulationAssistantResponseOutput>));
   }
 
   deleteCity(id: number | string): Observable<void> {

@@ -92,112 +92,154 @@
       <aside class="right-zone app-surface-bg">
         <section class="right-zone-section assistant-section">
           <div class="assistant-controls">
+            <div class="section-header">
+              <div>
+                <div class="section-title">Command builder</div>
+                <div class="section-subtitle">
+                  Structured actions for city reads and deterministic commands.
+                </div>
+              </div>
+            </div>
+
+            @if (commandBuilderError()) {
+              <div class="command-error">{{ commandBuilderError() }}</div>
+            }
+
+            @if (selectedHuman(); as human) {
+              <div class="inspector-card inspector-card--selected">
+                <div class="inspector-name">{{ human.name }}</div>
+                <div class="inspector-meta">
+                  {{ humanBusyLabel(human.busy) }} ·
+                  {{ selectedHumanCoordinates() }}
+                </div>
+              </div>
+            } @else {
+              <div class="empty-block">
+                Select a human on the board or from the list below.
+              </div>
+            }
+
+            <div class="human-list">
+              @for (human of filteredHumans(); track human.id) {
+                <button
+                  type="button"
+                  class="human-pill"
+                  [class.human-pill--selected]="selectedHumanId() === human.id"
+                  (click)="selectHuman(human)"
+                >
+                  <span>{{ human.name }}</span>
+                  <small>{{ humanBusyLabel(human.busy) }}</small>
+                </button>
+              } @empty {
+                <div class="empty">No humans available.</div>
+              }
+            </div>
+
             <select
-              id="assistant-command-select"
+              id="builder-action-select"
               class="assistant-command-select"
               [disabled]="chatBusy()"
-              (change)="onAssistantCommandSelect($event)"
-              aria-label="Choose a deterministic assistant command"
+              (change)="onBuilderActionChange($event)"
+              [value]="builderActionKey()"
+              aria-label="Select builder action"
             >
-              <option value="">Choose a command…</option>
-              @for (cmd of assistantCommands(); track cmd.commandType) {
-                <option [value]="cmd.canonicalText">
-                  {{ cmd.label }}
+              <option value="">Choose an action…</option>
+              @for (action of builderActions(); track action.actionKey) {
+                <option [value]="action.actionKey ?? ''">
+                  {{ action.label }}
                 </option>
               }
             </select>
 
-            <div class="chat-row">
-              <input
-                #chatBox
-                class="chat-input"
-                type="text"
-                [value]="chatInput()"
-                (input)="onChatInput(chatBox.value)"
-                (keydown.enter)="onSendChat()"
-                placeholder="world status"
-              />
-              <button
-                type="button"
-                class="chat-send"
-                [disabled]="!canSendChat()"
-                (click)="onSendChat()"
+            @if (needsBuilderActor()) {
+              <select
+                id="builder-actor-select"
+                class="assistant-command-select"
+                [disabled]="chatBusy()"
+                [value]="builderActorValue()"
+                (change)="onBuilderActorChange($event)"
+                aria-label="Select action actor"
               >
-                Send
-              </button>
-            </div>
-
-            <div class="assistant-suggestions">
-              @for (suggestion of assistantSuggestions(); track suggestion) {
-                <button
-                  type="button"
-                  class="suggestion-chip"
-                  [disabled]="chatBusy()"
-                  (click)="onAssistantSuggestion(suggestion)"
-                >
-                  {{ suggestion }}
-                </button>
-              }
-            </div>
-
-            <div class="console-feedback">
-              <div
-                class="console-status"
-                [class.console-status--error]="assistantStatusIsError()"
-              >
-                {{ assistantStatusMessage() }}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="right-zone-section">
-          <div class="section-header">
-            <div>
-              <div class="section-title">Selected human</div>
-              <div class="section-subtitle">
-                Keep one person in focus while reading the board.
-              </div>
-            </div>
-            @if (selectedHuman()) {
-              <button
-                type="button"
-                class="text-button"
-                (click)="clearSelection()"
-              >
-                Clear
-              </button>
+                <option value="">Choose actor…</option>
+                @for (actor of builderActorOptions(); track actor.value) {
+                  <option [value]="actor.value ?? ''">
+                    {{ actor.label }}
+                  </option>
+                }
+              </select>
             }
-          </div>
 
-          @if (selectedHuman(); as human) {
-            <div class="inspector-card inspector-card--selected">
-              <div class="inspector-name">{{ human.name }}</div>
-              <div class="inspector-meta">
-                {{ humanBusyLabel(human.busy) }} ·
-                {{ selectedHumanCoordinates() }}
-              </div>
-            </div>
-          } @else {
-            <div class="empty-block">
-              Select a marker on the board or a name below to inspect that
-              human.
-            </div>
-          }
-
-          <div class="human-list">
-            @for (human of filteredHumans(); track human.id) {
-              <button
-                type="button"
-                class="human-pill"
-                [class.human-pill--selected]="selectedHumanId() === human.id"
-                (click)="selectHuman(human)"
+            @if (needsBuilderTarget()) {
+              <select
+                id="builder-target-select"
+                class="assistant-command-select"
+                [disabled]="chatBusy()"
+                [value]="builderTargetValue()"
+                (change)="onBuilderTargetChange($event)"
+                aria-label="Select action target"
               >
-                <span>{{ human.name }}</span>
-                <small>{{ humanBusyLabel(human.busy) }}</small>
-              </button>
-            } @empty {
-              <div class="empty">No humans available.</div>
+                <option value="">Choose target…</option>
+                @for (target of builderTargetOptions(); track target.value) {
+                  <option [value]="target.value ?? ''">
+                    {{ target.label }}
+                  </option>
+                }
+              </select>
+            }
+
+            <button
+              type="button"
+              class="chat-send"
+              [disabled]="!canExecuteBuilderAction()"
+              (click)="onExecuteBuilderAction()"
+            >
+              Execute
+            </button>
+
+            @if (chatError()) {
+              <div class="command-error">{{ chatError() }}</div>
+            }
+
+            @if (queryText()) {
+              <div class="query-summary">{{ queryText() }}</div>
+            }
+
+            @if (queryBlocks().length > 0) {
+              <div class="assistant-block-list">
+                @for (block of queryBlocks(); track block.type + (block.title ?? "")) {
+                  <div class="assistant-block">
+                    <div class="assistant-block-title">{{ block.title }}</div>
+                    @if (block.subtitle) {
+                      <div class="assistant-block-subtitle">{{ block.subtitle }}</div>
+                    }
+                    @if ((block.metrics ?? []).length > 0) {
+                      <div class="assistant-metrics-grid">
+                        @for (metric of block.metrics ?? []; track metric.label) {
+                          <div class="assistant-metric-pill">
+                            <span>{{ metric.label }}</span>
+                            <strong>{{ metric.value }}</strong>
+                          </div>
+                        }
+                      </div>
+                    }
+                    @if ((block.items ?? []).length > 0) {
+                      <div class="assistant-items">
+                        @for (item of block.items ?? []; track item.title + (item.subtitle ?? "")) {
+                          <div class="assistant-item">
+                            <div class="assistant-item-title">{{ item.title }}</div>
+                            @if (item.subtitle) {
+                              <div class="assistant-item-subtitle">{{ item.subtitle }}</div>
+                            }
+                            @if (item.body) {
+                              <div class="assistant-item-body">{{ item.body }}</div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
             }
           </div>
         </section>

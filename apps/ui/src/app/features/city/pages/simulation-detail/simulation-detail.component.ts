@@ -17,16 +17,16 @@ import {
   CityOutput,
   EventOutput,
   InventionOutput,
+  SimulationAssistantBlockOutput,
+  SimulationAssistantResponseOutput,
+  SimulationCommandBuilderActionOutput,
+  SimulationCommandBuilderOptionOutput,
+  SimulationCommandBuilderOutput,
   SimulationCommandOutput,
   SimulationSnapshotOutput,
 } from '@api';
 import { EventType } from '@shared';
 import { Observable, Subscription, interval } from 'rxjs';
-import {
-  SimulationAssistantBlock,
-  SimulationAssistantCommandDescriptor,
-  SimulationAssistantResponse,
-} from '../../simulation-assistant.models';
 import { CityService } from '../../city.service';
 import { SimulationBoardComponent } from '../../components/simulation-board/simulation-board.component';
 import { AgentChatEffectsService } from '../../services/agent-chat-effects.service';
@@ -56,8 +56,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
   private boardViewModelService = inject(BoardViewModelService);
 
   private pollingSubscription?: Subscription;
-  private assistantCatalogSubscription?: Subscription;
-  private chatEntrySeq = 0;
+  private commandBuilderSubscription?: Subscription;
 
   city: CityOutput = this.route.snapshot.data['city'];
 
@@ -85,14 +84,14 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
   selectedInventionId = signal<number | null>(null);
   selectedEventId = signal<number | null>(null);
   trackedHumanId = signal<number | null>(null);
-  assistantCommands = signal<SimulationAssistantCommandDescriptor[]>([]);
-  assistantSuggestions = computed(() =>
-    this.assistantCommands().map((c) => c.canonicalText),
-  );
-  chatInput = signal('');
+  commandBuilder = signal<SimulationCommandBuilderOutput | null>(null);
+  builderActionKey = signal<string>('');
+  builderActorValue = signal<string>('');
+  builderTargetValue = signal<string>('');
+  queryResponse = signal<SimulationAssistantResponseOutput | null>(null);
   chatBusy = signal(false);
   chatError = signal<string | null>(null);
-  chatEntries = signal<ChatEntry[]>([]);
+  commandBuilderError = signal<string | null>(null);
   eventsDrawerOpen = signal(false);
   eventsDrawerType = signal<string | null>(null);
   eventsDrawerIds = signal<number[] | null>(null);
@@ -260,40 +259,66 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
       ? this.storyFocusFromInvention(latestInvention)
       : null;
   });
-  assistantStatusMessage = computed(() => {
-    if (this.chatBusy()) {
-      return 'Assistant is reading the simulation…';
-    }
-    if (this.chatError()) {
-      return this.chatError();
-    }
-    return 'Use a short deterministic command or click a suggestion.';
+  builderActions = computed<SimulationCommandBuilderActionOutput[]>(() => {
+    return this.commandBuilder()?.actions ?? [];
   });
-  assistantStatusIsError = computed(() => !!this.chatError());
-  canSendChat = computed(
-    () => !this.chatBusy() && this.chatInput().trim().length > 0,
+  builderActorOptions = computed<SimulationCommandBuilderOptionOutput[]>(() => {
+    return this.commandBuilder()?.actorOptions ?? [];
+  });
+  selectedBuilderAction = computed<SimulationCommandBuilderActionOutput | null>(
+    () => {
+      const key = this.builderActionKey();
+      if (!key) {
+        return null;
+      }
+      return this.builderActions().find((action) => action.actionKey === key) ?? null;
+    },
   );
+  needsBuilderActor = computed(
+    () => this.selectedBuilderAction()?.actorKind === 'HUMAN',
+  );
+  builderTargetOptions = computed<SimulationCommandBuilderOptionOutput[]>(() => {
+    const action = this.selectedBuilderAction();
+    if (!action) {
+      return [];
+    }
+    const options = action.targetOptions ?? [];
+    if (
+      action.targetKind === 'HUMAN' &&
+      action.requiresDifferentTarget &&
+      this.builderActorValue()
+    ) {
+      return options.filter((option) => option.value !== this.builderActorValue());
+    }
+    return options;
+  });
+  needsBuilderTarget = computed(() => {
+    const kind = this.selectedBuilderAction()?.targetKind ?? 'NONE';
+    return kind !== 'NONE';
+  });
+  queryBlocks = computed<SimulationAssistantBlockOutput[]>(
+    () => this.queryResponse()?.blocks ?? [],
+  );
+  queryText = computed(() => this.queryResponse()?.text?.trim() ?? null);
+  canExecuteBuilderAction = computed(() => {
+    if (this.chatBusy()) {
+      return false;
+    }
+    const action = this.selectedBuilderAction();
+    if (!action) {
+      return false;
+    }
+    if (this.needsBuilderActor() && !this.builderActorValue()) {
+      return false;
+    }
+    if (this.needsBuilderTarget() && !this.builderTargetValue()) {
+      return false;
+    }
+    return true;
+  });
 
   ngOnInit(): void {
-    this.assistantCatalogSubscription = this.cityService
-      .getSimulationAssistantCommands()
-      .subscribe({
-        next: (commands) => {
-          this.assistantCommands.set(commands);
-          this.chatEntries.update((entries) => {
-            if (entries.length === 1 && entries[0].commandType === 'WELCOME') {
-              return [this.createAssistantWelcomeEntry()];
-            }
-            return entries;
-          });
-        },
-        error: () => {
-          /* no client-side fallback; select and chips stay empty */
-        },
-      });
-    if (this.chatEntries().length === 0) {
-      this.chatEntries.set([this.createAssistantWelcomeEntry()]);
-    }
+    this.loadCommandBuilder();
     this.refreshAll();
     this.pollingSubscription = interval(2000).subscribe(() => {
       if (this.isRunning()) {
@@ -303,7 +328,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.assistantCatalogSubscription?.unsubscribe();
+    this.commandBuilderSubscription?.unsubscribe();
     this.pollingSubscription?.unsubscribe();
   }
 
@@ -318,39 +343,86 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     this.submitSimulationCommand('advance 1');
   }
 
-  onChatInput(value: string): void {
-    this.chatInput.set(value);
-  }
-
-  onSendChat(): void {
-    const commandText = this.chatInput().trim();
-    if (!commandText) {
-      return;
-    }
-    this.submitAssistantCommand(commandText);
-  }
-
-  onAssistantSuggestion(commandText: string): void {
-    if (this.chatBusy()) {
-      return;
-    }
-    this.submitAssistantCommand(commandText);
-  }
-
-  onAssistantCommandSelect(event: Event): void {
+  onBuilderActionChange(event: Event): void {
     const select = event.target as HTMLSelectElement;
-    const value = select.value.trim();
-    select.value = '';
-    if (!value || this.chatBusy()) {
+    this.builderActionKey.set(select.value);
+    this.queryResponse.set(null);
+    this.chatError.set(null);
+    this.commandBuilderError.set(null);
+    if (this.needsBuilderActor()) {
+      const selectedHumanId = this.selectedHumanId();
+      if (selectedHumanId !== null) {
+        this.builderActorValue.set(String(selectedHumanId));
+      } else {
+        this.builderActorValue.set('');
+      }
+    } else {
+      this.builderActorValue.set('');
+    }
+    this.builderTargetValue.set('');
+  }
+
+  onBuilderActorChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.builderActorValue.set(select.value);
+    this.builderTargetValue.set('');
+    const actorId = Number(select.value);
+    if (Number.isFinite(actorId)) {
+      this.selectHumanById(actorId);
+    }
+  }
+
+  onBuilderTargetChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.builderTargetValue.set(select.value);
+  }
+
+  onExecuteBuilderAction(): void {
+    if (!this.canExecuteBuilderAction()) {
       return;
     }
-    this.submitAssistantCommand(value);
+    const action = this.selectedBuilderAction();
+    if (!action) {
+      return;
+    }
+
+    if (action.executionKind === 'QUERY') {
+      const commandText = action.commandText?.trim();
+      if (!commandText) {
+        this.chatError.set('Query action is missing command text.');
+        return;
+      }
+      this.submitAssistantQuery(commandText);
+      return;
+    }
+
+    const verb = action.commandVerb?.trim().toLowerCase();
+    if (!verb) {
+      this.chatError.set('Command action is missing a command verb.');
+      return;
+    }
+    const actor = this.builderActorValue().trim();
+    const target = this.builderTargetValue().trim();
+    let commandText = `${verb} ${actor}`.trim();
+    if (this.needsBuilderTarget()) {
+      commandText = `${commandText} ${target}`.trim();
+    }
+    this.submitSimulationCommand(commandText);
   }
 
   selectHuman(human: SimulationSnapshotOutput['humans'][number]): void {
     this.selectedHumanId.set(human.id);
     this.selectedInventionId.set(null);
     this.selectedEventId.set(null);
+    if (this.needsBuilderActor()) {
+      this.builderActorValue.set(String(human.id));
+      if (
+        this.selectedBuilderAction()?.targetKind === 'HUMAN' &&
+        this.builderTargetValue() === String(human.id)
+      ) {
+        this.builderTargetValue.set('');
+      }
+    }
   }
 
   selectHumanById(humanId: number): void {
@@ -374,6 +446,9 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
       this.humans().some((human) => human.id === actorId),
     );
     this.selectedHumanId.set(primaryActorId ?? null);
+    if (primaryActorId !== undefined && primaryActorId !== null && this.needsBuilderActor()) {
+      this.builderActorValue.set(String(primaryActorId));
+    }
   }
 
   clearSelection(): void {
@@ -381,6 +456,12 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     this.selectedInventionId.set(null);
     this.selectedEventId.set(null);
     this.trackedHumanId.set(null);
+    if (this.needsBuilderActor()) {
+      this.builderActorValue.set('');
+      if (this.selectedBuilderAction()?.targetKind === 'HUMAN') {
+        this.builderTargetValue.set('');
+      }
+    }
   }
 
   closeEventsDrawer(): void {
@@ -572,6 +653,70 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     this.refreshHistory(showLoading);
   }
 
+  private loadCommandBuilder(): void {
+    const cityId = this.requireCityId();
+    if (!cityId) {
+      return;
+    }
+    this.commandBuilderError.set(null);
+    this.commandBuilderSubscription?.unsubscribe();
+    this.commandBuilderSubscription = this.cityService
+      .getSimulationCommandBuilder(cityId)
+      .subscribe({
+        next: (builder) => {
+          this.commandBuilder.set(builder);
+          if (!this.builderActionKey()) {
+            const defaultAction =
+              builder.actions?.find((action) => action.executionKind === 'COMMAND') ??
+              builder.actions?.[0];
+            if (defaultAction?.actionKey) {
+              this.builderActionKey.set(defaultAction.actionKey);
+            }
+          }
+          this.reconcileBuilderSelection();
+        },
+        error: (error) => {
+          this.commandBuilderError.set('Failed to load command builder.');
+          console.error('Failed to load command builder:', error);
+        },
+      });
+  }
+
+  private reconcileBuilderSelection(): void {
+    const action = this.selectedBuilderAction();
+    if (!action) {
+      this.builderActorValue.set('');
+      this.builderTargetValue.set('');
+      return;
+    }
+
+    if (action.actorKind === 'HUMAN') {
+      const selectedHumanId = this.selectedHumanId();
+      if (selectedHumanId !== null && !this.builderActorValue()) {
+        this.builderActorValue.set(String(selectedHumanId));
+      }
+      const actorExists = this.builderActorOptions().some(
+        (option) => option.value === this.builderActorValue(),
+      );
+      if (!actorExists) {
+        this.builderActorValue.set('');
+      }
+    } else {
+      this.builderActorValue.set('');
+    }
+
+    if (action.targetKind === 'NONE') {
+      this.builderTargetValue.set('');
+      return;
+    }
+    const targetExists = this.builderTargetOptions().some(
+      (option) => option.value === this.builderTargetValue(),
+    );
+    if (!targetExists) {
+      this.builderTargetValue.set('');
+    }
+  }
+
   private refreshSnapshot(showLoading: boolean): void {
     const cityId = this.requireCityId();
     if (!cityId) {
@@ -677,6 +822,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
             ? response
             : null;
           this.applyUiEffects(response.uiEffects ?? []);
+          this.loadCommandBuilder();
         } else {
           this.chatError.set(response.message ?? 'Simulation command failed.');
         }
@@ -690,35 +836,27 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  private submitAssistantCommand(commandText: string): void {
+  private submitAssistantQuery(commandText: string): void {
     const cityId = this.requireCityId();
     if (!cityId || this.chatBusy()) {
       return;
     }
 
-    const userEntry = this.createUserEntry(commandText);
-    this.chatEntries.update((entries) => [...entries, userEntry]);
     this.chatBusy.set(true);
     this.chatError.set(null);
-    this.chatInput.set('');
+    this.queryResponse.set(null);
 
     this.cityService
       .sendSimulationAssistantCommand(cityId, commandText)
       .subscribe({
         next: (response) => {
           this.chatBusy.set(false);
-          this.chatEntries.update((entries) => [
-            ...entries,
-            this.createAssistantEntry(response),
-          ]);
+          this.queryResponse.set(response);
+          this.loadCommandBuilder();
         },
         error: (error) => {
           this.chatBusy.set(false);
-          this.chatError.set('Assistant request failed.');
-          this.chatEntries.update((entries) => [
-            ...entries,
-            this.createAssistantErrorEntry(),
-          ]);
+          this.chatError.set('Query request failed.');
           console.error('Simulation assistant request failed:', error);
         },
       });
@@ -882,6 +1020,9 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
       this.selectedHumanId.set(resolution.selectedHumanId);
       this.selectedEventId.set(null);
       this.selectedInventionId.set(null);
+      if (this.needsBuilderActor()) {
+        this.builderActorValue.set(String(resolution.selectedHumanId));
+      }
     }
     if (resolution.trackedHumanId !== null) {
       this.trackedHumanId.set(resolution.trackedHumanId);
@@ -912,82 +1053,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  private nextChatEntryId(): string {
-    return `chat-${++this.chatEntrySeq}`;
-  }
-
-  private createAssistantWelcomeEntry(): ChatEntry {
-    return {
-      id: this.nextChatEntryId(),
-      role: 'assistant',
-      content:
-        'Ask for a deterministic read of the simulation with one of the supported commands.',
-      timestamp: new Date().toISOString(),
-      commandType: 'WELCOME',
-      blocks: [
-        {
-          type: 'SUPPORTED_COMMANDS',
-          title: 'Quick suggestions',
-          subtitle: 'Start with one of these backend-supported reads.',
-          metrics: [],
-          items: this.assistantCommands().map((command) => ({
-            title: command.canonicalText,
-            subtitle: command.label,
-            body: command.description,
-            chips: [],
-          })),
-          emptyState: null,
-        },
-      ],
-    };
-  }
-
-  private createUserEntry(commandText: string): ChatEntry {
-    return {
-      id: this.nextChatEntryId(),
-      role: 'user',
-      content: commandText,
-      timestamp: new Date().toISOString(),
-      commandType: null,
-      blocks: [],
-    };
-  }
-
-  private createAssistantEntry(
-    response: SimulationAssistantResponse,
-  ): ChatEntry {
-    return {
-      id: this.nextChatEntryId(),
-      role: 'assistant',
-      content: response.text?.trim() || 'No assistant text returned.',
-      timestamp: new Date().toISOString(),
-      commandType: response.commandType ?? null,
-      blocks: response.blocks ?? [],
-    };
-  }
-
-  private createAssistantErrorEntry(): ChatEntry {
-    return {
-      id: this.nextChatEntryId(),
-      role: 'assistant',
-      content:
-        'The assistant could not load a deterministic response right now.',
-      timestamp: new Date().toISOString(),
-      commandType: 'ERROR',
-      blocks: [],
-    };
-  }
-
 }
-
-type ChatEntry = {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-  commandType: string | null;
-  blocks: SimulationAssistantBlock[];
-};
 
 type StoryFocusCard = {
   kind: 'event' | 'discovery';

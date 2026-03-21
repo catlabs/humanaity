@@ -488,6 +488,24 @@
   cursor: default;
 }
 
+.command-error {
+  border: 1px solid rgb(239 68 68 / 0.35);
+  border-radius: $radius-sm;
+  background: rgb(239 68 68 / 0.08);
+  color: #b91c1c;
+  padding: map.get($spacing-scale, 2) map.get($spacing-scale, 3);
+  font-size: 0.84rem;
+}
+
+.query-summary {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  background: var(--mat-sys-surface-container-low);
+  color: var(--mat-sys-on-surface);
+  padding: map.get($spacing-scale, 2) map.get($spacing-scale, 3);
+  font-size: 0.86rem;
+}
+
 .console-feedback {
   display: flex;
   flex-direction: column;
