@@ -167,3 +167,22 @@ Implemented:
 - fixed `CityService` assistant HTTP calls to use the same `BASE_PATH` as the generated OpenAPI client (relative `/api/...` was hitting the Angular dev server on port 4200 instead of Spring on 8080 in local dev)
 - added `.cursor/rules/agent-openapi-contract-sync.mdc` so agents resync Angular + MCP generated API types after backend OpenAPI/DTO changes (matches CI `apps/mcp` `api:generate:check`); documented in `docs/agent-context.md` and `openapi-regenerate-adapt` skill
 - regenerated committed OpenAPI outputs (`apps/ui` client, `apps/mcp` `api-types.ts`) and extended `eventType()` mapping for new `EventOutput.EventTypeEnum` values so CI contract check and UI build stay green
+
+## 2026-03-21
+
+Decision:
+
+- replace the free-text assistant strip on the authoritative simulation page with a structured action-first query builder that supports both actorless read queries and deterministic actor-scoped commands
+
+Implemented:
+
+- added `GET /api/simulations/{cityId}/command-builder` with auth + ownership checks, returning backend-owned action metadata (`executionKind`, `actorKind`, `targetKind`, and allowed options)
+- extended deterministic command execution with `meet <human> <human>` and updated mutation commands (`move`, `meet`) to assign goal + advance exactly one deterministic step so board changes are visible immediately after refresh
+- extended command referenced entities with `targetHumanId` and regenerated OpenAPI outputs for both UI and MCP (`apps/ui/src/app/api`, `apps/mcp/src/generated/api-types.ts`)
+- rewired the simulation detail command area to an action/actor/target builder, removed suggestion chips + free-text input + static console feedback strip, and moved selected-human context into the same command region
+- updated the simulation detail unit spec to assert action-first builder behavior (actorless query execution, deterministic command construction, invalid-combination gating)
+- synced active docs for this behavior in `docs/concepts/ui-simulation.md` and `docs/specs/deterministic-command-contract-spec.md`
+
+Trade-offs:
+
+- simulation detail browser tests still fail to run in this environment (`ng test` exits early), so validation here relied on backend contract tests plus UI TypeScript compile checks

@@ -49,6 +49,17 @@ AI is not part of command parsing or command execution for this path.
 }
 ```
 
+## Builder metadata endpoint
+
+- Method and path: `GET /api/simulations/{cityId}/command-builder`
+- Purpose: backend-owned metadata for the UI query builder
+- Returns:
+  - `actions` with execution kind (`QUERY` or `COMMAND`)
+  - per-action actor requirement (`NONE` or `HUMAN`)
+  - per-action target kind (`NONE`, `PLACE`, `HUMAN`) and allowed target options
+  - actor options for human-scoped actions
+- The UI must not invent action grammar or target lists outside this contract.
+
 ## Supported commands
 
 ### `advance <count>`
@@ -76,7 +87,17 @@ AI is not part of command parsing or command execution for this path.
   - `campfire`
   - `house`
 - successful execution returns `mutated = true`
+- successful execution must assign the goal and advance exactly one deterministic step
 - successful execution must return `REFRESH_SNAPSHOT`, `REFRESH_TIMELINE`, and may return `FOCUS_HUMAN` or `HIGHLIGHT_PLACE`
+
+### `meet <human> <human>`
+
+- assigns one human to meet another human
+- both human tokens resolve by exact case-insensitive name or numeric id
+- actor and target must be distinct humans
+- successful execution returns `mutated = true`
+- successful execution must assign the goal and advance exactly one deterministic step
+- successful execution must return `REFRESH_SNAPSHOT`, `REFRESH_TIMELINE`, and `FOCUS_HUMAN`
 
 ## Validation and parsing rules
 
@@ -86,6 +107,7 @@ AI is not part of command parsing or command execution for this path.
 - extra words outside the supported grammar are rejected
 - ambiguous human matches are rejected
 - unknown place ids are rejected
+- same-human `meet` pairs are rejected
 - rejected commands must not mutate simulation state
 
 ## Response semantics
@@ -102,6 +124,7 @@ Allowed values:
 - `ADVANCE`
 - `FOCUS_HUMAN`
 - `MOVE_HUMAN_TO_PLACE`
+- `MEET_HUMAN`
 - `UNSUPPORTED`
 
 ### `message`
@@ -122,6 +145,7 @@ Allowed values:
 ```json
 {
   "humanId": 12,
+  "targetHumanId": 18,
   "placeId": "forest"
 }
 ```

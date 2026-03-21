@@ -6,7 +6,8 @@ Deterministic city-scoped command handling for the primary simulation control lo
 ## Covers
 - explicit fail-closed command grammar for simulation control
 - backend-owned command execution and UI-friendly response effects
-- a command console UX that stays separate from AI narration
+- a structured command/query builder UX that stays separate from AI narration
+- `GET /api/simulations/{cityId}/command-builder` as backend-owned metadata for action/actor/target selection
 - `POST /api/simulations/{cityId}/commands` as the primary command surface for the main simulation page
 - legacy agent orchestration retained only as secondary or historical context while deterministic commands become the forward path
 

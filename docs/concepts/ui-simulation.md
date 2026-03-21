@@ -15,13 +15,15 @@ Primary simulation UI experience for the authoritative city simulation page.
 - The right rail should keep the primary deterministic command console at the top, then flow into simulation status, selected-human context, recent activity, and discoveries in one readable scrollable column.
 - The overall page should read as one product path: `Command -> Simulation -> Events -> Narration`.
 - The primary command console should submit exact deterministic commands through `POST /api/simulations/{cityId}/commands`.
+- The command console should load action metadata from `GET /api/simulations/{cityId}/command-builder` so actor/target inputs only appear when required by the selected action.
+- The command console should support both actorless read queries (for example world status, recent events, inventions) and actor-scoped deterministic commands in one structured builder.
 - Deterministic command feedback should be rendered directly from backend command responses rather than inferred from AI narration or best-effort client interpretation.
 - Recent activity entries and board event markers should stay visibly linked so selecting either surface makes the latest simulation delta easier to read.
 - Event and discovery narration should remain supplemental to canonical facts, with explicit ready/fallback/unavailable states rendered directly from backend enrichment fields.
 - The simulation board container should fill remaining page height via flex layout (`flex: 1` + `min-height: 0`) rather than relying on percentage-height inheritance chains.
 - Empty/loading overlays should be layered within the same board container so they do not collapse or displace the world surface.
 - Legacy agent-chat affordances may remain elsewhere in the repo for historical or secondary flows, but they are not the authoritative command path for this page.
-- The simulation assistant panel should expose the backend command catalog (`GET /api/simulations/assistant/commands`) in a select plus quick chips, keep input + status in a non-scrolling control strip, and show the conversation/results in a dedicated scroll region below.
+- The authoritative page should not use free-text assistant chips/input for command execution; it should remain query-builder driven.
 
 ## Source docs
 - `docs/specs/main-simulation-board-spec.md`
