@@ -7,6 +7,7 @@ import eu.catlabs.humanaity.auth.domain.User;
 import eu.catlabs.humanaity.auth.infrastructure.persistence.UserRepository;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
 import eu.catlabs.humanaity.simulation.application.SimulationCommandService;
+import eu.catlabs.humanaity.simulation.application.assistant.SimulationAssistantCommandsCatalog;
 import eu.catlabs.humanaity.simulation.application.assistant.SimulationAssistantService;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService.TimelineHistory;
 import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
@@ -17,6 +18,7 @@ import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotBoundsOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotCentroidOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotCityOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotHumanOutput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationAssistantCommandDescriptorOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationAssistantRequestInput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationAssistantResponseOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationCommandInput;
@@ -54,17 +56,20 @@ public class SimulationController {
     private final SimulationApplicationService simulationApplicationService;
     private final SimulationCommandService simulationCommandService;
     private final SimulationAssistantService simulationAssistantService;
+    private final SimulationAssistantCommandsCatalog simulationAssistantCommandsCatalog;
     private final UserRepository userRepository;
 
     public SimulationController(
             SimulationApplicationService simulationApplicationService,
             SimulationCommandService simulationCommandService,
             SimulationAssistantService simulationAssistantService,
+            SimulationAssistantCommandsCatalog simulationAssistantCommandsCatalog,
             UserRepository userRepository
     ) {
         this.simulationApplicationService = simulationApplicationService;
         this.simulationCommandService = simulationCommandService;
         this.simulationAssistantService = simulationAssistantService;
+        this.simulationAssistantCommandsCatalog = simulationAssistantCommandsCatalog;
         this.userRepository = userRepository;
     }
 
@@ -269,6 +274,19 @@ public class SimulationController {
                 .map(this::toCityOverviewOutput)
                 .toList();
         return ResponseEntity.ok(outputs);
+    }
+
+    @GetMapping("/assistant/commands")
+    @Operation(summary = "List deterministic simulation assistant commands")
+    public ResponseEntity<List<SimulationAssistantCommandDescriptorOutput>> listAssistantCommands(
+            Authentication authentication
+    ) {
+        try {
+            resolveCurrentUser(authentication);
+            return ResponseEntity.ok(simulationAssistantCommandsCatalog.listSupportedCommands());
+        } catch (UnauthorizedException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 
     @GetMapping("/{cityId}/snapshot")

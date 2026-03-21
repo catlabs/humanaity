@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -88,6 +89,30 @@ class SimulationAssistantApiContractTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(request("world status")))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void assistantCommandsListRequiresAuth() throws Exception {
+        mockMvc.perform(get("/api/simulations/assistant/commands"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void assistantCommandsListReturnsCanonicalCommands() throws Exception {
+        User owner = persistUser("assistant-owner-catalog@example.com");
+
+        MvcResult result = mockMvc.perform(get("/api/simulations/assistant/commands")
+                        .header("Authorization", bearerFor(owner)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode root = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(root.isArray()).isTrue();
+        assertThat(root).hasSize(4);
+        assertThat(root.toString()).contains("inventions");
+        assertThat(root.toString()).contains("world status");
+        assertThat(root.toString()).contains("recent events");
+        assertThat(root.toString()).contains("relationships");
     }
 
     @Test
