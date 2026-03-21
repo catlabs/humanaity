@@ -166,3 +166,4 @@ Implemented:
 - updated `docs/concepts/ui-simulation.md` to describe the assistant catalog + layout behavior
 - fixed `CityService` assistant HTTP calls to use the same `BASE_PATH` as the generated OpenAPI client (relative `/api/...` was hitting the Angular dev server on port 4200 instead of Spring on 8080 in local dev)
 - added `.cursor/rules/agent-openapi-contract-sync.mdc` so agents resync Angular + MCP generated API types after backend OpenAPI/DTO changes (matches CI `apps/mcp` `api:generate:check`); documented in `docs/agent-context.md` and `openapi-regenerate-adapt` skill
+- regenerated committed OpenAPI outputs (`apps/ui` client, `apps/mcp` `api-types.ts`) and extended `eventType()` mapping for new `EventOutput.EventTypeEnum` values so CI contract check and UI build stay green
