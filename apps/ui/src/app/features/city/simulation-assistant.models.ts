@@ -1,3 +1,11 @@
+/** Matches GET /api/simulations/assistant/commands */
+export type SimulationAssistantCommandDescriptor = {
+  commandType: string;
+  canonicalText: string;
+  label: string;
+  description: string;
+};
+
 export type SimulationAssistantMetric = {
   label: string;
   value: string;

@@ -6,6 +6,7 @@ import {
   AgentChatRequestInput,
   AgentChatResponseOutput,
   AgentChatService,
+  BASE_PATH,
   CitiesService,
   EventOutput,
   HumansService,
@@ -20,13 +21,18 @@ import {
   SimulationSnapshotOutput,
 } from '@api';
 import { parseApiResponse } from '@core';
-import { SimulationAssistantResponse } from './simulation-assistant.models';
+import {
+  SimulationAssistantCommandDescriptor,
+  SimulationAssistantResponse,
+} from './simulation-assistant.models';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CityService {
   private http = inject(HttpClient);
+  /** Same origin as generated OpenAPI clients; relative `/api` would hit the dev server (4200), not Spring. */
+  private apiBase = inject(BASE_PATH);
   private agentChatService = inject(AgentChatService);
   private citiesService = inject(CitiesService);
   private humansService = inject(HumansService);
@@ -151,12 +157,25 @@ export class CityService {
       .pipe(switchMap(parseApiResponse<SimulationCommandOutput>));
   }
 
+  getSimulationAssistantCommands(): Observable<
+    SimulationAssistantCommandDescriptor[]
+  > {
+    return this.http
+      .get(`${this.apiBase}/api/simulations/assistant/commands`)
+      .pipe(
+        switchMap(parseApiResponse<SimulationAssistantCommandDescriptor[]>),
+      );
+  }
+
   sendSimulationAssistantCommand(
     cityId: number,
     commandText: string,
   ): Observable<SimulationAssistantResponse> {
     return this.http
-      .post(`/api/simulations/${cityId}/assistant`, { commandText })
+      .post(
+        `${this.apiBase}/api/simulations/${cityId}/assistant`,
+        { commandText },
+      )
       .pipe(switchMap(parseApiResponse<SimulationAssistantResponse>));
   }
 

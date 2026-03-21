@@ -114,164 +114,62 @@
 
       <aside class="right-zone app-surface-bg">
         <section class="right-zone-section assistant-section">
-          <div class="section-header">
-            <div>
-              <div class="section-title">Simulation assistant</div>
-              <div class="section-subtitle">
-                Deterministic reading panel driven entirely by the backend. Use
-                a short command or click a suggestion.
-              </div>
-            </div>
-          </div>
-
-          <div class="chat-row">
-            <input
-              #chatBox
-              class="chat-input"
-              type="text"
-              [value]="chatInput()"
-              (input)="onChatInput(chatBox.value)"
-              (keydown.enter)="onSendChat()"
-              placeholder="world status"
-            />
-            <button
-              type="button"
-              class="chat-send"
-              [disabled]="!canSendChat()"
-              (click)="onSendChat()"
+          <div class="assistant-controls">
+            <select
+              id="assistant-command-select"
+              class="assistant-command-select"
+              [disabled]="chatBusy()"
+              (change)="onAssistantCommandSelect($event)"
+              aria-label="Choose a deterministic assistant command"
             >
-              Send
-            </button>
-          </div>
+              <option value="">Choose a command…</option>
+              @for (cmd of assistantCommands(); track cmd.commandType) {
+                <option [value]="cmd.canonicalText">
+                  {{ cmd.label }}
+                </option>
+              }
+            </select>
 
-          <div class="assistant-suggestions">
-            @for (suggestion of assistantSuggestions; track suggestion) {
+            <div class="chat-row">
+              <input
+                #chatBox
+                class="chat-input"
+                type="text"
+                [value]="chatInput()"
+                (input)="onChatInput(chatBox.value)"
+                (keydown.enter)="onSendChat()"
+                placeholder="world status"
+              />
               <button
                 type="button"
-                class="suggestion-chip"
-                [disabled]="chatBusy()"
-                (click)="onAssistantSuggestion(suggestion)"
+                class="chat-send"
+                [disabled]="!canSendChat()"
+                (click)="onSendChat()"
               >
-                {{ suggestion }}
+                Send
               </button>
-            }
-          </div>
-
-          <div class="console-feedback">
-            <div
-              class="console-status"
-              [class.console-status--error]="assistantStatusIsError()"
-            >
-              {{ assistantStatusMessage() }}
             </div>
-          </div>
 
-          <div class="assistant-thread">
-            @for (entry of chatEntries(); track entry.timestamp) {
-              <article
-                class="assistant-message"
-                [class.assistant-message--user]="entry.role === 'user'"
+            <div class="assistant-suggestions">
+              @for (suggestion of assistantSuggestions(); track suggestion) {
+                <button
+                  type="button"
+                  class="suggestion-chip"
+                  [disabled]="chatBusy()"
+                  (click)="onAssistantSuggestion(suggestion)"
+                >
+                  {{ suggestion }}
+                </button>
+              }
+            </div>
+
+            <div class="console-feedback">
+              <div
+                class="console-status"
+                [class.console-status--error]="assistantStatusIsError()"
               >
-                <div class="assistant-message-header">
-                  <strong>{{
-                    entry.role === "user" ? "You" : "Assistant"
-                  }}</strong>
-                  @if (entry.commandType) {
-                    <span class="assistant-command-type">{{
-                      eventTypeLabel(entry.commandType)
-                    }}</span>
-                  }
-                </div>
-                <div class="assistant-message-body">{{ entry.content }}</div>
-
-                @if (entry.blocks.length > 0) {
-                  <div class="assistant-block-list">
-                    @for (
-                      block of entry.blocks;
-                      track block.title + block.type
-                    ) {
-                      <section class="assistant-block">
-                        <div class="assistant-block-header">
-                          <div class="assistant-block-title">
-                            {{ block.title }}
-                          </div>
-                          @if (block.subtitle) {
-                            <div class="assistant-block-subtitle">
-                              {{ block.subtitle }}
-                            </div>
-                          }
-                        </div>
-
-                        @if (block.metrics.length > 0) {
-                          <div class="assistant-metrics-grid">
-                            @for (metric of block.metrics; track metric.label) {
-                              <div class="assistant-metric-pill">
-                                <span>{{ metric.label }}</span>
-                                <strong>{{ metric.value }}</strong>
-                              </div>
-                            }
-                          </div>
-                        }
-
-                        @if (block.items.length > 0) {
-                          <div class="assistant-items">
-                            @for (
-                              item of block.items;
-                              track item.title + $index
-                            ) {
-                              <article class="assistant-item">
-                                <div class="assistant-item-title">
-                                  {{ item.title }}
-                                </div>
-                                @if (item.subtitle) {
-                                  <div class="assistant-item-subtitle">
-                                    {{ item.subtitle }}
-                                  </div>
-                                }
-                                @if (item.body) {
-                                  <div class="assistant-item-body">
-                                    {{ item.body }}
-                                  </div>
-                                }
-                                @if (item.chips.length > 0) {
-                                  <div class="assistant-item-chips">
-                                    @for (chip of item.chips; track chip) {
-                                      <span>{{ chip }}</span>
-                                    }
-                                  </div>
-                                }
-                              </article>
-                            }
-                          </div>
-                        } @else if (block.emptyState) {
-                          <div class="empty-block">{{ block.emptyState }}</div>
-                        }
-                      </section>
-                    }
-                  </div>
-                }
-              </article>
-            }
-          </div>
-        </section>
-
-        <section class="right-zone-section">
-          <div class="section-title">Simulation state</div>
-          <div class="status-grid">
-            <div class="pill">
-              <span>Run</span
-              ><strong>{{
-                hasRun() ? (isRunning() ? "Running" : "Paused") : "Not started"
-              }}</strong>
-            </div>
-            <div class="pill">
-              <span>Year</span><strong>{{ currentYear() }}</strong>
-            </div>
-            <div class="pill">
-              <span>Busy</span><strong>{{ populationBusy() }}</strong>
-            </div>
-            <div class="pill">
-              <span>Events</span><strong>{{ totalEvents() }}</strong>
+                {{ assistantStatusMessage() }}
+              </div>
             </div>
           </div>
         </section>

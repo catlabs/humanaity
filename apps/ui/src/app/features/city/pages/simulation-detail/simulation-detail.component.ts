@@ -24,6 +24,7 @@ import { EventType } from '@shared';
 import { Observable, Subscription, interval } from 'rxjs';
 import {
   SimulationAssistantBlock,
+  SimulationAssistantCommandDescriptor,
   SimulationAssistantResponse,
 } from '../../simulation-assistant.models';
 import { CityService } from '../../city.service';
@@ -58,6 +59,8 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
   private boardViewModelService = inject(BoardViewModelService);
 
   private pollingSubscription?: Subscription;
+  private assistantCatalogSubscription?: Subscription;
+  private chatEntrySeq = 0;
 
   city: CityOutput = this.route.snapshot.data['city'];
 
@@ -85,12 +88,10 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
   selectedInventionId = signal<number | null>(null);
   selectedEventId = signal<number | null>(null);
   trackedHumanId = signal<number | null>(null);
-  assistantSuggestions = [
-    'inventions',
-    'world status',
-    'recent events',
-    'relationships',
-  ] as const;
+  assistantCommands = signal<SimulationAssistantCommandDescriptor[]>([]);
+  assistantSuggestions = computed(() =>
+    this.assistantCommands().map((c) => c.canonicalText),
+  );
   chatInput = signal('');
   chatBusy = signal(false);
   chatError = signal<string | null>(null);
@@ -315,6 +316,22 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
   );
 
   ngOnInit(): void {
+    this.assistantCatalogSubscription = this.cityService
+      .getSimulationAssistantCommands()
+      .subscribe({
+        next: (commands) => {
+          this.assistantCommands.set(commands);
+          this.chatEntries.update((entries) => {
+            if (entries.length === 1 && entries[0].commandType === 'WELCOME') {
+              return [this.createAssistantWelcomeEntry()];
+            }
+            return entries;
+          });
+        },
+        error: () => {
+          /* no client-side fallback; select and chips stay empty */
+        },
+      });
     if (this.chatEntries().length === 0) {
       this.chatEntries.set([this.createAssistantWelcomeEntry()]);
     }
@@ -327,6 +344,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.assistantCatalogSubscription?.unsubscribe();
     this.pollingSubscription?.unsubscribe();
   }
 
@@ -365,6 +383,16 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
       return;
     }
     this.submitAssistantCommand(commandText);
+  }
+
+  onAssistantCommandSelect(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const value = select.value.trim();
+    select.value = '';
+    if (!value || this.chatBusy()) {
+      return;
+    }
+    this.submitAssistantCommand(value);
   }
 
   selectHuman(human: SimulationSnapshotOutput['humans'][number]): void {
@@ -939,8 +967,13 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  private nextChatEntryId(): string {
+    return `chat-${++this.chatEntrySeq}`;
+  }
+
   private createAssistantWelcomeEntry(): ChatEntry {
     return {
+      id: this.nextChatEntryId(),
       role: 'assistant',
       content:
         'Ask for a deterministic read of the simulation with one of the supported commands.',
@@ -952,10 +985,10 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
           title: 'Quick suggestions',
           subtitle: 'Start with one of these backend-supported reads.',
           metrics: [],
-          items: this.assistantSuggestions.map((command: string) => ({
-            title: command,
-            subtitle: null,
-            body: null,
+          items: this.assistantCommands().map((command) => ({
+            title: command.canonicalText,
+            subtitle: command.label,
+            body: command.description,
             chips: [],
           })),
           emptyState: null,
@@ -966,6 +999,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
 
   private createUserEntry(commandText: string): ChatEntry {
     return {
+      id: this.nextChatEntryId(),
       role: 'user',
       content: commandText,
       timestamp: new Date().toISOString(),
@@ -978,6 +1012,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     response: SimulationAssistantResponse,
   ): ChatEntry {
     return {
+      id: this.nextChatEntryId(),
       role: 'assistant',
       content: response.text?.trim() || 'No assistant text returned.',
       timestamp: new Date().toISOString(),
@@ -988,6 +1023,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
 
   private createAssistantErrorEntry(): ChatEntry {
     return {
+      id: this.nextChatEntryId(),
       role: 'assistant',
       content:
         'The assistant could not load a deterministic response right now.',
@@ -1032,6 +1068,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
 }
 
 type ChatEntry = {
+  id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;

@@ -3,6 +3,34 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { CityService } from '../../city.service';
+import type { SimulationAssistantCommandDescriptor } from '../../simulation-assistant.models';
+
+const testAssistantCatalog: SimulationAssistantCommandDescriptor[] = [
+  {
+    commandType: 'INVENTIONS',
+    canonicalText: 'inventions',
+    label: 'Inventions',
+    description: 'Latest unlocked inventions.',
+  },
+  {
+    commandType: 'WORLD_STATUS',
+    canonicalText: 'world status',
+    label: 'World status',
+    description: 'Run snapshot.',
+  },
+  {
+    commandType: 'RECENT_EVENTS',
+    canonicalText: 'recent events',
+    label: 'Recent events',
+    description: 'Recent events.',
+  },
+  {
+    commandType: 'RELATIONSHIPS',
+    canonicalText: 'relationships',
+    label: 'Relationships',
+    description: 'Pairs.',
+  },
+];
 import { SimulationDetailComponent } from './simulation-detail.component';
 
 describe('SimulationDetailComponent', () => {
@@ -91,6 +119,7 @@ describe('SimulationDetailComponent', () => {
       'stepSimulation',
       'sendSimulationCommand',
       'sendSimulationAssistantCommand',
+      'getSimulationAssistantCommands',
     ]);
 
     cityService.getSimulationSnapshot.and.returnValue(of(snapshot));
@@ -113,10 +142,14 @@ describe('SimulationDetailComponent', () => {
     );
     cityService.sendSimulationAssistantCommand.and.returnValue(
       of({
-        text: 'Advanced city by 3 steps.',
-        commandType: 'ADVANCE',
+        ok: true,
+        text: 'World status summary.',
+        commandType: 'WORLD_STATUS',
         blocks: [],
       } as any)
+    );
+    cityService.getSimulationAssistantCommands.and.returnValue(
+      of(testAssistantCatalog),
     );
 
     await TestBed.configureTestingModule({
@@ -144,8 +177,8 @@ describe('SimulationDetailComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Spec City');
     expect(text).toContain('Era Founding · Year 1');
-    expect(text).toContain('Simulation assistant');
-    expect(text).toContain('Simulation state');
+    expect(text).toContain('Use a short deterministic command or click a suggestion.');
+    expect(text).toContain('readable board state');
     expect(text).toContain('Story focus');
     expect(text).toContain('Timeline');
     expect(text).toContain('No simulation run yet');
@@ -163,21 +196,20 @@ describe('SimulationDetailComponent', () => {
     );
   });
 
-  it('submits assistant command requests and renders the backend reply', () => {
+  it('submits assistant command requests and stores the backend reply in chat entries', () => {
     const component = fixture.componentInstance;
-    component.onChatInput('advance 3');
+    component.onChatInput('world status');
     component.onSendChat();
     fixture.detectChanges();
 
     expect(cityService.sendSimulationAssistantCommand).toHaveBeenCalledWith(
       7,
-      'advance 3'
+      'world status'
     );
 
-    const text = fixture.nativeElement.textContent as string;
-    expect(text).toContain('Simulation assistant');
-    expect(text).toContain('Advanced city by 3 steps.');
-    expect(text).toContain('Advance');
+    const entries = component.chatEntries();
+    const assistantReply = entries.find((e) => e.role === 'assistant' && e.commandType === 'WORLD_STATUS');
+    expect(assistantReply?.content).toContain('World status summary.');
   });
 
   it('applies uiEffects from deterministic command responses', () => {
@@ -339,7 +371,7 @@ describe('SimulationDetailComponent', () => {
       throwError(() => new Error('Unsupported command.'))
     );
 
-    fixture.componentInstance.onChatInput('advance by 3 steps');
+    fixture.componentInstance.onChatInput('world status');
     fixture.componentInstance.onSendChat();
     fixture.detectChanges();
 
