@@ -33,6 +33,7 @@ public class SimulationCommandService {
     private static final Pattern ADVANCE_PATTERN = Pattern.compile("^advance\\s+(\\d+)$", Pattern.CASE_INSENSITIVE);
     private static final Pattern FOCUS_PATTERN = Pattern.compile("^focus\\s+(.+)$", Pattern.CASE_INSENSITIVE);
     private static final Pattern MOVE_PATTERN = Pattern.compile("^move\\s+(.+)\\s+(forest|river|church|campfire|house)$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern MEET_PATTERN = Pattern.compile("^meet\\s+(.+)\\s+(.+)$", Pattern.CASE_INSENSITIVE);
     private static final int MAX_ADVANCE_COUNT = 20;
 
     private final CityRepository cityRepository;
@@ -64,7 +65,7 @@ public class SimulationCommandService {
                 ? ""
                 : input.getCommandText().trim();
         if (commandText.isBlank()) {
-            return reject("Command is blank. Use `advance <count>`, `focus <human>`, or `move <human> <place>`.");
+            return reject("Command is blank. Use `advance <count>`, `focus <human>`, `move <human> <place>`, or `meet <human> <human>`.");
         }
 
         Matcher advanceMatcher = ADVANCE_PATTERN.matcher(commandText);
@@ -82,7 +83,12 @@ public class SimulationCommandService {
             return executeMove(cityId, moveMatcher.group(1).trim(), moveMatcher.group(2).trim().toLowerCase(Locale.ROOT));
         }
 
-        return reject("Unsupported command. Use `advance <count>`, `focus <human>`, or `move <human> <place>`." );
+        Matcher meetMatcher = MEET_PATTERN.matcher(commandText);
+        if (meetMatcher.matches()) {
+            return executeMeet(cityId, meetMatcher.group(1).trim(), meetMatcher.group(2).trim());
+        }
+
+        return reject("Unsupported command. Use `advance <count>`, `focus <human>`, `move <human> <place>`, or `meet <human> <human>`." );
     }
 
     private SimulationCommandOutput executeAdvance(Long cityId, int count) {
@@ -137,13 +143,20 @@ public class SimulationCommandService {
                 new HumanGoalApplicationService.GoalTarget(place.id(), null, place.x(), place.y(), "command:move")
         );
         emitGoalAssignedEvent(cityId, goal, assignedTick);
+        long fromTick = advanceOneStep(cityId);
 
-        SimulationCommandOutput output = success("MOVE_HUMAN_TO_PLACE", "Assigned " + human.getName() + " to move toward " + place.id() + ".", true);
+        SimulationCommandOutput output = success(
+                "MOVE_HUMAN_TO_PLACE",
+                "Assigned " + human.getName() + " to move toward " + place.id() + " and advanced city by 1 step.",
+                true
+        );
         output.getReferencedEntities().setHumanId(human.getId());
         output.getReferencedEntities().setPlaceId(place.id());
 
         output.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
-        output.getUiEffects().add(new AgentUiEffectOutput("REFRESH_TIMELINE"));
+        AgentUiEffectOutput refreshTimeline = new AgentUiEffectOutput("REFRESH_TIMELINE");
+        refreshTimeline.setFromTick(fromTick);
+        output.getUiEffects().add(refreshTimeline);
 
         AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
         focus.setHumanId(human.getId());
@@ -153,6 +166,62 @@ public class SimulationCommandService {
         highlightPlace.setPlaceId(place.id());
         output.getUiEffects().add(highlightPlace);
         return output;
+    }
+
+    private SimulationCommandOutput executeMeet(Long cityId, String actorToken, String targetToken) {
+        Human actor = resolveExactHuman(cityId, actorToken);
+        if (actor == null) {
+            return reject("Could not resolve a single actor for `meet`. Use an exact human id or exact name.");
+        }
+
+        Human target = resolveExactHuman(cityId, targetToken);
+        if (target == null) {
+            return reject("Could not resolve a single target for `meet`. Use an exact human id or exact name.");
+        }
+        if (actor.getId().equals(target.getId())) {
+            return reject("`meet` requires two distinct humans.");
+        }
+
+        long assignedTick = currentTickForGoalAssignment(cityId);
+        HumanGoal goal = humanGoalApplicationService.assignGoal(
+                cityId,
+                actor.getId(),
+                HumanGoalType.MEET_HUMAN,
+                HumanGoalSource.CHAT_COMMAND,
+                assignedTick,
+                new HumanGoalApplicationService.GoalTarget(
+                        null,
+                        target.getId(),
+                        target.getX(),
+                        target.getY(),
+                        "command:meet"
+                )
+        );
+        emitGoalAssignedEvent(cityId, goal, assignedTick);
+        long fromTick = advanceOneStep(cityId);
+
+        SimulationCommandOutput output = success(
+                "MEET_HUMAN",
+                "Assigned " + actor.getName() + " to meet " + target.getName() + " and advanced city by 1 step.",
+                true
+        );
+        output.getReferencedEntities().setHumanId(actor.getId());
+        output.getReferencedEntities().setTargetHumanId(target.getId());
+
+        output.getUiEffects().add(new AgentUiEffectOutput("REFRESH_SNAPSHOT"));
+        AgentUiEffectOutput refreshTimeline = new AgentUiEffectOutput("REFRESH_TIMELINE");
+        refreshTimeline.setFromTick(fromTick);
+        output.getUiEffects().add(refreshTimeline);
+
+        AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
+        focus.setHumanId(actor.getId());
+        output.getUiEffects().add(focus);
+        return output;
+    }
+
+    private long advanceOneStep(Long cityId) {
+        SimulationRun run = simulationApplicationService.step(cityId, 1);
+        return Math.max(0L, run.getTick());
     }
 
     private Human resolveExactHuman(Long cityId, String token) {

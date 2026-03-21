@@ -9,9 +9,8 @@
  */
 
 
-export interface SimulationCommandReferencedEntitiesOutput { 
-    humanId?: number;
-    targetHumanId?: number;
-    placeId?: string;
+export interface SimulationCommandBuilderOptionOutput { 
+    label?: string;
+    value?: string;
 }
 

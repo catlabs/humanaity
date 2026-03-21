@@ -3,6 +3,7 @@ package eu.catlabs.humanaity.simulation.api.dto;
 public class SimulationCommandReferencedEntitiesOutput {
 
     private Long humanId;
+    private Long targetHumanId;
     private String placeId;
 
     public Long getHumanId() {
@@ -19,5 +20,13 @@ public class SimulationCommandReferencedEntitiesOutput {
 
     public void setPlaceId(String placeId) {
         this.placeId = placeId;
+    }
+
+    public Long getTargetHumanId() {
+        return targetHumanId;
+    }
+
+    public void setTargetHumanId(Long targetHumanId) {
+        this.targetHumanId = targetHumanId;
     }
 }

@@ -34,6 +34,9 @@ model/simulationAssistantItemOutput.ts
 model/simulationAssistantMetricOutput.ts
 model/simulationAssistantRequestInput.ts
 model/simulationAssistantResponseOutput.ts
+model/simulationCommandBuilderActionOutput.ts
+model/simulationCommandBuilderOptionOutput.ts
+model/simulationCommandBuilderOutput.ts
 model/simulationCommandInput.ts
 model/simulationCommandOutput.ts
 model/simulationCommandReferencedEntitiesOutput.ts

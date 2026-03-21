@@ -152,10 +152,55 @@ class SimulationCommandsApiContractTest {
         assertThat(payload.get("ok").asBoolean()).isTrue();
         assertThat(payload.get("commandType").asText()).isEqualTo("MOVE_HUMAN_TO_PLACE");
         assertThat(payload.get("mutated").asBoolean()).isTrue();
+        assertThat(payload.get("message").asText()).contains("advanced city by 1 step");
         assertThat(payload.path("referencedEntities").path("humanId").asLong()).isEqualTo(human.getId());
         assertThat(payload.path("referencedEntities").path("placeId").asText()).isEqualTo("forest");
         assertThat(payload.get("uiEffects").toString()).contains("REFRESH_SNAPSHOT", "REFRESH_TIMELINE", "FOCUS_HUMAN", "HIGHLIGHT_PLACE");
         assertThat(humanGoalRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void meetCommandAssignsGoalAndReturnsTwoHumanReferences() throws Exception {
+        User owner = persistUser("owner-command-meet@example.com");
+        City city = persistCity("MeetCity", owner);
+        Human actor = persistHuman(city, "Ada", 0.2, 0.3);
+        Human target = persistHuman(city, "Ben", 0.8, 0.7);
+
+        MvcResult result = mockMvc.perform(post("/api/simulations/{cityId}/commands", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("meet " + actor.getId() + " " + target.getId())))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(payload.get("ok").asBoolean()).isTrue();
+        assertThat(payload.get("commandType").asText()).isEqualTo("MEET_HUMAN");
+        assertThat(payload.get("mutated").asBoolean()).isTrue();
+        assertThat(payload.get("message").asText()).contains("advanced city by 1 step");
+        assertThat(payload.path("referencedEntities").path("humanId").asLong()).isEqualTo(actor.getId());
+        assertThat(payload.path("referencedEntities").path("targetHumanId").asLong()).isEqualTo(target.getId());
+        assertThat(payload.get("uiEffects").toString()).contains("REFRESH_SNAPSHOT", "REFRESH_TIMELINE", "FOCUS_HUMAN");
+        assertThat(humanGoalRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void meetCommandRejectsSameHuman() throws Exception {
+        User owner = persistUser("owner-command-meet-invalid@example.com");
+        City city = persistCity("MeetInvalidCity", owner);
+        Human actor = persistHuman(city, "Ada", 0.2, 0.3);
+
+        MvcResult result = mockMvc.perform(post("/api/simulations/{cityId}/commands", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("meet " + actor.getId() + " " + actor.getId())))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(payload.get("ok").asBoolean()).isFalse();
+        assertThat(payload.get("commandType").asText()).isEqualTo("UNSUPPORTED");
+        assertThat(payload.get("message").asText()).contains("two distinct humans");
     }
 
     @Test
