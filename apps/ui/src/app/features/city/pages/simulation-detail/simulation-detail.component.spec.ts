@@ -177,6 +177,7 @@ describe('SimulationDetailComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Spec City');
     expect(text).toContain('Era Founding · Year 1');
+    expect(text).toContain('Tick 0');
     expect(text).toContain('Use a short deterministic command or click a suggestion.');
     expect(text).toContain('readable board state');
     expect(text).toContain('Story focus');
@@ -185,6 +186,15 @@ describe('SimulationDetailComponent', () => {
     expect(text).toContain('AI narration ready');
     expect(text).toContain('Fallback narration');
     expect(fixture.nativeElement.querySelector('app-simulation-board')).not.toBeNull();
+
+    const toolbar = fixture.nativeElement.querySelector('.info-bar') as HTMLElement;
+    const hasRefreshLabel = Array.from(toolbar.querySelectorAll('button')).some(
+      (button) => (button.textContent ?? '').includes('Refresh'),
+    );
+    expect(hasRefreshLabel).toBeFalse();
+    expect(
+      toolbar.querySelector('button[aria-label="Advance simulation by one step"]'),
+    ).not.toBeNull();
   });
 
   it('submits advance 1 through the deterministic command endpoint from the step button', () => {

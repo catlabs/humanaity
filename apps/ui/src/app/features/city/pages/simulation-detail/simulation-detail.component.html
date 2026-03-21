@@ -2,45 +2,23 @@
   <mat-toolbar class="info-bar app-surface-bg">
     <div class="title-block">
       <div class="title-main">{{ city.name || "Simulation" }}</div>
-      <div class="title-sub">{{ headerRunSummary() }} · {{ phaseLabel() }}</div>
-    </div>
-
-    <div class="toolbar-status" aria-label="Simulation status">
-      <div class="toolbar-pill">
-        <span>Run</span>
-        <strong>{{
-          hasRun() ? (isRunning() ? "Running" : "Paused") : "Not started"
-        }}</strong>
-      </div>
-      <div class="toolbar-pill">
-        <span>Tick</span>
-        <strong>{{ currentTick() }}</strong>
-      </div>
-      <div class="toolbar-pill">
-        <span>People</span>
-        <strong>{{ populationTotal() }}</strong>
+      <div class="title-sub">
+        {{ headerRunSummary() }} ·
+        <span class="title-sub-tick">Tick {{ currentTick() }}</span>
       </div>
     </div>
 
     <span class="spacer"></span>
-
     <button
-      mat-stroked-button
-      type="button"
-      (click)="onRefresh()"
-      [disabled]="controlBusy()"
-    >
-      <mat-icon>refresh</mat-icon>
-      Refresh
-    </button>
-    <button
-      mat-stroked-button
+      mat-icon-button
+      class="step-icon-button"
       type="button"
       (click)="onStep()"
       [disabled]="!canStep()"
+      aria-label="Advance simulation by one step"
+      title="Advance simulation by one step"
     >
-      <mat-icon>skip_next</mat-icon>
-      Step
+      <mat-icon class="step-icon">skip_next</mat-icon>
     </button>
   </mat-toolbar>
 
@@ -73,14 +51,13 @@
           <app-simulation-board
             class="world-board"
             [markers]="boardMarkers()"
-            [eventMarkers]="boardEventMarkers()"
+            [eventMarkers]="[]"
             [places]="boardPlaces()"
             [selectedHumanId]="selectedHumanId()"
             [selectedEventId]="selectedEventId()"
             [freshEventIds]="recentDeltaEventIds()"
             [highlightedPlaceId]="highlightedPlaceId()"
             (markerSelected)="selectHumanById($event)"
-            (eventMarkerSelected)="selectEventById($event)"
           ></app-simulation-board>
 
           @if (showWorldOverlay()) {

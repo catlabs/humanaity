@@ -45,29 +45,23 @@
   max-width: 34rem;
 }
 
-.toolbar-status {
-  display: flex;
-  gap: map.get($spacing-scale, 2);
-  flex-wrap: wrap;
+.title-sub-tick {
+  color: var(--mat-sys-on-surface-variant);
 }
 
-.toolbar-pill {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: $radius-sm;
-  background: var(--mat-sys-surface-container-low);
+.step-icon-button {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  min-height: 1.75rem;
+  flex: 0 0 auto;
+}
 
-  span {
-    @include hai-meta;
-  }
-
-  strong {
-    color: var(--mat-sys-on-surface);
-    font-size: 0.95rem;
-  }
+.step-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  line-height: 1rem;
 }
 
 .spacer {
@@ -905,7 +899,6 @@
     flex-wrap: wrap;
   }
 
-  .toolbar-status,
   .console-examples,
   .feed-item-header {
     width: 100%;
