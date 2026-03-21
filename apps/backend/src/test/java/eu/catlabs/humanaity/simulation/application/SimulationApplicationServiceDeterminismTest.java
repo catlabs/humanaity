@@ -9,6 +9,10 @@ import eu.catlabs.humanaity.human.application.HumanApplicationService;
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
+import eu.catlabs.humanaity.simulation.domain.HumanGoal;
+import eu.catlabs.humanaity.simulation.domain.HumanGoalSource;
+import eu.catlabs.humanaity.simulation.domain.HumanGoalStatus;
+import eu.catlabs.humanaity.simulation.domain.HumanGoalType;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
 import eu.catlabs.humanaity.simulation.domain.SimulationRunStatus;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
@@ -22,9 +26,11 @@ import org.mockito.quality.Strictness;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -138,6 +144,7 @@ class SimulationApplicationServiceDeterminismTest {
             assertThat(right.getX()).isEqualTo(left.getX());
             assertThat(right.getY()).isEqualTo(left.getY());
             assertThat(right.isBusy()).isEqualTo(left.isBusy());
+            assertThat(right.getNextGoalAssignTick()).isEqualTo(left.getNextGoalAssignTick());
         }
     }
 
@@ -168,11 +175,15 @@ class SimulationApplicationServiceDeterminismTest {
         run.setStatus(SimulationRunStatus.RUNNING);
 
         List<Human> humans = createOrderedHumans(city);
+        Map<Long, Human> humansById = humans.stream()
+                .collect(java.util.stream.Collectors.toMap(Human::getId, human -> human));
+        Map<Long, HumanGoal> activeGoalsByHuman = new HashMap<>();
+        AtomicLong goalIds = new AtomicLong(1L);
 
         when(simulationRunRepository.findByCityId(cityId)).thenReturn(Optional.of(run));
-        when(simulationRunRepository.save(any(SimulationRun.class))).thenReturn(run);
+        when(simulationRunRepository.save(any(SimulationRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(humanRepository.findByCityIdOrderByIdAsc(cityId)).thenAnswer(invocation -> humans);
-        when(humanRepository.saveAll(any())).thenReturn(humans);
+        when(humanRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
         doNothing().when(humanApplicationService).publishHumanUpdates(any());
         when(eventApplicationService.emitEventsAtTick(anyLong(), anyLong(), any())).thenReturn(List.of());
         when(eventApplicationService.emitLifecycleEvent(
@@ -188,7 +199,70 @@ class SimulationApplicationServiceDeterminismTest {
         when(inventionApplicationService.deriveFromPersistedEvents(anyLong(), anyBoolean())).thenReturn(List.of());
         when(inventionApplicationService.listCityInventions(anyLong(), any(), any(), any())).thenReturn(List.of());
         when(eventApplicationService.listCityEvents(anyLong(), any(), any(), any())).thenReturn(List.of());
-        when(humanGoalApplicationService.listActiveGoalsByCity(anyLong())).thenReturn(List.of());
+        when(humanGoalApplicationService.listActiveGoalsByCity(cityId)).thenAnswer(invocation ->
+                activeGoalsByHuman.values().stream()
+                        .sorted(Comparator.comparing(HumanGoal::getAssignedTick).thenComparing(HumanGoal::getId))
+                        .toList()
+        );
+        when(humanGoalApplicationService.assignGoal(
+                org.mockito.ArgumentMatchers.eq(cityId),
+                anyLong(),
+                any(HumanGoalType.class),
+                any(HumanGoalSource.class),
+                anyLong(),
+                any(HumanGoalApplicationService.GoalTarget.class)
+        )).thenAnswer(invocation -> {
+            Long humanId = invocation.getArgument(1);
+            HumanGoalType goalType = invocation.getArgument(2);
+            HumanGoalSource source = invocation.getArgument(3);
+            Long assignedTick = invocation.getArgument(4);
+            HumanGoalApplicationService.GoalTarget target = invocation.getArgument(5);
+
+            Human human = humansById.get(humanId);
+            if (human == null) {
+                throw new IllegalStateException("Human not found in deterministic test scenario: " + humanId);
+            }
+
+            HumanGoal existing = activeGoalsByHuman.remove(humanId);
+            if (existing != null) {
+                existing.setStatus(HumanGoalStatus.CANCELLED);
+                existing.setCompletedTick(assignedTick);
+            }
+
+            human.setNextGoalAssignTick(null);
+
+            HumanGoal goal = new HumanGoal();
+            goal.setId(goalIds.getAndIncrement());
+            goal.setHuman(human);
+            goal.setGoalType(goalType);
+            goal.setSource(source);
+            goal.setStatus(HumanGoalStatus.ACTIVE);
+            goal.setAssignedTick(assignedTick);
+            goal.setCompletedTick(null);
+            goal.setTargetPlaceId(target.targetPlaceId());
+            goal.setTargetHumanId(target.targetHumanId());
+            goal.setTargetX(target.targetX());
+            goal.setTargetY(target.targetY());
+            goal.setMetadataKey(target.metadataKey());
+            activeGoalsByHuman.put(humanId, goal);
+            return goal;
+        });
+        when(humanGoalApplicationService.completeGoal(any(HumanGoal.class), anyLong())).thenAnswer(invocation -> {
+            HumanGoal goal = invocation.getArgument(0);
+            Long completedTick = invocation.getArgument(1);
+            goal.setStatus(HumanGoalStatus.COMPLETED);
+            goal.setCompletedTick(completedTick);
+            activeGoalsByHuman.remove(goal.getHuman().getId());
+            return goal;
+        });
+        when(humanGoalApplicationService.cancelGoal(any(HumanGoal.class), anyLong())).thenAnswer(invocation -> {
+            HumanGoal goal = invocation.getArgument(0);
+            Long completedTick = invocation.getArgument(1);
+            goal.setStatus(HumanGoalStatus.CANCELLED);
+            goal.setCompletedTick(completedTick);
+            activeGoalsByHuman.remove(goal.getHuman().getId());
+            return goal;
+        });
         when(knowledgeProgressionService.evaluateUnlocks(anyLong(), anyLong())).thenReturn(List.of());
         when(knowledgeUnlockRepository.findByCityIdOrderByUnlockedTickAscNodeIdAsc(anyLong())).thenReturn(List.of());
         when(humanActionCatalogService.actionsForApplications(any())).thenReturn(java.util.EnumSet.noneOf(eu.catlabs.humanaity.simulation.domain.HumanActionType.class));

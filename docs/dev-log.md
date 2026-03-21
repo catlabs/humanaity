@@ -186,3 +186,31 @@ Implemented:
 Trade-offs:
 
 - simulation detail browser tests still fail to run in this environment (`ng test` exits early), so validation here relied on backend contract tests plus UI TypeScript compile checks
+
+## 2026-03-21
+
+Decision:
+
+- remove default random idle drift from simulation ticks and move all humans through the goal lifecycle with deterministic autonomous reassignment
+- insert a deterministic dwell/rest window between goal completion and the next autonomous goal assignment
+
+Implemented:
+
+- added `human.nextGoalAssignTick` persistence (`V8__human_next_goal_assign_tick.sql`) and wired assignment flows to clear dwell metadata on new goal assignment
+- updated `SimulationApplicationService` to:
+  - assign deterministic autonomous `MOVE_TO_PLACE` goals for humans with no active goal when eligible
+  - keep humans stationary during dwell ticks (`GOAL_DWELL_TICKS=5`)
+  - set reassignment thresholds on goal completion and emit autonomous `GOAL_ASSIGNED` lifecycle events
+- updated backend tests:
+  - `SimulationGoalExecutionTest` now covers completion -> dwell -> reassignment and legacy/no-metadata default assignment
+  - `SimulationApplicationServiceDeterminismTest` now keeps stateful mocked goal lifecycle behavior compatible with deterministic autonomous assignment
+  - `HumanGoalApplicationServiceTest` verifies assignment clears `nextGoalAssignTick`
+- added simulation header start/stop controls on `/cities/:id`:
+  - Start shown when not running, Stop shown when running
+  - Step remains disabled while running
+  - updated simulation detail unit spec for toolbar visibility and action handlers
+
+Validation:
+
+- `cd apps/backend && bash ./mvnw -q -Dtest=SimulationGoalExecutionTest,SimulationApplicationServiceDeterminismTest,HumanGoalApplicationServiceTest test`
+- `cd apps/ui && npm test -- --watch=false --browsers=ChromeHeadless --include src/app/features/city/pages/simulation-detail/simulation-detail.component.spec.ts`

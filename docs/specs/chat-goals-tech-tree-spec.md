@@ -71,7 +71,8 @@ Minimum goal fields:
 - A goal is assigned outside the turn loop or by deterministic in-loop rules.
 - The step engine reads current goals and updates movement/action choices deterministically.
 - Goal progress and completion must emit deterministic events.
-- Idle humans may wander, but goal-driven movement has priority over idle wandering.
+- Humans without active goals must enter deterministic autonomous reassignment rather than perpetual random drift.
+- After goal completion, humans may remain stationary for a bounded deterministic dwell window before the next assignment.
 - Movement must clamp to world bounds and avoid edge-sticking behavior.
 
 ## Place-Aware Movement Rule

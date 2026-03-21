@@ -45,6 +45,8 @@ class HumanGoalApplicationServiceTest {
     void assignGoalStoresCanonicalGoalPayloadAndProvenance() {
         City city = createCity("Goals-A");
         Human human = createHuman(city, "Elsa", 0.2, 0.3);
+        human.setNextGoalAssignTick(42L);
+        human = humanRepository.save(human);
 
         HumanGoal goal = humanGoalApplicationService.assignGoal(
                 city.getId(),
@@ -65,6 +67,7 @@ class HumanGoalApplicationServiceTest {
         assertThat(goal.getTargetX()).isEqualTo(0.14);
         assertThat(goal.getTargetY()).isEqualTo(0.18);
         assertThat(goal.getMetadataKey()).isEqualTo("chat:msg-1");
+        assertThat(humanRepository.findById(human.getId()).orElseThrow().getNextGoalAssignTick()).isNull();
     }
 
     @Test

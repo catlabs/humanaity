@@ -6,6 +6,8 @@ Goal selection, tracking, and completion semantics for simulated humans.
 ## Covers
 - human goal model and lifecycle
 - goal generation from context/traits
+- deterministic autonomous reassignment for humans without active goals
+- post-completion dwell/rest timing before reassignment
 - relationship between goals, actions, and discoveries
 
 ## Source docs

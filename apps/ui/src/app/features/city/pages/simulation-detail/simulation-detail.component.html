@@ -9,17 +9,45 @@
     </div>
 
     <span class="spacer"></span>
-    <button
-      mat-icon-button
-      class="step-icon-button"
-      type="button"
-      (click)="onStep()"
-      [disabled]="!canStep()"
-      aria-label="Advance simulation by one step"
-      title="Advance simulation by one step"
-    >
-      <mat-icon class="step-icon">skip_next</mat-icon>
-    </button>
+    <div class="header-controls">
+      @if (!isRunning()) {
+        <button
+          mat-icon-button
+          class="control-icon-button"
+          type="button"
+          (click)="onStart()"
+          [disabled]="!canStart()"
+          aria-label="Start simulation"
+          title="Start simulation"
+        >
+          <mat-icon class="step-icon">play_arrow</mat-icon>
+        </button>
+      } @else {
+        <button
+          mat-icon-button
+          class="control-icon-button"
+          type="button"
+          (click)="onStop()"
+          [disabled]="!canStop()"
+          aria-label="Stop simulation"
+          title="Stop simulation"
+        >
+          <mat-icon class="step-icon">stop</mat-icon>
+        </button>
+      }
+
+      <button
+        mat-icon-button
+        class="control-icon-button"
+        type="button"
+        (click)="onStep()"
+        [disabled]="!canStep()"
+        aria-label="Advance simulation by one step"
+        title="Advance simulation by one step"
+      >
+        <mat-icon class="step-icon">skip_next</mat-icon>
+      </button>
+    </div>
   </mat-toolbar>
 
   @if (snapshotError()) {

@@ -16,6 +16,7 @@ import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQuer
 import eu.catlabs.humanaity.simulation.domain.HumanGoal;
 import eu.catlabs.humanaity.simulation.domain.HumanActionType;
 import eu.catlabs.humanaity.simulation.domain.KnowledgeUnlock;
+import eu.catlabs.humanaity.simulation.domain.HumanGoalSource;
 import eu.catlabs.humanaity.simulation.domain.HumanGoalType;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
 import eu.catlabs.humanaity.simulation.domain.SimulationRunStatus;
@@ -52,8 +53,8 @@ public class SimulationApplicationService {
     private static final int MAX_STEPS_PER_REQUEST = 10_000;
     private static final double COLLISION_DISTANCE_THRESHOLD = 0.08;
     private static final double GOAL_MOVEMENT_STEP = 0.035;
-    private static final double IDLE_MOVEMENT_STEP = 0.012;
     private static final double GOAL_COMPLETION_DISTANCE = 0.03;
+    private static final long GOAL_DWELL_TICKS = 5L;
     private static final int MAX_ACTION_OUTCOMES_PER_TICK = 1;
     private static final int MAX_EVENT_OUTCOMES_PER_TICK = 4;
     private static final long RECENT_DIALOGUE_WINDOW_TICKS = 3L;
@@ -65,6 +66,7 @@ public class SimulationApplicationService {
     private static final int PROXIMITY_GROUP_SUSTAIN_TICKS = 2;
     private static final long PROXIMITY_GROUP_COOLDOWN_TICKS = 4L;
     private static final long DISCOVERY_SEED_SALT = 0x9E3779B97F4A7C15L;
+    private static final long DEFAULT_GOAL_PLACE_SEED_SALT = 0xB7E151628AED2A6BL;
     private static final String[] INVENTION_TOPICS = {
             "Canal Irrigation",
             "Ceramic Kiln",
@@ -352,21 +354,37 @@ public class SimulationApplicationService {
             activeGoalsByHuman.put(goal.getHuman().getId(), goal);
         }
 
+        long nextTick = run.getTick() + 1;
         List<GoalTickOutcome> goalOutcomes = new ArrayList<>();
+        List<EventDraft> autonomousGoalAssignmentDrafts = new ArrayList<>();
         for (Human human : orderedHumans) {
             human.setBusy(false);
             HumanGoal goal = activeGoalsByHuman.get(human.getId());
+            if (goal != null) {
+                human.setNextGoalAssignTick(null);
+            } else {
+                goal = assignAutonomousGoalIfReady(cityId, run.getSeed(), run.getTick(), human);
+                if (goal != null) {
+                    activeGoalsByHuman.put(human.getId(), goal);
+                    autonomousGoalAssignmentDrafts.add(buildGoalAssignedDraft(goal, nextTick));
+                }
+            }
             GoalTickOutcome outcome = goal == null
-                    ? updateIdleHumanPosition(run.getSeed(), run.getTick(), human)
+                    ? GoalTickOutcome.none()
                     : updateGoalDrivenHumanPosition(goal, run.getSeed(), run.getTick(), human, humansById);
+            if (outcome.result() == GoalTickResult.COMPLETED) {
+                human.setNextGoalAssignTick(nextTick + GOAL_DWELL_TICKS);
+            } else if (outcome.result() == GoalTickResult.CANCELLED) {
+                human.setNextGoalAssignTick(null);
+            }
             goalOutcomes.add(outcome);
         }
 
         humanRepository.saveAll(orderedHumans);
         humanApplicationService.publishHumanUpdates(orderedHumans);
 
-        long nextTick = run.getTick() + 1;
-        List<EventDraft> goalLifecycleDrafts = finalizeGoalOutcomes(goalOutcomes, nextTick);
+        List<EventDraft> goalLifecycleDrafts = new ArrayList<>(autonomousGoalAssignmentDrafts);
+        goalLifecycleDrafts.addAll(finalizeGoalOutcomes(goalOutcomes, nextTick));
         List<EventDraft> actionDrafts = buildHumanActionDrafts(run, nextTick, orderedHumans, activeGoalsByHuman);
         run.setTick(nextTick);
         simulationRunRepository.save(run);
@@ -387,13 +405,52 @@ public class SimulationApplicationService {
         knowledgeProgressionService.evaluateUnlocks(cityId, nextTick);
     }
 
-    private GoalTickOutcome updateIdleHumanPosition(Long runSeed, Long tick, Human human) {
-        Random tickHumanRandom = new Random(deriveDeterministicSeed(runSeed, tick, human.getId()));
-        double deltaX = (tickHumanRandom.nextDouble() - 0.5) * (IDLE_MOVEMENT_STEP * 2.0);
-        double deltaY = (tickHumanRandom.nextDouble() - 0.5) * (IDLE_MOVEMENT_STEP * 2.0);
-        human.setX(applyBoundary(human.getX() + deltaX));
-        human.setY(applyBoundary(human.getY() + deltaY));
-        return GoalTickOutcome.none();
+    private HumanGoal assignAutonomousGoalIfReady(Long cityId, Long runSeed, Long tick, Human human) {
+        Long nextGoalAssignTick = human.getNextGoalAssignTick();
+        if (nextGoalAssignTick != null && tick < nextGoalAssignTick) {
+            return null;
+        }
+
+        SimulationPlaceRegistry.SimulationPlace targetPlace = selectDeterministicAutonomousTargetPlace(runSeed, tick, human);
+        return humanGoalApplicationService.assignGoal(
+                cityId,
+                human.getId(),
+                HumanGoalType.MOVE_TO_PLACE,
+                HumanGoalSource.AUTONOMOUS,
+                tick,
+                new HumanGoalApplicationService.GoalTarget(
+                        targetPlace.id(),
+                        null,
+                        targetPlace.x(),
+                        targetPlace.y(),
+                        "autonomous:default"
+                )
+        );
+    }
+
+    private SimulationPlaceRegistry.SimulationPlace selectDeterministicAutonomousTargetPlace(Long runSeed, Long tick, Human human) {
+        List<SimulationPlaceRegistry.SimulationPlace> places = SimulationPlaceRegistry.all();
+        if (places.isEmpty()) {
+            throw new IllegalStateException("Simulation places registry is empty");
+        }
+
+        String currentPlaceId = resolvePlaceForPosition(human.getX(), human.getY())
+                .map(SimulationPlaceRegistry.SimulationPlace::id)
+                .orElse(null);
+
+        Random placeRandom = new Random(deriveDeterministicSeed(runSeed, tick, human.getId()) ^ DEFAULT_GOAL_PLACE_SEED_SALT);
+        int baseIndex = placeRandom.nextInt(places.size());
+        if (places.size() == 1 || currentPlaceId == null) {
+            return places.get(baseIndex);
+        }
+
+        for (int offset = 0; offset < places.size(); offset++) {
+            SimulationPlaceRegistry.SimulationPlace candidate = places.get((baseIndex + offset) % places.size());
+            if (!candidate.id().equals(currentPlaceId)) {
+                return candidate;
+            }
+        }
+        return places.get(baseIndex);
     }
 
     private GoalTickOutcome updateGoalDrivenHumanPosition(
@@ -539,6 +596,30 @@ public class SimulationApplicationService {
                 payload,
                 24,
                 goalKey
+        );
+    }
+
+    private EventDraft buildGoalAssignedDraft(HumanGoal goal, long tick) {
+        Map<String, String> payload = new HashMap<>();
+        payload.put("goalId", String.valueOf(goal.getId()));
+        payload.put("goalType", goal.getGoalType().name());
+        payload.put("source", goal.getSource().name());
+        if (goal.getTargetPlaceId() != null) {
+            payload.put("targetPlaceId", goal.getTargetPlaceId());
+        }
+        if (goal.getTargetHumanId() != null) {
+            payload.put("targetHumanId", String.valueOf(goal.getTargetHumanId()));
+        }
+        if (goal.getMetadataKey() != null) {
+            payload.put("metadataKey", goal.getMetadataKey());
+        }
+        String eventKey = "GOAL_ASSIGNED:" + goal.getId() + ":" + tick;
+        return new EventDraft(
+                EventType.GOAL_ASSIGNED,
+                List.of(goal.getHuman().getId()),
+                payload,
+                18,
+                eventKey
         );
     }
 

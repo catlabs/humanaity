@@ -80,7 +80,6 @@ class SimulationGoalExecutionTest {
 
         simulationApplicationService.step(city.getId(), 80);
 
-        Optional<HumanGoal> activeGoal = humanGoalApplicationService.findActiveGoal(human.getId());
         HumanGoal persistedGoal = humanGoalRepository.findById(assigned.getId()).orElseThrow();
         Human updatedHuman = humanRepository.findById(human.getId()).orElseThrow();
         List<Event> completionEvents = eventRepository.findByCityIdAndEventTypeOrderByTickAscSequenceInTickAscIdAsc(
@@ -88,14 +87,88 @@ class SimulationGoalExecutionTest {
                 EventType.GOAL_COMPLETED
         );
 
-        assertThat(activeGoal).isEmpty();
         assertThat(persistedGoal.getStatus()).isEqualTo(HumanGoalStatus.COMPLETED);
         assertThat(persistedGoal.getCompletedTick()).isNotNull();
         assertThat(updatedHuman.getX()).isBetween(0.0, 1.0);
         assertThat(updatedHuman.getY()).isBetween(0.0, 1.0);
-        assertThat(completionEvents).hasSize(1);
-        assertThat(completionEvents.get(0).getPayload().get("goalId")).isEqualTo(String.valueOf(assigned.getId()));
-        assertThat(completionEvents.get(0).getPayload().get("goalType")).isEqualTo(HumanGoalType.MOVE_TO_PLACE.name());
+        assertThat(completionEvents).isNotEmpty();
+        assertThat(completionEvents).anyMatch(
+                event -> String.valueOf(assigned.getId()).equals(event.getPayload().get("goalId"))
+        );
+        assertThat(completionEvents).anyMatch(
+                event -> HumanGoalType.MOVE_TO_PLACE.name().equals(event.getPayload().get("goalType"))
+        );
+    }
+
+    @Test
+    void completedGoalTriggersDwellThenDeterministicAutonomousReassignment() {
+        City city = createCity("Goals-Dwell");
+        Human human = createHuman(city, "Nora", 0.14, 0.18);
+        simulationApplicationService.createRun(city.getId(), 777L);
+
+        HumanGoal firstGoal = humanGoalApplicationService.assignGoal(
+                city.getId(),
+                human.getId(),
+                HumanGoalType.MOVE_TO_PLACE,
+                HumanGoalSource.CHAT_COMMAND,
+                0L,
+                new HumanGoalApplicationService.GoalTarget("forest", null, 0.14, 0.18, "test-dwell")
+        );
+
+        simulationApplicationService.step(city.getId(), 1);
+
+        HumanGoal completedFirst = humanGoalRepository.findById(firstGoal.getId()).orElseThrow();
+        Human afterCompletion = humanRepository.findById(human.getId()).orElseThrow();
+        assertThat(completedFirst.getStatus()).isEqualTo(HumanGoalStatus.COMPLETED);
+        assertThat(completedFirst.getCompletedTick()).isEqualTo(1L);
+        assertThat(afterCompletion.getNextGoalAssignTick()).isEqualTo(6L);
+
+        double dwellX = afterCompletion.getX();
+        double dwellY = afterCompletion.getY();
+
+        simulationApplicationService.step(city.getId(), 5);
+
+        Human afterDwell = humanRepository.findById(human.getId()).orElseThrow();
+        Optional<HumanGoal> activeDuringDwell = humanGoalApplicationService.findActiveGoal(human.getId());
+        assertThat(afterDwell.getX()).isEqualTo(dwellX);
+        assertThat(afterDwell.getY()).isEqualTo(dwellY);
+        assertThat(activeDuringDwell).isEmpty();
+
+        simulationApplicationService.step(city.getId(), 1);
+
+        Human afterReassignment = humanRepository.findById(human.getId()).orElseThrow();
+        HumanGoal reassigned = humanGoalApplicationService.findActiveGoal(human.getId()).orElseThrow();
+        List<Event> assignedEvents = eventRepository.findByCityIdAndEventTypeOrderByTickAscSequenceInTickAscIdAsc(
+                city.getId(),
+                EventType.GOAL_ASSIGNED
+        );
+        assertThat(reassigned.getSource()).isEqualTo(HumanGoalSource.AUTONOMOUS);
+        assertThat(reassigned.getGoalType()).isEqualTo(HumanGoalType.MOVE_TO_PLACE);
+        assertThat(reassigned.getTargetPlaceId()).isNotEqualTo("forest");
+        assertThat(afterReassignment.getX()).isNotEqualTo(dwellX);
+        assertThat(afterReassignment.getY()).isNotEqualTo(dwellY);
+        assertThat(afterReassignment.getNextGoalAssignTick()).isNull();
+        assertThat(assignedEvents).anyMatch(
+                event -> HumanGoalSource.AUTONOMOUS.name().equals(event.getPayload().get("source"))
+        );
+    }
+
+    @Test
+    void humansWithoutGoalMetadataReceiveDeterministicDefaultGoalOnStep() {
+        City city = createCity("Goals-Legacy");
+        Human human = createHuman(city, "Milo", 0.5, 0.5);
+        human.setNextGoalAssignTick(null);
+        humanRepository.save(human);
+        simulationApplicationService.createRun(city.getId(), 20260321L);
+
+        simulationApplicationService.step(city.getId(), 1);
+
+        HumanGoal active = humanGoalApplicationService.findActiveGoal(human.getId()).orElseThrow();
+        Human updated = humanRepository.findById(human.getId()).orElseThrow();
+        assertThat(active.getSource()).isEqualTo(HumanGoalSource.AUTONOMOUS);
+        assertThat(active.getGoalType()).isEqualTo(HumanGoalType.MOVE_TO_PLACE);
+        assertThat(updated.getX()).isNotEqualTo(0.5);
+        assertThat(updated.getY()).isNotEqualTo(0.5);
     }
 
     @Test

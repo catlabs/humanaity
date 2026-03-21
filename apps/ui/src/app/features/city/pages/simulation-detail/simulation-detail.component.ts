@@ -191,6 +191,8 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
   });
 
   eraLabel = computed(() => this.formatEnumLabel(this.currentEra()));
+  canStart = computed(() => !this.controlBusy() && !this.isRunning());
+  canStop = computed(() => !this.controlBusy() && this.isRunning());
   canStep = computed(() => !this.controlBusy() && !this.isRunning());
   noRunYet = computed(() => !this.snapshotLoading() && !this.hasRun());
   hasHumans = computed(() => this.populationTotal() > 0);
@@ -341,6 +343,20 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
       return;
     }
     this.submitSimulationCommand('advance 1');
+  }
+
+  onStart(): void {
+    if (!this.canStart()) {
+      return;
+    }
+    this.runControlAction((cityId) => this.cityService.startSimulation(cityId));
+  }
+
+  onStop(): void {
+    if (!this.canStop()) {
+      return;
+    }
+    this.runControlAction((cityId) => this.cityService.stopSimulation(cityId));
   }
 
   onBuilderActionChange(event: Event): void {

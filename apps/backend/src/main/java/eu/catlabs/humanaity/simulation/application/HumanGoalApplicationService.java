@@ -50,6 +50,9 @@ public class HumanGoalApplicationService {
             humanGoalRepository.save(goal);
         }
 
+        human.setNextGoalAssignTick(null);
+        humanRepository.save(human);
+
         HumanGoal newGoal = new HumanGoal();
         newGoal.setHuman(human);
         newGoal.setGoalType(goalType);

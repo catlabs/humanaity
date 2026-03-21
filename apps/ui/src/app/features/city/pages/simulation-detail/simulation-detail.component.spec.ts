@@ -94,11 +94,15 @@ describe('SimulationDetailComponent', () => {
       'sendSimulationCommand',
       'sendSimulationAssistantCommand',
       'getSimulationCommandBuilder',
+      'startSimulation',
+      'stopSimulation',
     ]);
 
     cityService.getSimulationSnapshot.and.returnValue(of(snapshot));
     cityService.getSimulationTimeline.and.returnValue(of(timeline));
     cityService.getSimulationCommandBuilder.and.returnValue(of(commandBuilder));
+    cityService.startSimulation.and.returnValue(of(void 0));
+    cityService.stopSimulation.and.returnValue(of(void 0));
     cityService.sendSimulationCommand.and.returnValue(
       of({
         ok: true,
@@ -185,5 +189,45 @@ describe('SimulationDetailComponent', () => {
     expect(native.querySelector('.assistant-suggestions')).toBeNull();
     expect(native.querySelector('.console-feedback')).toBeNull();
     expect(native.querySelector('.chat-row')).toBeNull();
+  });
+
+  it('shows start control when simulation is not running and calls start handler', () => {
+    const native = fixture.nativeElement as HTMLElement;
+    const startButton = native.querySelector(
+      'button[aria-label="Start simulation"]',
+    ) as HTMLButtonElement | null;
+    const stopButton = native.querySelector(
+      'button[aria-label="Stop simulation"]',
+    ) as HTMLButtonElement | null;
+
+    expect(startButton).not.toBeNull();
+    expect(stopButton).toBeNull();
+
+    startButton?.click();
+    expect(cityService.startSimulation).toHaveBeenCalledWith(7);
+  });
+
+  it('shows stop control while running and keeps step disabled', () => {
+    const component = fixture.componentInstance;
+    component.isRunning.set(true);
+    fixture.detectChanges();
+
+    const native = fixture.nativeElement as HTMLElement;
+    const stopButton = native.querySelector(
+      'button[aria-label="Stop simulation"]',
+    ) as HTMLButtonElement | null;
+    const startButton = native.querySelector(
+      'button[aria-label="Start simulation"]',
+    ) as HTMLButtonElement | null;
+    const stepButton = native.querySelector(
+      'button[aria-label="Advance simulation by one step"]',
+    ) as HTMLButtonElement | null;
+
+    expect(stopButton).not.toBeNull();
+    expect(startButton).toBeNull();
+    expect(stepButton?.disabled).toBeTrue();
+
+    stopButton?.click();
+    expect(cityService.stopSimulation).toHaveBeenCalledWith(7);
   });
 });

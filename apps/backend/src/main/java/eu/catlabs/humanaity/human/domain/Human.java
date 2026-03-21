@@ -21,6 +21,7 @@ public class Human {
     private boolean busy;
     private String name;
     private String tribeId;
+    private Long nextGoalAssignTick;
     private Double x;
     private Double y;
 
