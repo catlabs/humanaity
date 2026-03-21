@@ -1,7 +1,7 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { CityService } from '../../city.service';
 import { SimulationDetailComponent } from './simulation-detail.component';
 
@@ -90,7 +90,7 @@ describe('SimulationDetailComponent', () => {
       'stopSimulation',
       'stepSimulation',
       'sendSimulationCommand',
-      'sendAgentChat',
+      'sendSimulationAssistantCommand',
     ]);
 
     cityService.getSimulationSnapshot.and.returnValue(of(snapshot));
@@ -111,7 +111,13 @@ describe('SimulationDetailComponent', () => {
         ],
       } as any)
     );
-    cityService.sendAgentChat.and.returnValue(of({} as any));
+    cityService.sendSimulationAssistantCommand.and.returnValue(
+      of({
+        text: 'Advanced city by 3 steps.',
+        commandType: 'ADVANCE',
+        blocks: [],
+      } as any)
+    );
 
     await TestBed.configureTestingModule({
       imports: [SimulationDetailComponent],
@@ -138,7 +144,7 @@ describe('SimulationDetailComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Spec City');
     expect(text).toContain('Era Founding · Year 1');
-    expect(text).toContain('Command');
+    expect(text).toContain('Simulation assistant');
     expect(text).toContain('Simulation state');
     expect(text).toContain('Story focus');
     expect(text).toContain('Timeline');
@@ -157,19 +163,19 @@ describe('SimulationDetailComponent', () => {
     );
   });
 
-  it('submits deterministic command requests and renders the backend reply', () => {
+  it('submits assistant command requests and renders the backend reply', () => {
     const component = fixture.componentInstance;
     component.onChatInput('advance 3');
     component.onSendChat();
     fixture.detectChanges();
 
-    expect(cityService.sendSimulationCommand).toHaveBeenCalledWith(
+    expect(cityService.sendSimulationAssistantCommand).toHaveBeenCalledWith(
       7,
-      jasmine.objectContaining({ commandText: 'advance 3' })
+      'advance 3'
     );
 
     const text = fixture.nativeElement.textContent as string;
-    expect(text).toContain('Command');
+    expect(text).toContain('Simulation assistant');
     expect(text).toContain('Advanced city by 3 steps.');
     expect(text).toContain('Advance');
   });
@@ -189,8 +195,7 @@ describe('SimulationDetailComponent', () => {
       } as any)
     );
 
-    fixture.componentInstance.onChatInput('move 12 forest');
-    fixture.componentInstance.onSendChat();
+    fixture.componentInstance.onStep();
     fixture.detectChanges();
 
     expect(fixture.componentInstance.selectedHumanId()).toBe(12);
@@ -329,26 +334,18 @@ describe('SimulationDetailComponent', () => {
     );
   });
 
-  it('renders rejected deterministic commands clearly', () => {
-    cityService.sendSimulationCommand.and.returnValue(
-      of({
-        ok: false,
-        commandType: 'UNSUPPORTED',
-        message:
-          'Unsupported command. Use `advance <count>`, `focus <human>`, or `move <human> <place>`.',
-        mutated: false,
-        referencedEntities: { humanId: null, placeId: null },
-        uiEffects: [],
-      } as any)
+  it('renders assistant request failures clearly', () => {
+    cityService.sendSimulationAssistantCommand.and.returnValue(
+      throwError(() => new Error('Unsupported command.'))
     );
 
     fixture.componentInstance.onChatInput('advance by 3 steps');
     fixture.componentInstance.onSendChat();
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.commandConsoleHasError()).toBeTrue();
+    expect(fixture.componentInstance.assistantStatusIsError()).toBeTrue();
     expect((fixture.nativeElement.textContent as string)).toContain(
-      'Unsupported command.'
+      'Assistant request failed.'
     );
   });
 });

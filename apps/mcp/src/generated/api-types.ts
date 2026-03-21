@@ -226,6 +226,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/simulations/{cityId}/assistant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Query the deterministic simulation assistant for a city */
+        post: operations["queryAssistant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/humans": {
         parameters: {
             query?: never;
@@ -561,6 +578,33 @@ export interface components {
             /** Format: int64 */
             humanId?: number;
             placeId?: string;
+        };
+        SimulationAssistantRequestInput: {
+            commandText?: string;
+        };
+        SimulationAssistantBlockOutput: {
+            type?: string;
+            title?: string;
+            subtitle?: string;
+            metrics?: components["schemas"]["SimulationAssistantMetricOutput"][];
+            items?: components["schemas"]["SimulationAssistantItemOutput"][];
+            emptyState?: string;
+        };
+        SimulationAssistantItemOutput: {
+            title?: string;
+            subtitle?: string;
+            body?: string;
+            chips?: string[];
+        };
+        SimulationAssistantMetricOutput: {
+            label?: string;
+            value?: string;
+        };
+        SimulationAssistantResponseOutput: {
+            ok?: boolean;
+            commandType?: string;
+            text?: string;
+            blocks?: components["schemas"]["SimulationAssistantBlockOutput"][];
         };
         AgentChatRequestInput: {
             message?: string;
@@ -1228,6 +1272,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["SimulationCommandOutput"];
+                };
+            };
+        };
+    };
+    queryAssistant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cityId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulationAssistantRequestInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SimulationAssistantResponseOutput"];
                 };
             };
         };
