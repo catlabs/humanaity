@@ -145,38 +145,6 @@ Trade-offs:
 
 Decision:
 
-- complete M4 by rendering backend-owned narration states explicitly in the main simulation page instead of silently treating enrichment as opaque optional copy
-
-Implemented:
-
-- updated the simulation-detail event feed, discoveries list, and event drawer so canonical facts remain primary while narration is labeled as ready, fallback, or unavailable
-- reused existing `EventOutput` and `InventionOutput` enrichment fields directly rather than inventing page-local narrative text
-- synced the active narration/UI docs and expanded the focused page spec with narration-state assertions
-
-Trade-offs:
-
-- this slice improves narration readability in the existing page surfaces but does not introduce new backend narration contracts or larger storytelling layouts
-
-## 2026-03-19
-
-Decision:
-
-- complete M5 by tightening the right-rail hierarchy so the main page reads as one coherent command -> simulation -> events -> narration flow during a short demo
-
-Implemented:
-
-- added a compact flow summary and story-focus panel to the right rail so command outcome, timeline change, and narration can be read in one place
-- tightened section labels and supporting copy across the simulation page to reduce the feeling of separate adjacent widgets
-- synced milestones and active page-contract docs so the completed coherence pass is reflected in the repo-visible guidance
-
-Trade-offs:
-
-- this slice favors demo readability and panel hierarchy polish over new domain capability; the underlying backend contracts remain unchanged
-
-## 2026-03-19
-
-Decision:
-
 - treat the M3 frontend scope as the authority for the new right-zone-first simulation layout constraints
 
 Implemented:

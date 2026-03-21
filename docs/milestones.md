@@ -111,7 +111,7 @@ Execution rhythm:
 
 ## M4 — AI Narrative Layer
 
-- Status: COMPLETE
+- Status: READY
 - Goal: Add AI value as narration only.
 - Current baseline: backend event enrichment already exists and `EventOutput` already exposes enrichment fields.
 - Visible UI outcome: events can show natural-language narration beside deterministic facts, with clear fallback behavior.
@@ -127,14 +127,11 @@ Execution rhythm:
   1. Reuse existing enrichment fields as the first-class narrative contract.
   2. Add narrative presentation to the main event feed.
   3. Verify the UI remains useful when narration is missing or fallback-generated.
-- Recent slice updates:
-  - 2026-03-19: rendered backend-owned narration status explicitly in the main event feed, recent discoveries list, and event drawer instead of silently collapsing to raw copy.
-  - 2026-03-19: kept canonical facts primary while showing `ready`, `fallback`, and unavailable narration states directly from `EventOutput` and `InventionOutput`.
 - Done signal: narration improves readability without becoming required for command execution or simulation understanding.
 
 ## M5 — Product Coherence
 
-- Status: COMPLETE
+- Status: READY
 - Goal: Make the full system demo understandable in under two minutes.
 - Current baseline: the repo already contains the main pieces, but the UI and docs still reflect an older agentic framing.
 - Visible UI outcome: the page reads as one coherent product flow from command to state change to event to narration.
@@ -149,8 +146,4 @@ Execution rhythm:
   1. Remove lingering agent-first copy from the main page.
   2. Tighten panel hierarchy so board, feed, and command console read as one flow.
   3. Run an end-to-end demo pass and fix the most visible confusion points.
-- Recent slice updates:
-  - 2026-03-19: added a lightweight command → simulation → events → narration flow summary to the right rail so the page reads as one product story instead of several adjacent widgets.
-  - 2026-03-19: introduced a story-focus panel that keeps the currently selected or freshest event/discovery narrative aligned with canonical facts in one place.
-  - 2026-03-19: tightened section labels and hierarchy so the authoritative simulation page reads as one coherent demo path in under two minutes.
 - Done signal: the system can be demonstrated as `Command -> Simulation -> Events -> Narration -> UI` in under two minutes.
