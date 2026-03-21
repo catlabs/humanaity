@@ -9,7 +9,10 @@
  */
 
 
-export interface SimulationCommandInput { 
-    commandText?: string;
+export interface SimulationAssistantItemOutput { 
+    title?: string;
+    subtitle?: string;
+    body?: string;
+    chips?: Array<string>;
 }
 

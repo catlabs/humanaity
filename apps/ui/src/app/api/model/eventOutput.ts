@@ -45,6 +45,9 @@ export namespace EventOutput {
         SimulationResumed: 'SIMULATION_RESUMED',
         SimulationCompleted: 'SIMULATION_COMPLETED',
         HumansCollided: 'HUMANS_COLLIDED',
+        GoalAssigned: 'GOAL_ASSIGNED',
+        GoalCompleted: 'GOAL_COMPLETED',
+        HumanActionPerformed: 'HUMAN_ACTION_PERFORMED',
         DiscoveryUnlocked: 'DISCOVERY_UNLOCKED',
         DialogueExchanged: 'DIALOGUE_EXCHANGED',
         InventionEmerged: 'INVENTION_EMERGED'

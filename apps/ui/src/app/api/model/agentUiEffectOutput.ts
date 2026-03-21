@@ -20,3 +20,4 @@ export interface AgentUiEffectOutput {
     eventType?: string;
     eventIds?: Array<number>;
 }
+

@@ -12,7 +12,9 @@
 export interface SimulationTimelineSummaryOutput { 
     latestEventTick?: number;
     latestInventionTick?: number;
+    latestKnowledgeUnlockTick?: number;
     recentEventCount: number;
     recentInventionCount: number;
+    recentKnowledgeUnlockCount: number;
 }
 

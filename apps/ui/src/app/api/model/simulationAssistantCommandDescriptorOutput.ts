@@ -9,7 +9,10 @@
  */
 
 
-export interface SimulationCommandInput { 
-    commandText?: string;
+export interface SimulationAssistantCommandDescriptorOutput { 
+    commandType?: string;
+    canonicalText?: string;
+    label?: string;
+    description?: string;
 }
 

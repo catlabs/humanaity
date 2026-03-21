@@ -12,6 +12,7 @@ import { SimulationTimelineSummaryOutput } from './simulationTimelineSummaryOutp
 import { SimulationSnapshotHumanOutput } from './simulationSnapshotHumanOutput';
 import { EventOutput } from './eventOutput';
 import { InventionOutput } from './inventionOutput';
+import { SimulationKnowledgeOutput } from './simulationKnowledgeOutput';
 import { SimulationSnapshotRunOutput } from './simulationSnapshotRunOutput';
 import { SimulationSnapshotMetricsOutput } from './simulationSnapshotMetricsOutput';
 
@@ -20,6 +21,7 @@ export interface SimulationSnapshotOutput {
     city: SimulationSnapshotCityOutput;
     run: SimulationSnapshotRunOutput;
     timelineSummary: SimulationTimelineSummaryOutput;
+    knowledge: SimulationKnowledgeOutput;
     humans: Array<SimulationSnapshotHumanOutput>;
     metrics: SimulationSnapshotMetricsOutput;
     recentEvents: Array<EventOutput>;

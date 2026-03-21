@@ -15,5 +15,7 @@ export interface AgentChatRequestInput {
     selectedHumanId?: number;
     selectedEventId?: number;
     selectedInventionId?: number;
+    confirmationToken?: string;
+    confirmIntervention?: boolean;
 }
 

@@ -21,6 +21,9 @@ export interface CityOverviewOutput {
     population: number;
     inventionCount: number;
     eventCount: number;
+    discoveryUnlockCount: number;
+    unlockedInventionCount: number;
+    applicationUnlockCount: number;
     updatedAt?: string;
 }
 export namespace CityOverviewOutput {

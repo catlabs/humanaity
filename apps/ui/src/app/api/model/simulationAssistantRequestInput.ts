@@ -9,7 +9,7 @@
  */
 
 
-export interface SimulationCommandInput { 
+export interface SimulationAssistantRequestInput { 
     commandText?: string;
 }
 

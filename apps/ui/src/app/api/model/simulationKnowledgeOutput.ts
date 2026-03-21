@@ -9,7 +9,9 @@
  */
 
 
-export interface SimulationCommandInput { 
-    commandText?: string;
+export interface SimulationKnowledgeOutput { 
+    unlockedDiscoveries: Array<string>;
+    unlockedInventions: Array<string>;
+    unlockedApplications: Array<string>;
 }
 

@@ -9,7 +9,8 @@
  */
 
 
-export interface SimulationCommandInput { 
-    commandText?: string;
+export interface SimulationAssistantMetricOutput { 
+    label?: string;
+    value?: string;
 }
 

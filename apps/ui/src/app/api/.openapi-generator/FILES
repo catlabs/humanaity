@@ -28,6 +28,16 @@ model/inventionOutput.ts
 model/models.ts
 model/refreshTokenRequest.ts
 model/signupRequest.ts
+model/simulationAssistantBlockOutput.ts
+model/simulationAssistantCommandDescriptorOutput.ts
+model/simulationAssistantItemOutput.ts
+model/simulationAssistantMetricOutput.ts
+model/simulationAssistantRequestInput.ts
+model/simulationAssistantResponseOutput.ts
+model/simulationCommandInput.ts
+model/simulationCommandOutput.ts
+model/simulationCommandReferencedEntitiesOutput.ts
+model/simulationKnowledgeOutput.ts
 model/simulationRunInput.ts
 model/simulationRunOutput.ts
 model/simulationSnapshotBoundsOutput.ts

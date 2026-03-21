@@ -23,6 +23,12 @@ import { EventOutput } from '../model/eventOutput';
 // @ts-ignore
 import { InventionOutput } from '../model/inventionOutput';
 // @ts-ignore
+import { SimulationAssistantCommandDescriptorOutput } from '../model/simulationAssistantCommandDescriptorOutput';
+// @ts-ignore
+import { SimulationAssistantRequestInput } from '../model/simulationAssistantRequestInput';
+// @ts-ignore
+import { SimulationAssistantResponseOutput } from '../model/simulationAssistantResponseOutput';
+// @ts-ignore
 import { SimulationCommandInput } from '../model/simulationCommandInput';
 // @ts-ignore
 import { SimulationCommandOutput } from '../model/simulationCommandOutput';
@@ -68,6 +74,9 @@ export class SimulationsService extends BaseService {
         }
 
         let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
@@ -118,6 +127,78 @@ export class SimulationsService extends BaseService {
     }
 
     /**
+     * Execute one deterministic simulation command for a city
+     * @endpoint post /api/simulations/{cityId}/commands
+     * @param cityId 
+     * @param simulationCommandInput 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     */
+    public executeCommand(cityId: number, simulationCommandInput: SimulationCommandInput, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<SimulationCommandOutput>;
+    public executeCommand(cityId: number, simulationCommandInput: SimulationCommandInput, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<SimulationCommandOutput>>;
+    public executeCommand(cityId: number, simulationCommandInput: SimulationCommandInput, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<SimulationCommandOutput>>;
+    public executeCommand(cityId: number, simulationCommandInput: SimulationCommandInput, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (cityId === null || cityId === undefined) {
+            throw new Error('Required parameter cityId was null or undefined when calling executeCommand.');
+        }
+        if (simulationCommandInput === null || simulationCommandInput === undefined) {
+            throw new Error('Required parameter simulationCommandInput was null or undefined when calling executeCommand.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            '*/*'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/api/simulations/${this.configuration.encodeParam({name: "cityId", value: cityId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}/commands`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<SimulationCommandOutput>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: simulationCommandInput,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Get a backend-owned simulation snapshot for one city
      * @endpoint get /api/simulations/{cityId}/snapshot
      * @param cityId 
@@ -133,6 +214,9 @@ export class SimulationsService extends BaseService {
         }
 
         let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
@@ -200,6 +284,9 @@ export class SimulationsService extends BaseService {
 
         let localVarHeaders = this.defaultHeaders;
 
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
+
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
         ]);
@@ -256,6 +343,9 @@ export class SimulationsService extends BaseService {
 
         let localVarHeaders = this.defaultHeaders;
 
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
+
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
         ]);
@@ -295,6 +385,60 @@ export class SimulationsService extends BaseService {
     }
 
     /**
+     * List deterministic simulation assistant commands
+     * @endpoint get /api/simulations/assistant/commands
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     */
+    public listAssistantCommands(observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<Array<SimulationAssistantCommandDescriptorOutput>>;
+    public listAssistantCommands(observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Array<SimulationAssistantCommandDescriptorOutput>>>;
+    public listAssistantCommands(observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Array<SimulationAssistantCommandDescriptorOutput>>>;
+    public listAssistantCommands(observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            '*/*'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/api/simulations/assistant/commands`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<Array<SimulationAssistantCommandDescriptorOutput>>('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * List city-scoped deterministic history events ordered by tick and sequence
      * @endpoint get /api/simulations/{cityId}/history/events
      * @param cityId 
@@ -321,6 +465,9 @@ export class SimulationsService extends BaseService {
           <any>limit, 'limit');
 
         let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
@@ -389,6 +536,9 @@ export class SimulationsService extends BaseService {
 
         let localVarHeaders = this.defaultHeaders;
 
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
+
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
         ]);
@@ -440,6 +590,9 @@ export class SimulationsService extends BaseService {
     public listCityOverviews(observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
 
         let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
@@ -496,6 +649,9 @@ export class SimulationsService extends BaseService {
 
         let localVarHeaders = this.defaultHeaders;
 
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
+
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
         ]);
@@ -551,6 +707,9 @@ export class SimulationsService extends BaseService {
 
         let localVarHeaders = this.defaultHeaders;
 
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
+
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
         ]);
@@ -590,6 +749,78 @@ export class SimulationsService extends BaseService {
     }
 
     /**
+     * Query the deterministic simulation assistant for a city
+     * @endpoint post /api/simulations/{cityId}/assistant
+     * @param cityId 
+     * @param simulationAssistantRequestInput 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     */
+    public queryAssistant(cityId: number, simulationAssistantRequestInput: SimulationAssistantRequestInput, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<SimulationAssistantResponseOutput>;
+    public queryAssistant(cityId: number, simulationAssistantRequestInput: SimulationAssistantRequestInput, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<SimulationAssistantResponseOutput>>;
+    public queryAssistant(cityId: number, simulationAssistantRequestInput: SimulationAssistantRequestInput, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<SimulationAssistantResponseOutput>>;
+    public queryAssistant(cityId: number, simulationAssistantRequestInput: SimulationAssistantRequestInput, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (cityId === null || cityId === undefined) {
+            throw new Error('Required parameter cityId was null or undefined when calling queryAssistant.');
+        }
+        if (simulationAssistantRequestInput === null || simulationAssistantRequestInput === undefined) {
+            throw new Error('Required parameter simulationAssistantRequestInput was null or undefined when calling queryAssistant.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            '*/*'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/api/simulations/${this.configuration.encodeParam({name: "cityId", value: cityId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}/assistant`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<SimulationAssistantResponseOutput>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: simulationAssistantRequestInput,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Resume simulation run for a city
      * @endpoint post /api/simulations/{cityId}/resume
      * @param cityId 
@@ -605,6 +836,9 @@ export class SimulationsService extends BaseService {
         }
 
         let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
@@ -661,6 +895,9 @@ export class SimulationsService extends BaseService {
 
         let localVarHeaders = this.defaultHeaders;
 
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
+
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
         ]);
@@ -716,6 +953,9 @@ export class SimulationsService extends BaseService {
 
         let localVarHeaders = this.defaultHeaders;
 
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
+
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'
         ]);
@@ -755,73 +995,6 @@ export class SimulationsService extends BaseService {
     }
 
     /**
-     * Execute one deterministic simulation command for a city
-     * @endpoint post /api/simulations/{cityId}/commands
-     * @param cityId
-     * @param simulationCommandInput
-     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
-     * @param reportProgress flag to report request and response progress.
-     */
-    public executeCommand(cityId: number, simulationCommandInput: SimulationCommandInput, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<SimulationCommandOutput>;
-    public executeCommand(cityId: number, simulationCommandInput: SimulationCommandInput, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<SimulationCommandOutput>>;
-    public executeCommand(cityId: number, simulationCommandInput: SimulationCommandInput, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<SimulationCommandOutput>>;
-    public executeCommand(cityId: number, simulationCommandInput: SimulationCommandInput, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
-        if (cityId === null || cityId === undefined) {
-            throw new Error('Required parameter cityId was null or undefined when calling executeCommand.');
-        }
-        if (simulationCommandInput === null || simulationCommandInput === undefined) {
-            throw new Error('Required parameter simulationCommandInput was null or undefined when calling executeCommand.');
-        }
-
-        let localVarHeaders = this.defaultHeaders;
-
-        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
-            '*/*'
-        ]);
-        if (localVarHttpHeaderAcceptSelected !== undefined) {
-            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
-        }
-
-        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
-
-        const localVarTransferCache: boolean = options?.transferCache ?? false;
-
-        const consumes: string[] = [
-            'application/json'
-        ];
-        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
-        if (httpContentTypeSelected !== undefined) {
-            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
-        }
-
-        let responseType_: 'text' | 'json' | 'blob' = 'json';
-        if (localVarHttpHeaderAcceptSelected) {
-            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
-                responseType_ = 'text';
-            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
-                responseType_ = 'json';
-            } else {
-                responseType_ = 'blob';
-            }
-        }
-
-        let localVarPath = `/api/simulations/${this.configuration.encodeParam({name: "cityId", value: cityId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}/commands`;
-        const { basePath, withCredentials } = this.configuration;
-        return this.httpClient.request<SimulationCommandOutput>('post', `${basePath}${localVarPath}`,
-            {
-                context: localVarHttpContext,
-                body: simulationCommandInput,
-                responseType: <any>responseType_,
-                ...(withCredentials ? { withCredentials } : {}),
-                headers: localVarHeaders,
-                observe: observe,
-                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
-                reportProgress: reportProgress
-            }
-        );
-    }
-
-    /**
      * Stop simulation for a city
      * @endpoint post /api/simulations/{cityId}/stop
      * @param cityId 
@@ -837,6 +1010,9 @@ export class SimulationsService extends BaseService {
         }
 
         let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearer-jwt) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearer-jwt', 'Authorization', localVarHeaders, 'Bearer ');
 
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             '*/*'

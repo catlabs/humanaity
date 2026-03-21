@@ -12,6 +12,7 @@
 export interface HumanInput { 
     busy?: boolean;
     name?: string;
+    tribeId?: string;
     x?: number;
     y?: number;
     creativity?: number;

@@ -12,6 +12,7 @@
 export interface HumanOutput { 
     id: number;
     name: string;
+    tribeId?: string;
     x: number;
     y: number;
     creativity?: number;

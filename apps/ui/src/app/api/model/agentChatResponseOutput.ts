@@ -21,4 +21,6 @@ export interface AgentChatResponseOutput {
     executedActions?: Array<AgentActionOutput>;
     referencedEntities?: AgentReferencedEntitiesOutput;
     uiEffects?: Array<AgentUiEffectOutput>;
+    structuredData?: { [key: string]: any; };
 }
+
