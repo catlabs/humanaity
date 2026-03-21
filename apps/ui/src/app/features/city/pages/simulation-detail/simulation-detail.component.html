@@ -8,7 +8,9 @@
     <div class="toolbar-status" aria-label="Simulation status">
       <div class="toolbar-pill">
         <span>Run</span>
-        <strong>{{ hasRun() ? (isRunning() ? "Running" : "Paused") : "Not started" }}</strong>
+        <strong>{{
+          hasRun() ? (isRunning() ? "Running" : "Paused") : "Not started"
+        }}</strong>
       </div>
       <div class="toolbar-pill">
         <span>Tick</span>
@@ -22,11 +24,21 @@
 
     <span class="spacer"></span>
 
-    <button mat-stroked-button type="button" (click)="onRefresh()" [disabled]="controlBusy()">
+    <button
+      mat-stroked-button
+      type="button"
+      (click)="onRefresh()"
+      [disabled]="controlBusy()"
+    >
       <mat-icon>refresh</mat-icon>
       Refresh
     </button>
-    <button mat-stroked-button type="button" (click)="onStep()" [disabled]="!canStep()">
+    <button
+      mat-stroked-button
+      type="button"
+      (click)="onStep()"
+      [disabled]="!canStep()"
+    >
       <mat-icon>skip_next</mat-icon>
       Step
     </button>
@@ -47,7 +59,10 @@
   @if (noRunYet()) {
     <div class="state-banner">
       <mat-icon>info</mat-icon>
-      <span>No simulation run yet. Step once to create the first readable board state.</span>
+      <span
+        >No simulation run yet. Step once to create the first readable board
+        state.</span
+      >
     </div>
   }
 
@@ -71,9 +86,19 @@
           @if (showWorldOverlay()) {
             <div class="world-overlay">
               <mat-icon>public</mat-icon>
-              <div class="overlay-title">{{ noRunYet() ? "Board ready for first run" : "Board ready for people" }}</div>
+              <div class="overlay-title">
+                {{
+                  noRunYet()
+                    ? "Board ready for first run"
+                    : "Board ready for people"
+                }}
+              </div>
               <div class="overlay-copy">
-                {{ noRunYet() ? "Step the simulation to populate the board and start the event feed." : "No humans are available in this snapshot yet." }}
+                {{
+                  noRunYet()
+                    ? "Step the simulation to populate the board and start the event feed."
+                    : "No humans are available in this snapshot yet."
+                }}
               </div>
             </div>
           }
@@ -88,18 +113,15 @@
       </article>
 
       <aside class="right-zone app-surface-bg">
-        <section class="right-zone-section">
+        <section class="right-zone-section assistant-section">
           <div class="section-header">
             <div>
-              <div class="section-title">Command</div>
-              <div class="section-subtitle">Use exact commands, then read the resulting state, events, and narration in the same rail.</div>
+              <div class="section-title">Simulation assistant</div>
+              <div class="section-subtitle">
+                Deterministic reading panel driven entirely by the backend. Use
+                a short command or click a suggestion.
+              </div>
             </div>
-          </div>
-
-          <div class="console-examples">
-            @for (example of commandExamples; track example) {
-              <span>{{ example }}</span>
-            }
           </div>
 
           <div class="chat-row">
@@ -110,7 +132,7 @@
               [value]="chatInput()"
               (input)="onChatInput(chatBox.value)"
               (keydown.enter)="onSendChat()"
-              placeholder="advance 5"
+              placeholder="world status"
             />
             <button
               type="button"
@@ -122,28 +144,113 @@
             </button>
           </div>
 
-          <div class="console-feedback">
-            <div class="console-status" [class.console-status--error]="commandConsoleHasError()">{{ commandConsoleHint() }}</div>
-            @if (latestCommandResult(); as latestResult) {
-              <div class="chat-meta">
-                {{ eventTypeLabel(latestResult.commandType ?? 'UNSUPPORTED') }}
-                · {{ latestResult.mutated ? "State changed" : "Read only" }}
-                @if (latestResult.referencedEntities?.humanId) {
-                  · human {{ latestResult.referencedEntities?.humanId }}
-                }
-                @if (latestResult.referencedEntities?.placeId) {
-                  · place {{ latestResult.referencedEntities?.placeId }}
-                }
-              </div>
+          <div class="assistant-suggestions">
+            @for (suggestion of assistantSuggestions; track suggestion) {
+              <button
+                type="button"
+                class="suggestion-chip"
+                [disabled]="chatBusy()"
+                (click)="onAssistantSuggestion(suggestion)"
+              >
+                {{ suggestion }}
+              </button>
             }
           </div>
 
-          <div class="flow-strip" aria-label="Product flow summary">
-            @for (step of flowSummary(); track step.label) {
-              <div class="flow-step">
-                <span>{{ step.label }}</span>
-                <strong>{{ step.value }}</strong>
-              </div>
+          <div class="console-feedback">
+            <div
+              class="console-status"
+              [class.console-status--error]="assistantStatusIsError()"
+            >
+              {{ assistantStatusMessage() }}
+            </div>
+          </div>
+
+          <div class="assistant-thread">
+            @for (entry of chatEntries(); track entry.timestamp) {
+              <article
+                class="assistant-message"
+                [class.assistant-message--user]="entry.role === 'user'"
+              >
+                <div class="assistant-message-header">
+                  <strong>{{
+                    entry.role === "user" ? "You" : "Assistant"
+                  }}</strong>
+                  @if (entry.commandType) {
+                    <span class="assistant-command-type">{{
+                      eventTypeLabel(entry.commandType)
+                    }}</span>
+                  }
+                </div>
+                <div class="assistant-message-body">{{ entry.content }}</div>
+
+                @if (entry.blocks.length > 0) {
+                  <div class="assistant-block-list">
+                    @for (
+                      block of entry.blocks;
+                      track block.title + block.type
+                    ) {
+                      <section class="assistant-block">
+                        <div class="assistant-block-header">
+                          <div class="assistant-block-title">
+                            {{ block.title }}
+                          </div>
+                          @if (block.subtitle) {
+                            <div class="assistant-block-subtitle">
+                              {{ block.subtitle }}
+                            </div>
+                          }
+                        </div>
+
+                        @if (block.metrics.length > 0) {
+                          <div class="assistant-metrics-grid">
+                            @for (metric of block.metrics; track metric.label) {
+                              <div class="assistant-metric-pill">
+                                <span>{{ metric.label }}</span>
+                                <strong>{{ metric.value }}</strong>
+                              </div>
+                            }
+                          </div>
+                        }
+
+                        @if (block.items.length > 0) {
+                          <div class="assistant-items">
+                            @for (
+                              item of block.items;
+                              track item.title + $index
+                            ) {
+                              <article class="assistant-item">
+                                <div class="assistant-item-title">
+                                  {{ item.title }}
+                                </div>
+                                @if (item.subtitle) {
+                                  <div class="assistant-item-subtitle">
+                                    {{ item.subtitle }}
+                                  </div>
+                                }
+                                @if (item.body) {
+                                  <div class="assistant-item-body">
+                                    {{ item.body }}
+                                  </div>
+                                }
+                                @if (item.chips.length > 0) {
+                                  <div class="assistant-item-chips">
+                                    @for (chip of item.chips; track chip) {
+                                      <span>{{ chip }}</span>
+                                    }
+                                  </div>
+                                }
+                              </article>
+                            }
+                          </div>
+                        } @else if (block.emptyState) {
+                          <div class="empty-block">{{ block.emptyState }}</div>
+                        }
+                      </section>
+                    }
+                  </div>
+                }
+              </article>
             }
           </div>
         </section>
@@ -152,7 +259,10 @@
           <div class="section-title">Simulation state</div>
           <div class="status-grid">
             <div class="pill">
-              <span>Run</span><strong>{{ hasRun() ? (isRunning() ? "Running" : "Paused") : "Not started" }}</strong>
+              <span>Run</span
+              ><strong>{{
+                hasRun() ? (isRunning() ? "Running" : "Paused") : "Not started"
+              }}</strong>
             </div>
             <div class="pill">
               <span>Year</span><strong>{{ currentYear() }}</strong>
@@ -170,20 +280,34 @@
           <div class="section-header">
             <div>
               <div class="section-title">Selected human</div>
-              <div class="section-subtitle">Keep one person in focus while reading the board.</div>
+              <div class="section-subtitle">
+                Keep one person in focus while reading the board.
+              </div>
             </div>
             @if (selectedHuman()) {
-              <button type="button" class="text-button" (click)="clearSelection()">Clear</button>
+              <button
+                type="button"
+                class="text-button"
+                (click)="clearSelection()"
+              >
+                Clear
+              </button>
             }
           </div>
 
           @if (selectedHuman(); as human) {
             <div class="inspector-card inspector-card--selected">
               <div class="inspector-name">{{ human.name }}</div>
-              <div class="inspector-meta">{{ humanBusyLabel(human.busy) }} · {{ selectedHumanCoordinates() }}</div>
+              <div class="inspector-meta">
+                {{ humanBusyLabel(human.busy) }} ·
+                {{ selectedHumanCoordinates() }}
+              </div>
             </div>
           } @else {
-            <div class="empty-block">Select a marker on the board or a name below to inspect that human.</div>
+            <div class="empty-block">
+              Select a marker on the board or a name below to inspect that
+              human.
+            </div>
           }
 
           <div class="human-list">
@@ -207,7 +331,10 @@
           <div class="section-header">
             <div>
               <div class="section-title">Story focus</div>
-              <div class="section-subtitle">The current event or discovery narrative stays aligned with canonical facts.</div>
+              <div class="section-subtitle">
+                The current event or discovery narrative stays aligned with
+                canonical facts.
+              </div>
             </div>
           </div>
 
@@ -220,16 +347,31 @@
                 <div class="story-focus-actors">{{ focus.actorSummary }}</div>
               }
               <div class="narration-row">
-                <span class="narration-chip" [class.narration-chip--fallback]="focus.narrationTone === 'fallback'" [class.narration-chip--muted]="focus.narrationTone === 'muted'">
+                <span
+                  class="narration-chip"
+                  [class.narration-chip--fallback]="
+                    focus.narrationTone === 'fallback'
+                  "
+                  [class.narration-chip--muted]="
+                    focus.narrationTone === 'muted'
+                  "
+                >
                   {{ focus.narrationLabel }}
                 </span>
               </div>
-              <div class="story-focus-copy" [class.story-focus-copy--muted]="focus.narrationTone === 'muted'">
+              <div
+                class="story-focus-copy"
+                [class.story-focus-copy--muted]="
+                  focus.narrationTone === 'muted'
+                "
+              >
                 {{ focus.narrationCopy }}
               </div>
             </div>
           } @else {
-            <div class="empty-block">Select an event or discovery to read the current story focus.</div>
+            <div class="empty-block">
+              Select an event or discovery to read the current story focus.
+            </div>
           }
         </section>
 
@@ -237,9 +379,18 @@
           <div class="section-header">
             <div>
               <div class="section-title">Timeline</div>
-              <div class="section-subtitle">History-driven feed from the latest timeline window, linked to the board markers.</div>
+              <div class="section-subtitle">
+                History-driven feed from the latest timeline window, linked to
+                the board markers.
+              </div>
             </div>
-            <button type="button" class="text-button" (click)="openAllEventsDrawer()">Open all</button>
+            <button
+              type="button"
+              class="text-button"
+              (click)="openAllEventsDrawer()"
+            >
+              Open all
+            </button>
           </div>
 
           @if (latestTimelineDeltaMessage(); as deltaMessage) {
@@ -259,10 +410,18 @@
                 (click)="selectEvent(event)"
               >
                 <div class="feed-item-header">
-                  <span class="feed-tag" [class.feed-tag--invention]="eventType(event) === 'invention'" [class.feed-tag--warning]="eventType(event) === 'warning'">
+                  <span
+                    class="feed-tag"
+                    [class.feed-tag--invention]="
+                      eventType(event) === 'invention'
+                    "
+                    [class.feed-tag--warning]="eventType(event) === 'warning'"
+                  >
                     {{ eventTypeLabel(event.eventType) }}
                   </span>
-                  <span class="feed-meta">Tick {{ event.tick }} · Year {{ event.year }}</span>
+                  <span class="feed-meta"
+                    >Tick {{ event.tick }} · Year {{ event.year }}</span
+                  >
                 </div>
                 <div class="feed-title-row">
                   <strong>{{ eventTitle(event) }}</strong>
@@ -276,16 +435,35 @@
                 <div class="feed-facts">{{ eventCanonicalSummary(event) }}</div>
                 <div class="narration-block">
                   <div class="narration-row">
-                    <span class="narration-chip" [class.narration-chip--fallback]="eventNarrationTone(event) === 'fallback'" [class.narration-chip--muted]="eventNarrationTone(event) === 'muted'">
+                    <span
+                      class="narration-chip"
+                      [class.narration-chip--fallback]="
+                        eventNarrationTone(event) === 'fallback'
+                      "
+                      [class.narration-chip--muted]="
+                        eventNarrationTone(event) === 'muted'
+                      "
+                    >
                       {{ eventNarrationLabel(event) }}
                     </span>
                   </div>
-                  <div class="narration-copy" [class.narration-copy--muted]="eventNarrationTone(event) === 'muted'">{{ eventNarrationCopy(event) }}</div>
+                  <div
+                    class="narration-copy"
+                    [class.narration-copy--muted]="
+                      eventNarrationTone(event) === 'muted'
+                    "
+                  >
+                    {{ eventNarrationCopy(event) }}
+                  </div>
                 </div>
               </button>
             } @empty {
               <div class="empty-block">
-                {{ historyLoading() ? "Loading recent activity…" : "No recent events yet. Step the simulation to populate the feed." }}
+                {{
+                  historyLoading()
+                    ? "Loading recent activity…"
+                    : "No recent events yet. Step the simulation to populate the feed."
+                }}
               </div>
             }
           </div>
@@ -296,7 +474,9 @@
               <button
                 type="button"
                 class="discovery-item"
-                [class.discovery-item--selected]="selectedInventionId() === invention.id"
+                [class.discovery-item--selected]="
+                  selectedInventionId() === invention.id
+                "
                 [class.discovery-item--fresh]="isFreshInvention(invention.id)"
                 (click)="selectInvention(invention)"
               >
@@ -304,14 +484,31 @@
                   <strong>{{ invention.title }}</strong>
                   <small>{{ invention.summary }}</small>
                   @if (inventionNarratedTitle(invention); as narratedTitle) {
-                    <div class="discovery-narrated-title">{{ narratedTitle }}</div>
+                    <div class="discovery-narrated-title">
+                      {{ narratedTitle }}
+                    </div>
                   }
                   <div class="narration-row">
-                    <span class="narration-chip" [class.narration-chip--fallback]="inventionNarrationTone(invention) === 'fallback'" [class.narration-chip--muted]="inventionNarrationTone(invention) === 'muted'">
+                    <span
+                      class="narration-chip"
+                      [class.narration-chip--fallback]="
+                        inventionNarrationTone(invention) === 'fallback'
+                      "
+                      [class.narration-chip--muted]="
+                        inventionNarrationTone(invention) === 'muted'
+                      "
+                    >
                       {{ inventionNarrationLabel(invention) }}
                     </span>
                   </div>
-                  <div class="narration-copy" [class.narration-copy--muted]="inventionNarrationTone(invention) === 'muted'">{{ inventionNarrationCopy(invention) }}</div>
+                  <div
+                    class="narration-copy"
+                    [class.narration-copy--muted]="
+                      inventionNarrationTone(invention) === 'muted'
+                    "
+                  >
+                    {{ inventionNarrationCopy(invention) }}
+                  </div>
                 </div>
                 <div class="discovery-meta">
                   <span>{{ inventionCategoryLabel(invention) }}</span>
@@ -337,17 +534,27 @@
         <div>
           <div class="events-drawer-title">Events</div>
           @if (eventsDrawerType(); as eventType) {
-            <div class="events-drawer-subtitle">{{ eventTypeLabel(eventType) }}</div>
+            <div class="events-drawer-subtitle">
+              {{ eventTypeLabel(eventType) }}
+            </div>
           }
         </div>
-        <button type="button" class="events-drawer-close" (click)="closeEventsDrawer()">
+        <button
+          type="button"
+          class="events-drawer-close"
+          (click)="closeEventsDrawer()"
+        >
           Close
         </button>
       </div>
 
       <div class="events-drawer-list">
         @for (event of drawerEvents(); track event.id) {
-          <button type="button" class="drawer-event-item" (click)="selectEvent(event)">
+          <button
+            type="button"
+            class="drawer-event-item"
+            (click)="selectEvent(event)"
+          >
             <div class="drawer-event-title">{{ eventTitle(event) }}</div>
             <div class="drawer-event-meta">
               {{ eventCanonicalSummary(event) }}
@@ -355,7 +562,12 @@
             <div class="drawer-event-status">
               {{ eventNarrationLabel(event) }}
             </div>
-            <div class="drawer-event-snippet" [class.drawer-event-snippet--muted]="eventNarrationTone(event) === 'muted'">
+            <div
+              class="drawer-event-snippet"
+              [class.drawer-event-snippet--muted]="
+                eventNarrationTone(event) === 'muted'
+              "
+            >
               {{ eventNarrationCopy(event) }}
             </div>
           </button>

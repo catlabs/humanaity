@@ -1,13 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import {
-  AgentChatRequestInput,
-  AgentChatResponseOutput,
   AgentUiEffectOutput,
   CityOutput,
   EventOutput,
@@ -17,6 +22,10 @@ import {
 } from '@api';
 import { EventType } from '@shared';
 import { Observable, Subscription, interval } from 'rxjs';
+import {
+  SimulationAssistantBlock,
+  SimulationAssistantResponse,
+} from '../../simulation-assistant.models';
 import { CityService } from '../../city.service';
 import {
   SimulationBoardComponent,
@@ -42,9 +51,7 @@ import {
   templateUrl: './simulation-detail.component.html',
   styleUrl: './simulation-detail.component.scss',
 })
-export class SimulationDetailComponent
-  implements OnInit, OnDestroy
-{
+export class SimulationDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private cityService = inject(CityService);
   private agentChatEffectsService = inject(AgentChatEffectsService);
@@ -78,18 +85,15 @@ export class SimulationDetailComponent
   selectedInventionId = signal<number | null>(null);
   selectedEventId = signal<number | null>(null);
   trackedHumanId = signal<number | null>(null);
-  guidedFocus = signal<GuidedHumanSummary | null>(null);
-  guidedComparison = signal<GuidedCompareSummary | null>(null);
-  guidedFollow = signal<GuidedFollowSummary | null>(null);
-  pendingDirectorConfirmation = signal<DirectorConfirmationSummary | null>(null);
-  boardEventEntries = signal<BoardEventEntry[]>([]);
-  boardPulseNonce = signal(0);
-  lastBoardReaction = signal<string | null>(null);
-  directorBoardState = signal<'pending' | 'executed' | null>(null);
+  assistantSuggestions = [
+    'inventions',
+    'world status',
+    'recent events',
+    'relationships',
+  ] as const;
   chatInput = signal('');
   chatBusy = signal(false);
   chatError = signal<string | null>(null);
-  chatConversationId = signal<string | null>(null);
   chatEntries = signal<ChatEntry[]>([]);
   eventsDrawerOpen = signal(false);
   eventsDrawerType = signal<string | null>(null);
@@ -117,21 +121,22 @@ export class SimulationDetailComponent
   recentInventionCount = signal(0);
 
   filteredHumans = computed(() =>
-    this.humans().filter((human) => this.filters()[this.humanState(human)])
+    this.humans().filter((human) => this.filters()[this.humanState(human)]),
   );
-  boardMarkers = computed(() =>
-    this.boardViewModelService.fromHumans(this.humans()).markers
+  boardMarkers = computed(
+    () => this.boardViewModelService.fromHumans(this.humans()).markers,
   );
   boardEventMarkers = computed<SimulationBoardEventMarker[]>(() => {
     const markersByHumanId = new Map(
-      this.boardMarkers().map((marker) => [marker.id, marker])
+      this.boardMarkers().map((marker) => [marker.id, marker]),
     );
     return this.events()
       .slice(-16)
-      .filter((event) =>
-        event.eventType === 'HUMANS_COLLIDED' ||
-        event.eventType === 'DIALOGUE_EXCHANGED' ||
-        event.eventType === 'DISCOVERY_UNLOCKED'
+      .filter(
+        (event) =>
+          event.eventType === 'HUMANS_COLLIDED' ||
+          event.eventType === 'DIALOGUE_EXCHANGED' ||
+          event.eventType === 'DISCOVERY_UNLOCKED',
       )
       .map((event) => {
         const anchors = event.actorIds
@@ -141,9 +146,11 @@ export class SimulationDetailComponent
           return null;
         }
         const leftPct =
-          anchors.reduce((sum, marker) => sum + marker.leftPct, 0) / anchors.length;
+          anchors.reduce((sum, marker) => sum + marker.leftPct, 0) /
+          anchors.length;
         const topPct =
-          anchors.reduce((sum, marker) => sum + marker.topPct, 0) / anchors.length;
+          anchors.reduce((sum, marker) => sum + marker.topPct, 0) /
+          anchors.length;
         return {
           eventId: event.id,
           leftPct,
@@ -165,19 +172,23 @@ export class SimulationDetailComponent
 
   selectedHuman = computed(() => {
     const id = this.selectedHumanId();
-    return id === null ? null : this.humans().find((human) => human.id === id) ?? null;
+    return id === null
+      ? null
+      : (this.humans().find((human) => human.id === id) ?? null);
   });
 
   selectedInvention = computed(() => {
     const id = this.selectedInventionId();
     return id === null
       ? null
-      : this.inventions().find((invention) => invention.id === id) ?? null;
+      : (this.inventions().find((invention) => invention.id === id) ?? null);
   });
 
   selectedEvent = computed(() => {
     const id = this.selectedEventId();
-    return id === null ? null : this.events().find((event) => event.id === id) ?? null;
+    return id === null
+      ? null
+      : (this.events().find((event) => event.id === id) ?? null);
   });
   trackedHuman = computed(() => {
     const trackedId = this.trackedHumanId();
@@ -188,31 +199,31 @@ export class SimulationDetailComponent
   });
 
   populationActive = computed(() =>
-    Math.max(this.populationTotal() - this.populationBusy(), 0)
+    Math.max(this.populationTotal() - this.populationBusy(), 0),
   );
 
   inventionCounts = computed(() => {
     const inventions = this.inventions();
     return {
-      scientific: inventions.filter((inv) => inv.category === 'TECHNIQUE').length,
-      philosophical: inventions.filter((inv) => inv.category === 'KNOWLEDGE').length,
-      cultural: inventions.filter((inv) => inv.category === 'SOCIAL_PRACTICE').length,
+      scientific: inventions.filter((inv) => inv.category === 'TECHNIQUE')
+        .length,
+      philosophical: inventions.filter((inv) => inv.category === 'KNOWLEDGE')
+        .length,
+      cultural: inventions.filter((inv) => inv.category === 'SOCIAL_PRACTICE')
+        .length,
       total: inventions.length,
     };
   });
-  displayedInventions = computed(() =>
-    this.inventions().slice(-12).reverse()
-  );
-  displayedEvents = computed(() =>
-    this.events().slice(-20).reverse()
-  );
+  displayedInventions = computed(() => this.inventions().slice(-12).reverse());
+  displayedEvents = computed(() => this.events().slice(-20).reverse());
   drawerEvents = computed(() => {
     const allEvents = this.events();
     const eventIds = this.eventsDrawerIds();
     const eventType = this.eventsDrawerType();
-    const byIds = Array.isArray(eventIds) && eventIds.length > 0
-      ? allEvents.filter((event) => eventIds.includes(event.id))
-      : allEvents;
+    const byIds =
+      Array.isArray(eventIds) && eventIds.length > 0
+        ? allEvents.filter((event) => eventIds.includes(event.id))
+        : allEvents;
     const byType = eventType
       ? byIds.filter((event) => event.eventType === eventType)
       : byIds;
@@ -232,27 +243,6 @@ export class SimulationDetailComponent
     }
     return `${human.name} · ${this.humanBusyLabel(human.busy)}`;
   });
-  latestAgentMessage = computed(() => {
-    const entries = this.chatEntries();
-    for (let index = entries.length - 1; index >= 0; index -= 1) {
-      const entry = entries[index];
-      if (entry.role === 'agent') {
-        return entry.content;
-      }
-    }
-    return null;
-  });
-  latestAgentEntry = computed(() => {
-    const entries = this.chatEntries();
-    for (let index = entries.length - 1; index >= 0; index -= 1) {
-      const entry = entries[index];
-      if (entry.role === 'agent') {
-        return entry;
-      }
-    }
-    return null;
-  });
-  commandExamples = ['advance 5', 'focus Ada', 'move Ada forest'] as const;
   selectedHumanCoordinates = computed(() => {
     const human = this.selectedHuman();
     if (!human) {
@@ -268,37 +258,13 @@ export class SimulationDetailComponent
   });
   activityFeed = computed(() => this.displayedEvents().slice(0, 8));
   recentDiscoveries = computed(() => this.displayedInventions().slice(0, 3));
-  latestCommandResult = signal<SimulationCommandOutput | null>(null);
   recentDeltaEventIds = signal<number[]>([]);
   recentDeltaInventionIds = signal<number[]>([]);
   latestTimelineDeltaMessage = signal<string | null>(null);
   private pendingTimelineCommand: SimulationCommandOutput | null = null;
   headerRunSummary = computed(
-    () => `Era ${this.eraLabel()} · Year ${this.currentYear()}`
+    () => `Era ${this.eraLabel()} · Year ${this.currentYear()}`,
   );
-  flowSummary = computed(() => [
-    {
-      label: 'Command',
-      value: this.latestCommandResult()
-        ? this.eventTypeLabel(this.latestCommandResult()?.commandType ?? 'UNSUPPORTED')
-        : 'Ready',
-    },
-    {
-      label: 'Simulation',
-      value: `Tick ${this.currentTick()}`,
-    },
-    {
-      label: 'Events',
-      value:
-        this.recentDeltaEventIds().length > 0
-          ? `${this.recentDeltaEventIds().length} new`
-          : `${this.recentEventCount()} recent`,
-    },
-    {
-      label: 'Narration',
-      value: this.storyFocus()?.narrationLabel ?? 'Awaiting focus',
-    },
-  ]);
   storyFocus = computed<StoryFocusCard | null>(() => {
     const selectedEvent = this.selectedEvent();
     if (selectedEvent) {
@@ -311,14 +277,14 @@ export class SimulationDetailComponent
     }
 
     const latestFreshEvent = this.activityFeed().find((event) =>
-      this.isFreshEvent(event.id)
+      this.isFreshEvent(event.id),
     );
     if (latestFreshEvent) {
       return this.storyFocusFromEvent(latestFreshEvent);
     }
 
     const latestFreshInvention = this.recentDiscoveries().find((invention) =>
-      this.isFreshInvention(invention.id)
+      this.isFreshInvention(invention.id),
     );
     if (latestFreshInvention) {
       return this.storyFocusFromInvention(latestFreshInvention);
@@ -330,29 +296,28 @@ export class SimulationDetailComponent
     }
 
     const latestInvention = this.recentDiscoveries()[0];
-    return latestInvention ? this.storyFocusFromInvention(latestInvention) : null;
+    return latestInvention
+      ? this.storyFocusFromInvention(latestInvention)
+      : null;
   });
-  commandConsoleHint = computed(() => {
+  assistantStatusMessage = computed(() => {
     if (this.chatBusy()) {
-      return 'Sending command…';
+      return 'Assistant is reading the simulation…';
     }
     if (this.chatError()) {
       return this.chatError();
     }
-    const latest = this.latestCommandResult();
-    if (latest?.message) {
-      return latest.message;
-    }
-    return 'Use exact commands: advance <count>, focus <human>, move <human> <place>.';
+    return 'Use a short deterministic command or click a suggestion.';
   });
-  commandConsoleHasError = computed(
-    () => !!this.chatError() || this.latestCommandResult()?.ok === false
-  );
+  assistantStatusIsError = computed(() => !!this.chatError());
   canSendChat = computed(
-    () => !this.chatBusy() && this.chatInput().trim().length > 0
+    () => !this.chatBusy() && this.chatInput().trim().length > 0,
   );
 
   ngOnInit(): void {
+    if (this.chatEntries().length === 0) {
+      this.chatEntries.set([this.createAssistantWelcomeEntry()]);
+    }
     this.refreshAll();
     this.pollingSubscription = interval(2000).subscribe(() => {
       if (this.isRunning()) {
@@ -388,11 +353,18 @@ export class SimulationDetailComponent
   }
 
   onSendChat(): void {
-    const message = this.chatInput().trim();
-    if (!message) {
+    const commandText = this.chatInput().trim();
+    if (!commandText) {
       return;
     }
-    this.submitSimulationCommand(message);
+    this.submitAssistantCommand(commandText);
+  }
+
+  onAssistantSuggestion(commandText: string): void {
+    if (this.chatBusy()) {
+      return;
+    }
+    this.submitAssistantCommand(commandText);
   }
 
   selectHuman(human: SimulationSnapshotOutput['humans'][number]): void {
@@ -419,7 +391,7 @@ export class SimulationDetailComponent
     this.selectedInventionId.set(null);
 
     const primaryActorId = event.actorIds.find((actorId) =>
-      this.humans().some((human) => human.id === actorId)
+      this.humans().some((human) => human.id === actorId),
     );
     this.selectedHumanId.set(primaryActorId ?? null);
   }
@@ -493,7 +465,9 @@ export class SimulationDetailComponent
     }
 
     const names = event.actorIds
-      .map((actorId) => this.humans().find((human) => human.id === actorId)?.name)
+      .map(
+        (actorId) => this.humans().find((human) => human.id === actorId)?.name,
+      )
       .filter((name): name is string => !!name);
 
     if (names.length === 0) {
@@ -589,7 +563,7 @@ export class SimulationDetailComponent
   }
 
   inventionNarrationTone(
-    invention: InventionOutput
+    invention: InventionOutput,
   ): 'ready' | 'fallback' | 'muted' {
     switch (invention.enrichmentStatus) {
       case 'READY':
@@ -665,13 +639,12 @@ export class SimulationDetailComponent
         this.inventions.set(timeline.inventions);
         this.totalEvents.set(timeline.eventCount);
         this.totalInventions.set(timeline.inventionCount);
-        this.syncBoardEventEntries(timeline.events);
         this.captureTimelineDelta(
           previousEvents,
           previousInventions,
           timeline.events,
           timeline.inventions,
-          showLoading
+          showLoading,
         );
         this.historyLoading.set(false);
       },
@@ -690,7 +663,7 @@ export class SimulationDetailComponent
     this.currentYear.set(snapshot.run.year);
     this.currentEra.set(snapshot.run.era);
     this.worldPhase.set(
-      snapshot.run.status ?? (snapshot.run.running ? 'RUNNING' : 'CREATED')
+      snapshot.run.status ?? (snapshot.run.running ? 'RUNNING' : 'CREATED'),
     );
 
     this.populationTotal.set(snapshot.metrics.population);
@@ -698,13 +671,18 @@ export class SimulationDetailComponent
     this.totalEvents.set(snapshot.metrics.eventCount);
     this.totalInventions.set(snapshot.metrics.inventionCount);
     this.recentEventCount.set(snapshot.timelineSummary.recentEventCount);
-    this.recentInventionCount.set(snapshot.timelineSummary.recentInventionCount);
+    this.recentInventionCount.set(
+      snapshot.timelineSummary.recentInventionCount,
+    );
     this.humans.set(snapshot.humans);
 
     if (this.events().length === 0 && snapshot.recentEvents.length > 0) {
       this.events.set(snapshot.recentEvents);
     }
-    if (this.inventions().length === 0 && snapshot.recentInventions.length > 0) {
+    if (
+      this.inventions().length === 0 &&
+      snapshot.recentInventions.length > 0
+    ) {
       this.inventions.set(snapshot.recentInventions);
     }
   }
@@ -717,30 +695,66 @@ export class SimulationDetailComponent
 
     this.chatBusy.set(true);
     this.chatError.set(null);
-    this.chatInput.set('');
 
     this.cityService.sendSimulationCommand(cityId, { commandText }).subscribe({
       next: (response) => {
         this.chatBusy.set(false);
-        this.latestCommandResult.set(response);
         if (response.ok) {
           this.pendingTimelineCommand = this.hasTimelineRefreshEffect(response)
             ? response
             : null;
           this.applyUiEffects(response.uiEffects ?? []);
+        } else {
+          this.chatError.set(response.message ?? 'Simulation command failed.');
         }
       },
       error: (error) => {
         this.chatBusy.set(false);
         this.pendingTimelineCommand = null;
-        this.chatError.set('Command request failed.');
+        this.chatError.set('Simulation command request failed.');
         console.error('Simulation command request failed:', error);
       },
     });
   }
 
+  private submitAssistantCommand(commandText: string): void {
+    const cityId = this.requireCityId();
+    if (!cityId || this.chatBusy()) {
+      return;
+    }
+
+    const userEntry = this.createUserEntry(commandText);
+    this.chatEntries.update((entries) => [...entries, userEntry]);
+    this.chatBusy.set(true);
+    this.chatError.set(null);
+    this.chatInput.set('');
+
+    this.cityService
+      .sendSimulationAssistantCommand(cityId, commandText)
+      .subscribe({
+        next: (response) => {
+          this.chatBusy.set(false);
+          this.chatEntries.update((entries) => [
+            ...entries,
+            this.createAssistantEntry(response),
+          ]);
+        },
+        error: (error) => {
+          this.chatBusy.set(false);
+          this.chatError.set('Assistant request failed.');
+          this.chatEntries.update((entries) => [
+            ...entries,
+            this.createAssistantErrorEntry(),
+          ]);
+          console.error('Simulation assistant request failed:', error);
+        },
+      });
+  }
+
   private hasTimelineRefreshEffect(response: SimulationCommandOutput): boolean {
-    return (response.uiEffects ?? []).some((effect) => effect.type === 'REFRESH_TIMELINE');
+    return (response.uiEffects ?? []).some(
+      (effect) => effect.type === 'REFRESH_TIMELINE',
+    );
   }
 
   private captureTimelineDelta(
@@ -748,25 +762,31 @@ export class SimulationDetailComponent
     previousInventions: InventionOutput[],
     nextEvents: EventOutput[],
     nextInventions: InventionOutput[],
-    showLoading: boolean
+    showLoading: boolean,
   ): void {
     if (showLoading) {
       return;
     }
 
     const previousEventIds = new Set(previousEvents.map((event) => event.id));
-    const previousInventionIds = new Set(previousInventions.map((invention) => invention.id));
+    const previousInventionIds = new Set(
+      previousInventions.map((invention) => invention.id),
+    );
 
-    const newEvents = nextEvents.filter((event) => !previousEventIds.has(event.id));
+    const newEvents = nextEvents.filter(
+      (event) => !previousEventIds.has(event.id),
+    );
     const newInventions = nextInventions.filter(
-      (invention) => !previousInventionIds.has(invention.id)
+      (invention) => !previousInventionIds.has(invention.id),
     );
 
     if (newEvents.length === 0 && newInventions.length === 0) {
       this.recentDeltaEventIds.set([]);
       this.recentDeltaInventionIds.set([]);
       if (this.pendingTimelineCommand) {
-        this.latestTimelineDeltaMessage.set(this.pendingTimelineCommand.message ?? null);
+        this.latestTimelineDeltaMessage.set(
+          this.pendingTimelineCommand.message ?? null,
+        );
       }
       this.pendingTimelineCommand = null;
       return;
@@ -774,7 +794,7 @@ export class SimulationDetailComponent
 
     this.recentDeltaEventIds.set(newEvents.slice(-6).map((event) => event.id));
     this.recentDeltaInventionIds.set(
-      newInventions.slice(-3).map((invention) => invention.id)
+      newInventions.slice(-3).map((invention) => invention.id),
     );
 
     const newestEvent = newEvents[newEvents.length - 1];
@@ -783,14 +803,14 @@ export class SimulationDetailComponent
     }
 
     this.latestTimelineDeltaMessage.set(
-      this.summarizeTimelineDelta(newEvents.length, newInventions.length)
+      this.summarizeTimelineDelta(newEvents.length, newInventions.length),
     );
     this.pendingTimelineCommand = null;
   }
 
   private summarizeTimelineDelta(
     eventCount: number,
-    inventionCount: number
+    inventionCount: number,
   ): string {
     const parts: string[] = [];
 
@@ -799,7 +819,7 @@ export class SimulationDetailComponent
     }
     if (inventionCount > 0) {
       parts.push(
-        `${inventionCount} new ${inventionCount === 1 ? 'discovery' : 'discoveries'}`
+        `${inventionCount} new ${inventionCount === 1 ? 'discovery' : 'discoveries'}`,
       );
     }
 
@@ -831,9 +851,7 @@ export class SimulationDetailComponent
     };
   }
 
-  private storyFocusFromInvention(
-    invention: InventionOutput
-  ): StoryFocusCard {
+  private storyFocusFromInvention(invention: InventionOutput): StoryFocusCard {
     return {
       kind: 'discovery',
       label: 'Discovery',
@@ -846,7 +864,9 @@ export class SimulationDetailComponent
     };
   }
 
-  private runControlAction(action: (cityId: number) => Observable<unknown>): void {
+  private runControlAction(
+    action: (cityId: number) => Observable<unknown>,
+  ): void {
     const cityId = this.requireCityId();
     if (!cityId || this.controlBusy()) {
       return;
@@ -882,27 +902,6 @@ export class SimulationDetailComponent
       .join(' ');
   }
 
-  private applyChatResponse(response: AgentChatResponseOutput): void {
-    if (response.conversationId) {
-      this.chatConversationId.set(response.conversationId);
-    }
-
-    this.chatEntries.update((entries) => [
-      ...entries,
-      {
-        role: 'agent',
-        content: response.message?.trim() || 'No response message returned.',
-        timestamp: new Date().toISOString(),
-        commandClass: response.commandClass ?? null,
-        interpretationProvenance: response.interpretationProvenance ?? null,
-        interpretedCommandSummary: response.interpretedCommandSummary ?? null,
-      },
-    ]);
-
-    this.applyUiEffects(response.uiEffects ?? []);
-    this.applyGuidedStructuredData(response);
-  }
-
   private applyUiEffects(effects: AgentUiEffectOutput[]): void {
     const resolution = this.agentChatEffectsService.resolve(effects);
 
@@ -910,11 +909,9 @@ export class SimulationDetailComponent
       this.selectedHumanId.set(resolution.selectedHumanId);
       this.selectedEventId.set(null);
       this.selectedInventionId.set(null);
-      this.lastBoardReaction.set(`Focused human ${resolution.selectedHumanId}`);
     }
     if (resolution.trackedHumanId !== null) {
       this.trackedHumanId.set(resolution.trackedHumanId);
-      this.lastBoardReaction.set(`Tracking human ${resolution.trackedHumanId}`);
     }
     if (resolution.selectedEventId !== null) {
       this.selectedEventId.set(resolution.selectedEventId);
@@ -926,171 +923,82 @@ export class SimulationDetailComponent
       this.selectedHumanId.set(null);
       this.selectedEventId.set(null);
     }
-
     if (resolution.refreshSnapshot) {
-      this.boardPulseNonce.update((value) => value + 1);
-      this.lastBoardReaction.set('Board refreshed from latest snapshot');
       this.refreshSnapshot(false);
     }
     if (resolution.refreshTimeline) {
-      this.boardPulseNonce.update((value) => value + 1);
       this.refreshHistory(false);
-    }
-    if (resolution.selectedEventId !== null) {
-      this.lastBoardReaction.set(`Marked event ${resolution.selectedEventId}`);
-    }
-    if (resolution.directorInterventionState === 'executed') {
-      this.pendingDirectorConfirmation.set(null);
-      this.directorBoardState.set('executed');
-      this.lastBoardReaction.set('Intervention executed and reflected on board');
-    }
-    if (resolution.directorInterventionState === 'pending') {
-      this.directorBoardState.set('pending');
-      this.lastBoardReaction.set('Intervention pending explicit confirmation');
     }
     if (resolution.openEventsDrawer) {
       this.eventsDrawerOpen.set(true);
       this.eventsDrawerType.set(resolution.drawerEventType);
       this.eventsDrawerIds.set(resolution.drawerEventIds);
-      this.lastBoardReaction.set('Opened events drawer from chat');
     }
     if (resolution.highlightedPlaceId !== null) {
       this.highlightedPlaceId.set(resolution.highlightedPlaceId);
-      this.lastBoardReaction.set(`Highlighted place ${resolution.highlightedPlaceId}`);
     }
   }
 
-  private applyGuidedStructuredData(response: AgentChatResponseOutput): void {
-    const structuredData = this.readStructuredData(response);
-    if (!structuredData) {
-      return;
-    }
-
-    if (structuredData.focusHuman) {
-      this.guidedFocus.set(structuredData.focusHuman);
-      this.selectedHumanId.set(structuredData.focusHuman.id);
-      this.selectedEventId.set(null);
-      this.selectedInventionId.set(null);
-    }
-
-    if (structuredData.compareHumans) {
-      this.guidedComparison.set(structuredData.compareHumans);
-      this.selectedHumanId.set(structuredData.compareHumans.left.id);
-      this.selectedEventId.set(null);
-      this.selectedInventionId.set(null);
-    }
-
-    if (structuredData.followHuman) {
-      this.guidedFollow.set(structuredData.followHuman);
-      this.trackedHumanId.set(structuredData.followHuman.human.id);
-      this.selectedHumanId.set(structuredData.followHuman.human.id);
-      this.selectedEventId.set(null);
-      this.selectedInventionId.set(null);
-    }
-
-    if (structuredData.directorConfirmation) {
-      this.pendingDirectorConfirmation.set(structuredData.directorConfirmation);
-      this.directorBoardState.set('pending');
-    }
-    if (structuredData.directorIntervention?.status === 'EXECUTED') {
-      this.pendingDirectorConfirmation.set(null);
-      this.directorBoardState.set('executed');
-    }
-  }
-
-  private readStructuredData(
-    response: AgentChatResponseOutput
-  ): GuidedChatStructuredData | null {
-    const maybeStructured = (response as AgentChatResponseWithStructuredData)
-      .structuredData;
-    if (!maybeStructured || typeof maybeStructured !== 'object') {
-      return null;
-    }
-    return maybeStructured;
-  }
-
-  onConfirmDirectorIntervention(): void {
-    const pending = this.pendingDirectorConfirmation();
-    const cityId = this.requireCityId();
-    if (!pending || !cityId || this.chatBusy()) {
-      return;
-    }
-
-    this.chatBusy.set(true);
-    this.chatError.set(null);
-    const message = `director confirm meet humans`;
-    this.chatEntries.update((entries) => [
-      ...entries,
-      {
-        role: 'user',
-        content: `Confirm intervention ${pending.commandType}`,
-        timestamp: new Date().toISOString(),
-        commandClass: 'DIRECTOR',
-        interpretationProvenance: null,
-        interpretedCommandSummary: null,
-      },
-    ]);
-
-    this.cityService
-      .sendAgentChat(
-        cityId,
+  private createAssistantWelcomeEntry(): ChatEntry {
+    return {
+      role: 'assistant',
+      content:
+        'Ask for a deterministic read of the simulation with one of the supported commands.',
+      timestamp: new Date().toISOString(),
+      commandType: 'WELCOME',
+      blocks: [
         {
-          message,
-          conversationId: this.chatConversationId() ?? undefined,
-          selectedHumanId: pending.humanIds?.[0],
-          confirmationToken: pending.confirmationToken,
-          confirmIntervention: true,
-        } as AgentChatRequestInput
-      )
-      .subscribe({
-        next: (response) => {
-          this.chatBusy.set(false);
-          this.applyChatResponse(response);
+          type: 'SUPPORTED_COMMANDS',
+          title: 'Quick suggestions',
+          subtitle: 'Start with one of these backend-supported reads.',
+          metrics: [],
+          items: this.assistantSuggestions.map((command: string) => ({
+            title: command,
+            subtitle: null,
+            body: null,
+            chips: [],
+          })),
+          emptyState: null,
         },
-        error: (error) => {
-          this.chatBusy.set(false);
-          this.chatError.set('Director confirmation failed.');
-          console.error('Director confirmation failed:', error);
-        },
-      });
+      ],
+    };
   }
 
-  onCancelDirectorIntervention(): void {
-    this.pendingDirectorConfirmation.set(null);
-    this.directorBoardState.set(null);
+  private createUserEntry(commandText: string): ChatEntry {
+    return {
+      role: 'user',
+      content: commandText,
+      timestamp: new Date().toISOString(),
+      commandType: null,
+      blocks: [],
+    };
   }
 
-  private syncBoardEventEntries(events: EventOutput[]): void {
-    const now = Date.now();
-    const existing = this.boardEventEntries().filter((entry) => entry.expiresAtMs > now);
-    const knownIds = new Set(existing.map((entry) => entry.eventId));
-    const fresh = events
-      .slice(-16)
-      .filter((event) => !knownIds.has(event.id))
-      .flatMap((event) => {
-        const anchor = event.actorIds?.[0];
-        if (typeof anchor !== 'number') {
-          return [];
-        }
-        const isInteraction =
-          event.eventType === 'HUMANS_COLLIDED' ||
-          event.eventType === 'DIALOGUE_EXCHANGED';
-        return [
-          {
-            eventId: event.id,
-            anchorHumanId: anchor,
-            expiresAtMs: now + 5000,
-            tone: isInteraction ? ('interaction' as const) : ('milestone' as const),
-            label: this.formatEnumLabel(event.eventType),
-          },
-        ];
-      });
+  private createAssistantEntry(
+    response: SimulationAssistantResponse,
+  ): ChatEntry {
+    return {
+      role: 'assistant',
+      content: response.text?.trim() || 'No assistant text returned.',
+      timestamp: new Date().toISOString(),
+      commandType: response.commandType ?? null,
+      blocks: response.blocks ?? [],
+    };
+  }
 
-    this.boardEventEntries.set([...existing, ...fresh].slice(-20));
+  private createAssistantErrorEntry(): ChatEntry {
+    return {
+      role: 'assistant',
+      content:
+        'The assistant could not load a deterministic response right now.',
+      timestamp: new Date().toISOString(),
+      commandType: 'ERROR',
+      blocks: [],
+    };
   }
 
   private eventMarkerKind(
-    event: EventOutput
+    event: EventOutput,
   ): SimulationBoardEventMarker['kind'] {
     switch (event.eventType) {
       case 'HUMANS_COLLIDED':
@@ -1124,84 +1032,11 @@ export class SimulationDetailComponent
 }
 
 type ChatEntry = {
-  role: 'user' | 'agent';
+  role: 'user' | 'assistant';
   content: string;
   timestamp: string;
-  commandClass: string | null;
-  interpretationProvenance: string | null;
-  interpretedCommandSummary: string | null;
-};
-
-type GuidedHumanSummary = {
-  id: number;
-  name: string;
-  busy: boolean;
-  x: number;
-  y: number;
-};
-
-type GuidedCompareSummary = {
-  left: GuidedHumanSummary;
-  right: GuidedHumanSummary;
-};
-
-type GuidedFollowEventSummary = {
-  id: number;
-  tick: number;
-  type: string;
-  year: number;
-};
-
-type GuidedFollowInventionSummary = {
-  id: number;
-  tickCreated: number;
-  title: string;
-  category: string;
-};
-
-type GuidedFollowSummary = {
-  human: GuidedHumanSummary;
-  ticks: number;
-  fromTick: number;
-  resultTick: number;
-  eventWindow: GuidedFollowEventSummary[];
-  inventionWindow: GuidedFollowInventionSummary[];
-};
-
-type GuidedChatStructuredData = {
-  focusHuman?: GuidedHumanSummary;
-  compareHumans?: GuidedCompareSummary;
-  followHuman?: GuidedFollowSummary;
-  directorConfirmation?: DirectorConfirmationSummary;
-  directorIntervention?: DirectorInterventionSummary;
-};
-
-type AgentChatResponseWithStructuredData = AgentChatResponseOutput & {
-  structuredData?: GuidedChatStructuredData;
-};
-
-type DirectorConfirmationSummary = {
-  interventionId: number;
-  commandType: string;
-  confirmationToken: string;
-  expiresAt: string;
-  humanIds: number[];
-};
-
-type DirectorInterventionSummary = {
-  id: number;
-  status: string;
-  commandType: string;
-  humanIds: number[];
-  executedTick?: number;
-};
-
-type BoardEventEntry = {
-  eventId: number;
-  anchorHumanId: number;
-  expiresAtMs: number;
-  tone: 'milestone' | 'interaction';
-  label: string;
+  commandType: string | null;
+  blocks: SimulationAssistantBlock[];
 };
 
 type StoryFocusCard = {
