@@ -90,12 +90,16 @@ Keep a skill at the top level only when it is truly cross-cutting, such as `comm
 - `docs/milestone-execution` -> use for milestone slicing, docs update cadence, and Codex handoff packets
 - `docs/archive-maintenance` -> use only for historical corrections
 - `ui/feature-scaffold` -> pair with `ui-feature-architecture.mdc`
-- `ui/openapi-regenerate-adapt` -> pair with `ui-api-generated-client.mdc`
+- `ui/openapi-regenerate-adapt` -> pair with `ui-api-generated-client.mdc` and `agent-openapi-contract-sync.mdc` (backend contract changes must also refresh `apps/mcp` generated types)
 - `ui/shared-ui-component-authoring` -> pair with `ui-shared-ui-boundaries.mdc`
 - `ui/modernize-legacy-angular` -> rely on the existing `ui-*` rule set rather than a single duplicate rule
 - `backend/run-backend` -> no rule needed
 - `ui/run-frontend` -> no rule needed
 - `commit-message` -> keep as a skill unless commit automation via external agents becomes a recurring workflow
+
+## API contract drift (UI + MCP)
+
+Backend DTO/OpenAPI changes are not done until **both** consumers are regenerated: the Angular client under `apps/ui/src/app/api/` and MCP’s `apps/mcp/src/generated/api-types.ts`. CI enforces MCP drift via `npm run api:generate:check` in `apps/mcp`. See `.cursor/rules/agent-openapi-contract-sync.mdc`.
 
 ## Codex context contract
 
@@ -157,6 +161,7 @@ Rules:
 - .cursor/rules/agent-context-layering.mdc
 - .cursor/rules/sprint-doc-sync.mdc
 - .cursor/rules/sprint-chunk-completion-gate.mdc
+- .cursor/rules/agent-openapi-contract-sync.mdc (when changing backend API/DTOs)
 - <other relevant rules>
 
 Skills to follow:

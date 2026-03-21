@@ -165,3 +165,4 @@ Implemented:
 - wired the simulation assistant UI to load that catalog from the API (no client-side command fallback on failure), added a command `<select>` plus sticky control strip and scrollable results thread, and fixed chat entry `@for` tracking with stable ids
 - updated `docs/concepts/ui-simulation.md` to describe the assistant catalog + layout behavior
 - fixed `CityService` assistant HTTP calls to use the same `BASE_PATH` as the generated OpenAPI client (relative `/api/...` was hitting the Angular dev server on port 4200 instead of Spring on 8080 in local dev)
+- added `.cursor/rules/agent-openapi-contract-sync.mdc` so agents resync Angular + MCP generated API types after backend OpenAPI/DTO changes (matches CI `apps/mcp` `api:generate:check`); documented in `docs/agent-context.md` and `openapi-regenerate-adapt` skill

@@ -1,0 +1,26 @@
+---
+description: Regenerate UI and MCP OpenAPI-derived types when backend DTOs or API contracts change; CI fails on MCP drift.
+alwaysApply: true
+---
+
+# OpenAPI contract sync (UI + MCP)
+
+GitHub CI runs `apps/mcp` with `npm run api:generate:check`, which regenerates `src/generated/api-types.ts` from the live `/v3/api-docs` and **fails if that file is out of date** (`git diff` on the generated file). Backend changes that alter models, DTOs, or OpenAPI annotations therefore break MCP CI until types are resynced.
+
+## When this applies
+
+Whenever a backend change affects:
+
+- request/response shapes, DTOs, or enums exposed in the API
+- OpenAPI/SpringDoc metadata (operation ids, schemas, required fields)
+- anything that changes the document at `/v3/api-docs`
+
+## Required follow-through before merge
+
+1. **Angular UI** — Regenerate the OpenAPI client; do not hand-edit generated files under `apps/ui/src/app/api/`. Follow `.cursor/skills/ui/openapi-regenerate-adapt/SKILL.md` and `.cursor/rules/ui-api-generated-client.mdc`. Typical command (backend running locally): from `apps/ui`, run `npm run api:generate` (uses `HUMANAITY_API_BASE_URL` if set).
+
+2. **MCP** — Regenerate TypeScript API types; do not hand-edit `apps/mcp/src/generated/api-types.ts`. With backend at `http://localhost:8080`, from `apps/mcp` run `npm run api:generate` (or set `HUMANAITY_API_BASE_URL`). Commit the updated `api-types.ts`. Locally verify with `npm run api:generate:check` (same as CI).
+
+3. **Manual code** — Update any non-generated code (MCP tools, UI wrappers, tests) that referenced old types or endpoints.
+
+Skipping regeneration causes **contract drift**: UI compile errors, MCP `tsc` failures, or the explicit **MCP API check** failure in CI.

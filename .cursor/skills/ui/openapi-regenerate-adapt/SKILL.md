@@ -9,6 +9,8 @@ description: Regenerate OpenAPI Angular client and adapt feature wrappers safely
 
 Regenerate `src/app/api` and safely align feature services with updated signatures.
 
+If the backend change altered the **public API contract**, also regenerate MCP types (separate generated file): from `apps/mcp` with the backend running, `npm run api:generate`, then commit `src/generated/api-types.ts`. Policy: `.cursor/rules/agent-openapi-contract-sync.mdc`.
+
 ## Workflow
 
 1. Regenerate API client from the configured OpenAPI source.
