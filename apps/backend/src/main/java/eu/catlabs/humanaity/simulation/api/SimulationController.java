@@ -7,6 +7,7 @@ import eu.catlabs.humanaity.auth.domain.User;
 import eu.catlabs.humanaity.auth.infrastructure.persistence.UserRepository;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
 import eu.catlabs.humanaity.simulation.application.SimulationCommandService;
+import eu.catlabs.humanaity.simulation.application.assistant.SimulationAssistantService;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService.TimelineHistory;
 import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
 import eu.catlabs.humanaity.simulation.api.dto.CityOverviewOutput;
@@ -16,6 +17,8 @@ import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotBoundsOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotCentroidOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotCityOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationSnapshotHumanOutput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationAssistantRequestInput;
+import eu.catlabs.humanaity.simulation.api.dto.SimulationAssistantResponseOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationCommandInput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationCommandOutput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationKnowledgeOutput;
@@ -50,15 +53,18 @@ public class SimulationController {
 
     private final SimulationApplicationService simulationApplicationService;
     private final SimulationCommandService simulationCommandService;
+    private final SimulationAssistantService simulationAssistantService;
     private final UserRepository userRepository;
 
     public SimulationController(
             SimulationApplicationService simulationApplicationService,
             SimulationCommandService simulationCommandService,
+            SimulationAssistantService simulationAssistantService,
             UserRepository userRepository
     ) {
         this.simulationApplicationService = simulationApplicationService;
         this.simulationCommandService = simulationCommandService;
+        this.simulationAssistantService = simulationAssistantService;
         this.userRepository = userRepository;
     }
 
@@ -141,6 +147,25 @@ public class SimulationController {
             return ResponseEntity.notFound().build();
         }
     }
+    @PostMapping("/{cityId}/assistant")
+    @Operation(summary = "Query the deterministic simulation assistant for a city")
+    public ResponseEntity<SimulationAssistantResponseOutput> queryAssistant(
+            @PathVariable Long cityId,
+            @RequestBody SimulationAssistantRequestInput input,
+            Authentication authentication
+    ) {
+        try {
+            User currentUser = resolveCurrentUser(authentication);
+            return ResponseEntity.ok(simulationAssistantService.handle(cityId, currentUser, input));
+        } catch (UnauthorizedException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @PostMapping("/{cityId}/start")
     @Operation(summary = "Start simulation for a city")
     public ResponseEntity<Map<String, String>> startSimulation(@PathVariable Long cityId) {
