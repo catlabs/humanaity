@@ -7,6 +7,7 @@ import { SimulationDetailComponent } from './simulation-detail.component';
 
 describe('SimulationDetailComponent', () => {
   let fixture: ComponentFixture<SimulationDetailComponent>;
+  let component: SimulationDetailComponent;
   let cityService: jasmine.SpyObj<CityService>;
 
   const snapshot = {
@@ -45,6 +46,37 @@ describe('SimulationDetailComponent', () => {
     inventionCount: 0,
     events: [],
     inventions: [],
+  } as any;
+
+  const timelineWithDelta = {
+    cityId: 7,
+    fromTick: 4,
+    eventCount: 1,
+    inventionCount: 1,
+    events: [
+      {
+        id: 100,
+        eventType: 'HUMAN_ACTION_PERFORMED',
+        eventCategory: 'ACTION',
+        actorIds: [1],
+        tick: 5,
+        year: 1,
+        era: 'FOUNDING',
+        enrichmentStatus: 'PENDING',
+        enrichedSnippet: null,
+      },
+    ],
+    inventions: [
+      {
+        id: 200,
+        title: 'Campfire Rhythm',
+        summary: 'Coordination improves.',
+        category: 'SOCIAL_PRACTICE',
+        impactScore: 3,
+        yearCreated: 1,
+        enrichmentStatus: 'PENDING',
+      },
+    ],
   } as any;
 
   const commandBuilder = {
@@ -109,7 +141,11 @@ describe('SimulationDetailComponent', () => {
         commandType: 'ADVANCE',
         message: 'Advanced city by 1 step.',
         mutated: true,
-        referencedEntities: { humanId: null, placeId: null, targetHumanId: null },
+        referencedEntities: {
+          humanId: null,
+          placeId: null,
+          targetHumanId: null,
+        },
         uiEffects: [{ type: 'REFRESH_SNAPSHOT' }, { type: 'REFRESH_TIMELINE' }],
       } as any),
     );
@@ -135,40 +171,54 @@ describe('SimulationDetailComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(SimulationDetailComponent);
+    component = fixture.componentInstance;
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
   });
 
-  it('loads snapshot history and command-builder metadata on init', () => {
+  async function flushView(): Promise<void> {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await Promise.resolve();
+    fixture.detectChanges();
+  }
+
+  it('loads snapshot history and command-builder metadata on init without empty placeholder copy', () => {
     expect(cityService.getSimulationSnapshot).toHaveBeenCalledWith(7);
     expect(cityService.getSimulationTimeline).toHaveBeenCalledWith(7, 100);
     expect(cityService.getSimulationCommandBuilder).toHaveBeenCalledWith(7);
 
-    const text = fixture.nativeElement.textContent as string;
-    expect(text).toContain('Command builder');
+    const native = fixture.nativeElement as HTMLElement;
+    const text = native.textContent as string;
+
     expect(text).toContain('Spec City');
-    expect(text).toContain('No revealed insights yet.');
-    expect(text).not.toContain('Story focus');
-    expect(text).not.toContain('Timeline');
-    expect(text).not.toContain('Discoveries');
+    expect(text).not.toContain('Command builder');
+    expect(text).not.toContain('No revealed insights yet.');
+    expect(native.querySelectorAll('.chat-turn').length).toBe(0);
   });
 
-  it('executes actorless query action without requiring actor/target', () => {
-    const component = fixture.componentInstance;
+  it('executes actorless query action and appends assistant turns in order', async () => {
     component.builderActionKey.set('WORLD_STATUS');
+
     component.onExecuteBuilderAction();
+    component.onExecuteBuilderAction();
+    await flushView();
 
     expect(cityService.sendSimulationAssistantCommand).toHaveBeenCalledWith(
       7,
       'world status',
     );
-    expect(component.revealedInsightCards().length).toBe(1);
-    expect(component.revealedInsightCards()[0]?.kind).toBe('assistant');
+    expect(component.chatTurns().length).toBe(2);
+    expect(component.chatTurns().map((turn) => turn.kind)).toEqual([
+      'assistant',
+      'assistant',
+    ]);
+    expect(component.chatTurns()[0]?.contextSummary).toBe('World status');
+    expect(component.chatTurns()[1]?.message).toBe('World status summary.');
   });
 
   it('builds and submits deterministic command text for actor+target actions', () => {
-    const component = fixture.componentInstance;
     component.builderActionKey.set('MOVE_HUMAN_TO_PLACE');
     component.builderActorValue.set('1');
     component.builderTargetValue.set('forest');
@@ -179,10 +229,37 @@ describe('SimulationDetailComponent', () => {
       7,
       jasmine.objectContaining({ commandText: 'move 1 forest' }),
     );
+    expect(component.chatTurns().length).toBe(1);
+    expect(component.chatTurns()[0]?.kind).toBe('command');
+    expect(component.chatTurns()[0]?.contextSummary).toBe(
+      'Go to place · Ada · Forest',
+    );
+  });
+
+  it('merges timeline and discoveries into the newest command turn', async () => {
+    cityService.getSimulationTimeline.and.returnValue(of(timelineWithDelta));
+    component.builderActionKey.set('MOVE_HUMAN_TO_PLACE');
+    component.builderActorValue.set('1');
+    component.builderTargetValue.set('forest');
+
+    component.onExecuteBuilderAction();
+    await flushView();
+
+    expect(component.chatTurns().length).toBe(1);
+    expect(component.chatTurns()[0]?.message).toBe('Advanced city by 1 step.');
+    expect(component.chatTurns()[0]?.timelineEvents.length).toBe(1);
+    expect(component.chatTurns()[0]?.discoveryInventions.length).toBe(1);
+    expect(component.chatTurns()[0]?.deltaMessage).toBe(
+      'Timeline updated with 1 new event and 1 new discovery.',
+    );
+
+    const text = (fixture.nativeElement as HTMLElement).textContent as string;
+    expect(text).toContain('Campfire Rhythm');
+    expect(text).toContain('Recent events');
+    expect(text).toContain('Recent discoveries');
   });
 
   it('prevents submission for invalid combinations', () => {
-    const component = fixture.componentInstance;
     component.builderActionKey.set('MOVE_HUMAN_TO_PLACE');
     component.builderActorValue.set('');
     component.builderTargetValue.set('forest');
@@ -190,17 +267,16 @@ describe('SimulationDetailComponent', () => {
     expect(component.canExecuteBuilderAction()).toBeFalse();
   });
 
-  it('removes legacy assistant chips and console feedback row', () => {
+  it('keeps legacy removed UI out of the template', () => {
     const native = fixture.nativeElement as HTMLElement;
     expect(native.querySelector('.assistant-suggestions')).toBeNull();
     expect(native.querySelector('.console-feedback')).toBeNull();
     expect(native.querySelector('.chat-row')).toBeNull();
-    expect(native.querySelector('.human-list')).toBeNull();
-    expect(native.querySelector('.inspector-card')).toBeNull();
+    expect(native.querySelector('.insight-card')).toBeNull();
+    expect(native.querySelector('.insight-placeholder')).toBeNull();
   });
 
-  it('reveals story focus when selecting an event', () => {
-    const component = fixture.componentInstance;
+  it('appends story turns when selecting events and discoveries', async () => {
     component.events.set([
       {
         id: 42,
@@ -214,52 +290,46 @@ describe('SimulationDetailComponent', () => {
         enrichedSnippet: 'Ada and Ben exchanged ideas.',
       } as any,
     ]);
+    component.inventions.set([
+      {
+        id: 43,
+        title: 'River Song',
+        summary: 'A shared ritual emerges.',
+        category: 'SOCIAL_PRACTICE',
+        impactScore: 2,
+        yearCreated: 1,
+        enrichmentStatus: 'READY',
+        enrichedTitle: 'Song of the River',
+        enrichedSummary: 'A new tradition binds the group.',
+      } as any,
+    ]);
 
     component.selectEvent(component.events()[0] as any);
+    component.selectInvention(component.inventions()[0] as any);
+    await flushView();
 
-    const card = component.revealedInsightCards()[0];
-    expect(card.kind).toBe('story');
-    fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
-      'Story focus',
+    expect(component.chatTurns().length).toBe(2);
+    expect(component.chatTurns().map((turn) => turn.kind)).toEqual([
+      'story',
+      'story',
+    ]);
+    expect(component.chatTurns()[0]?.contextSummary).toContain('Selected event');
+    expect(component.chatTurns()[1]?.contextSummary).toContain(
+      'Selected discovery',
     );
   });
 
-  it('prepends timeline and discoveries cards from timeline delta', () => {
-    const component = fixture.componentInstance as any;
-    component.captureTimelineDelta(
-      [],
-      [],
-      [
-        {
-          id: 100,
-          eventType: 'HUMAN_ACTION_PERFORMED',
-          eventCategory: 'ACTION',
-          actorIds: [1],
-          tick: 5,
-          year: 1,
-          era: 'FOUNDING',
-          enrichmentStatus: 'PENDING',
-          enrichedSnippet: null,
-        },
-      ],
-      [
-        {
-          id: 200,
-          title: 'Campfire Rhythm',
-          summary: 'Coordination improves.',
-          category: 'SOCIAL_PRACTICE',
-          impactScore: 3,
-          yearCreated: 1,
-          enrichmentStatus: 'PENDING',
-        },
-      ],
-      false,
-    );
+  it('scrolls the feed to the bottom after appending a turn', async () => {
+    const feed = fixture.nativeElement.querySelector('.chat-feed') as HTMLElement;
+    const scrollTo = jasmine.createSpy('scrollTo');
+    Object.defineProperty(feed, 'scrollHeight', { value: 640, configurable: true });
+    (feed as HTMLElement & { scrollTo: typeof scrollTo }).scrollTo = scrollTo;
 
-    expect(component.revealedInsightCards().length).toBe(2);
-    expect(component.revealedInsightCards()[0].kind).toBe('timeline');
-    expect(component.revealedInsightCards()[1].kind).toBe('discoveries');
+    component.builderActionKey.set('WORLD_STATUS');
+    component.onExecuteBuilderAction();
+    await flushView();
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 640 });
   });
 
   it('shows start control when simulation is not running and calls start handler', () => {
@@ -279,7 +349,6 @@ describe('SimulationDetailComponent', () => {
   });
 
   it('shows stop control while running and keeps step disabled', () => {
-    const component = fixture.componentInstance;
     component.isRunning.set(true);
     fixture.detectChanges();
 

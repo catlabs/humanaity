@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
 import {
   Component,
+  ElementRef,
   OnDestroy,
   OnInit,
+  ViewChild,
   computed,
   inject,
   signal,
@@ -55,6 +57,9 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
   private agentChatEffectsService = inject(AgentChatEffectsService);
   private boardViewModelService = inject(BoardViewModelService);
 
+  @ViewChild('chatFeed')
+  private chatFeedElement?: ElementRef<HTMLElement>;
+
   private pollingSubscription?: Subscription;
   private commandBuilderSubscription?: Subscription;
 
@@ -88,11 +93,10 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
   builderActionKey = signal<string>('');
   builderActorValue = signal<string>('');
   builderTargetValue = signal<string>('');
-  queryResponse = signal<SimulationAssistantResponseOutput | null>(null);
   chatBusy = signal(false);
   chatError = signal<string | null>(null);
   commandBuilderError = signal<string | null>(null);
-  revealedInsightCards = signal<RevealedInsightCard[]>([]);
+  chatTurns = signal<SimulationChatTurn[]>([]);
   eventsDrawerOpen = signal(false);
   eventsDrawerType = signal<string | null>(null);
   eventsDrawerIds = signal<number[] | null>(null);
@@ -175,8 +179,6 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
       total: inventions.length,
     };
   });
-  displayedInventions = computed(() => this.inventions().slice(-12).reverse());
-  displayedEvents = computed(() => this.events().slice(-20).reverse());
   drawerEvents = computed(() => {
     const allEvents = this.events();
     const eventIds = this.eventsDrawerIds();
@@ -218,51 +220,13 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
 
     return `${format(human.x)} x · ${format(human.y)} y`;
   });
-  activityFeed = computed(() => this.displayedEvents().slice(0, 8));
-  recentDiscoveries = computed(() => this.displayedInventions().slice(0, 3));
   recentDeltaEventIds = signal<number[]>([]);
   recentDeltaInventionIds = signal<number[]>([]);
-  latestTimelineDeltaMessage = signal<string | null>(null);
-  private pendingTimelineCommand: SimulationCommandOutput | null = null;
-  private revealedInsightCounter = 0;
+  private pendingCommandTurnId: string | null = null;
+  private chatTurnCounter = 0;
   headerRunSummary = computed(
     () => `Era ${this.eraLabel()} · Year ${this.currentYear()}`,
   );
-  storyFocus = computed<StoryFocusCard | null>(() => {
-    const selectedEvent = this.selectedEvent();
-    if (selectedEvent) {
-      return this.storyFocusFromEvent(selectedEvent);
-    }
-
-    const selectedInvention = this.selectedInvention();
-    if (selectedInvention) {
-      return this.storyFocusFromInvention(selectedInvention);
-    }
-
-    const latestFreshEvent = this.activityFeed().find((event) =>
-      this.isFreshEvent(event.id),
-    );
-    if (latestFreshEvent) {
-      return this.storyFocusFromEvent(latestFreshEvent);
-    }
-
-    const latestFreshInvention = this.recentDiscoveries().find((invention) =>
-      this.isFreshInvention(invention.id),
-    );
-    if (latestFreshInvention) {
-      return this.storyFocusFromInvention(latestFreshInvention);
-    }
-
-    const latestEvent = this.activityFeed()[0];
-    if (latestEvent) {
-      return this.storyFocusFromEvent(latestEvent);
-    }
-
-    const latestInvention = this.recentDiscoveries()[0];
-    return latestInvention
-      ? this.storyFocusFromInvention(latestInvention)
-      : null;
-  });
   builderActions = computed<SimulationCommandBuilderActionOutput[]>(() => {
     return this.commandBuilder()?.actions ?? [];
   });
@@ -360,7 +324,6 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
   onBuilderActionChange(event: Event): void {
     const select = event.target as HTMLSelectElement;
     this.builderActionKey.set(select.value);
-    this.queryResponse.set(null);
     this.chatError.set(null);
     this.commandBuilderError.set(null);
     if (this.needsBuilderActor()) {
@@ -406,7 +369,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
         this.chatError.set('Query action is missing command text.');
         return;
       }
-      this.submitAssistantQuery(commandText);
+      this.submitAssistantQuery(commandText, action);
       return;
     }
 
@@ -421,7 +384,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     if (this.needsBuilderTarget()) {
       commandText = `${commandText} ${target}`.trim();
     }
-    this.submitSimulationCommand(commandText);
+    this.submitSimulationCommand(commandText, action);
   }
 
   selectHuman(human: SimulationSnapshotOutput['humans'][number]): void {
@@ -448,19 +411,20 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
 
   selectInvention(
     invention: InventionOutput,
-    options?: { revealStory?: boolean },
+    options?: { appendStoryTurn?: boolean },
   ): void {
     this.selectedInventionId.set(invention.id);
     this.selectedHumanId.set(null);
     this.selectedEventId.set(null);
-    if (options?.revealStory !== false) {
-      this.revealStoryFocus(this.storyFocusFromInvention(invention), {
-        dedupeKey: `story:discovery:${invention.id}`,
-      });
+    if (options?.appendStoryTurn !== false) {
+      this.appendStoryTurn(
+        this.storyFocusFromInvention(invention),
+        `Selected discovery · ${this.inventionDisplayTitle(invention)}`,
+      );
     }
   }
 
-  selectEvent(event: EventOutput, options?: { revealStory?: boolean }): void {
+  selectEvent(event: EventOutput, options?: { appendStoryTurn?: boolean }): void {
     this.selectedEventId.set(event.id);
     this.selectedInventionId.set(null);
 
@@ -471,10 +435,11 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     if (primaryActorId !== undefined && primaryActorId !== null && this.needsBuilderActor()) {
       this.builderActorValue.set(String(primaryActorId));
     }
-    if (options?.revealStory !== false) {
-      this.revealStoryFocus(this.storyFocusFromEvent(event), {
-        dedupeKey: `story:event:${event.id}`,
-      });
+    if (options?.appendStoryTurn !== false) {
+      this.appendStoryTurn(
+        this.storyFocusFromEvent(event),
+        `Selected event · ${this.eventTitle(event)}`,
+      );
     }
   }
 
@@ -832,7 +797,10 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  private submitSimulationCommand(commandText: string): void {
+  private submitSimulationCommand(
+    commandText: string,
+    action?: SimulationCommandBuilderActionOutput,
+  ): void {
     const cityId = this.requireCityId();
     if (!cityId || this.chatBusy()) {
       return;
@@ -840,14 +808,35 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
 
     this.chatBusy.set(true);
     this.chatError.set(null);
+    const contextSummary = action
+      ? this.buildContextSummary(
+          action,
+          this.builderActorValue(),
+          this.builderTargetValue(),
+        )
+      : null;
 
     this.cityService.sendSimulationCommand(cityId, { commandText }).subscribe({
       next: (response) => {
         this.chatBusy.set(false);
         if (response.ok) {
-          this.pendingTimelineCommand = this.hasTimelineRefreshEffect(response)
-            ? response
-            : null;
+          if (contextSummary) {
+            const turnId = this.appendChatTurn({
+              kind: 'command',
+              contextSummary,
+              message: response.message?.trim() || null,
+              assistantBlocks: [],
+              timelineEvents: [],
+              discoveryInventions: [],
+              storyFocus: null,
+              deltaMessage: null,
+            });
+            this.pendingCommandTurnId = this.hasTimelineRefreshEffect(response)
+              ? turnId
+              : null;
+          } else {
+            this.pendingCommandTurnId = null;
+          }
           this.applyUiEffects(response.uiEffects ?? []);
           this.loadCommandBuilder();
         } else {
@@ -856,14 +845,17 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.chatBusy.set(false);
-        this.pendingTimelineCommand = null;
+        this.pendingCommandTurnId = null;
         this.chatError.set('Simulation command request failed.');
         console.error('Simulation command request failed:', error);
       },
     });
   }
 
-  private submitAssistantQuery(commandText: string): void {
+  private submitAssistantQuery(
+    commandText: string,
+    action: SimulationCommandBuilderActionOutput,
+  ): void {
     const cityId = this.requireCityId();
     if (!cityId || this.chatBusy()) {
       return;
@@ -871,15 +863,20 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
 
     this.chatBusy.set(true);
     this.chatError.set(null);
-    this.queryResponse.set(null);
 
     this.cityService
       .sendSimulationAssistantCommand(cityId, commandText)
       .subscribe({
         next: (response) => {
           this.chatBusy.set(false);
-          this.queryResponse.set(response);
-          this.revealAssistantResponse(response);
+          this.appendAssistantTurn(
+            response,
+            this.buildContextSummary(
+              action,
+              this.builderActorValue(),
+              this.builderTargetValue(),
+            ),
+          );
           this.loadCommandBuilder();
         },
         error: (error) => {
@@ -922,12 +919,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     if (newEvents.length === 0 && newInventions.length === 0) {
       this.recentDeltaEventIds.set([]);
       this.recentDeltaInventionIds.set([]);
-      if (this.pendingTimelineCommand) {
-        this.latestTimelineDeltaMessage.set(
-          this.pendingTimelineCommand.message ?? null,
-        );
-      }
-      this.pendingTimelineCommand = null;
+      this.pendingCommandTurnId = null;
       return;
     }
 
@@ -938,36 +930,16 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
 
     const newestEvent = newEvents[newEvents.length - 1];
     if (newestEvent) {
-      this.selectEvent(newestEvent, { revealStory: false });
+      this.selectEvent(newestEvent, { appendStoryTurn: false });
     }
 
-    const deltaMessage = this.summarizeTimelineDelta(
-      newEvents.length,
-      newInventions.length,
+    this.updatePendingCommandTurnFromDelta(
+      this.pendingCommandTurnId,
+      newEvents.length > 0 ? nextEvents.slice(-8).reverse() : [],
+      newInventions.length > 0 ? nextInventions.slice(-3).reverse() : [],
+      this.summarizeTimelineDelta(newEvents.length, newInventions.length),
     );
-    this.latestTimelineDeltaMessage.set(deltaMessage);
-    const revealCards: RevealedInsightCard[] = [];
-    if (newEvents.length > 0) {
-      revealCards.push({
-        id: this.nextRevealedInsightId(),
-        dedupeKey: `timeline:${newEvents[newEvents.length - 1]?.id ?? 'none'}`,
-        kind: 'timeline',
-        title: 'Timeline',
-        deltaMessage,
-        events: nextEvents.slice(-8).reverse(),
-      });
-    }
-    if (newInventions.length > 0) {
-      revealCards.push({
-        id: this.nextRevealedInsightId(),
-        dedupeKey: `discoveries:${newInventions[newInventions.length - 1]?.id ?? 'none'}`,
-        kind: 'discoveries',
-        title: 'Discoveries',
-        inventions: nextInventions.slice(-3).reverse(),
-      });
-    }
-    this.prependRevealedInsights(revealCards);
-    this.pendingTimelineCommand = null;
+    this.pendingCommandTurnId = null;
   }
 
   private summarizeTimelineDelta(
@@ -986,11 +958,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     }
 
     const deltaLabel = parts.join(' and ');
-    const commandMessage = this.pendingTimelineCommand?.message?.trim();
-    if (commandMessage) {
-      return `${commandMessage} · ${deltaLabel}`;
-    }
-    return `Live timeline updated with ${deltaLabel}.`;
+    return `Timeline updated with ${deltaLabel}.`;
   }
 
   private eventSupportsNarration(event: EventOutput): boolean {
@@ -1026,23 +994,25 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     };
   }
 
-  private revealStoryFocus(
+  private appendStoryTurn(
     focus: StoryFocusCard,
-    options: { dedupeKey: string },
+    contextSummary: string,
   ): void {
-    this.prependRevealedInsights([
-      {
-        id: this.nextRevealedInsightId(),
-        dedupeKey: options.dedupeKey,
-        kind: 'story',
-        title: 'Story focus',
-        focus,
-      },
-    ]);
+    this.appendChatTurn({
+      kind: 'story',
+      contextSummary,
+      message: null,
+      assistantBlocks: [],
+      timelineEvents: [],
+      discoveryInventions: [],
+      storyFocus: focus,
+      deltaMessage: null,
+    });
   }
 
-  private revealAssistantResponse(
+  private appendAssistantTurn(
     response: SimulationAssistantResponseOutput,
+    contextSummary: string,
   ): void {
     const text = response.text?.trim() || null;
     const blocks = response.blocks ?? [];
@@ -1050,45 +1020,111 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const blockKey = blocks
-      .map((block) => `${block.type ?? 'GENERIC'}:${block.title ?? ''}`)
-      .join('|');
-    this.prependRevealedInsights([
-      {
-        id: this.nextRevealedInsightId(),
-        dedupeKey: `assistant:${response.commandType ?? 'UNKNOWN'}:${blockKey}:${text ?? ''}`,
-        kind: 'assistant',
-        title: 'Assistant',
-        text,
-        blocks,
-      },
-    ]);
-  }
-
-  private prependRevealedInsights(cards: RevealedInsightCard[]): void {
-    if (cards.length === 0) {
-      return;
-    }
-    this.revealedInsightCards.update((existing) => {
-      const nextCards: RevealedInsightCard[] = [];
-      let topKey = existing[0]?.dedupeKey ?? null;
-      for (const card of cards) {
-        if (card.dedupeKey === topKey) {
-          continue;
-        }
-        nextCards.push(card);
-        topKey = card.dedupeKey;
-      }
-      if (nextCards.length === 0) {
-        return existing;
-      }
-      return [...nextCards, ...existing];
+    this.appendChatTurn({
+      kind: 'assistant',
+      contextSummary,
+      message: text,
+      assistantBlocks: blocks,
+      timelineEvents: [],
+      discoveryInventions: [],
+      storyFocus: null,
+      deltaMessage: null,
     });
   }
 
-  private nextRevealedInsightId(): string {
-    this.revealedInsightCounter += 1;
-    return `insight-${this.revealedInsightCounter}`;
+  private updatePendingCommandTurnFromDelta(
+    turnId: string | null,
+    timelineEvents: EventOutput[],
+    discoveryInventions: InventionOutput[],
+    deltaMessage: string | null,
+  ): void {
+    if (!turnId) {
+      return;
+    }
+
+    this.chatTurns.update((existing) =>
+      existing.map((turn) =>
+        turn.id === turnId
+          ? {
+              ...turn,
+              timelineEvents,
+              discoveryInventions,
+              deltaMessage,
+            }
+          : turn,
+      ),
+    );
+    this.scrollFeedToBottom();
+  }
+
+  private buildContextSummary(
+    action: SimulationCommandBuilderActionOutput,
+    actorValue: string,
+    targetValue: string,
+  ): string {
+    const parts = [action.label?.trim() || 'Execute'];
+    const actorLabel = actorValue
+      ? this.optionLabel(this.builderActorOptions(), actorValue)
+      : null;
+    const targetLabel = targetValue
+      ? this.resolveTargetLabel(action, targetValue)
+      : null;
+
+    if (actorLabel) {
+      parts.push(actorLabel);
+    }
+    if (targetLabel) {
+      parts.push(targetLabel);
+    }
+
+    return parts.join(' · ');
+  }
+
+  private resolveTargetLabel(
+    action: SimulationCommandBuilderActionOutput,
+    targetValue: string,
+  ): string | null {
+    const targetOptions = action.targetOptions ?? [];
+    if (action.targetKind === 'HUMAN') {
+      return this.optionLabel(this.builderActorOptions(), targetValue);
+    }
+    return this.optionLabel(targetOptions, targetValue);
+  }
+
+  private optionLabel(
+    options: SimulationCommandBuilderOptionOutput[],
+    value: string,
+  ): string | null {
+    return options.find((option) => option.value === value)?.label ?? null;
+  }
+
+  private appendChatTurn(
+    turn: Omit<SimulationChatTurn, 'id'>,
+  ): string {
+    const id = this.nextChatTurnId();
+    this.chatTurns.update((existing) => [...existing, { id, ...turn }]);
+    this.scrollFeedToBottom();
+    return id;
+  }
+
+  private nextChatTurnId(): string {
+    this.chatTurnCounter += 1;
+    return `turn-${this.chatTurnCounter}`;
+  }
+
+  private scrollFeedToBottom(): void {
+    queueMicrotask(() => {
+      const element = this.chatFeedElement?.nativeElement;
+      if (!element) {
+        return;
+      }
+      const top = element.scrollHeight;
+      if (typeof element.scrollTo === 'function') {
+        element.scrollTo({ top });
+        return;
+      }
+      element.scrollTop = top;
+    });
   }
 
   private runControlAction(
@@ -1182,34 +1218,14 @@ type StoryFocusCard = {
   narrationCopy: string;
 };
 
-type RevealedInsightCard =
-  | {
-      id: string;
-      dedupeKey: string;
-      kind: 'story';
-      title: string;
-      focus: StoryFocusCard;
-    }
-  | {
-      id: string;
-      dedupeKey: string;
-      kind: 'timeline';
-      title: string;
-      deltaMessage: string | null;
-      events: EventOutput[];
-    }
-  | {
-      id: string;
-      dedupeKey: string;
-      kind: 'discoveries';
-      title: string;
-      inventions: InventionOutput[];
-    }
-  | {
-      id: string;
-      dedupeKey: string;
-      kind: 'assistant';
-      title: string;
-      text: string | null;
-      blocks: SimulationAssistantBlockOutput[];
-    };
+type SimulationChatTurn = {
+  id: string;
+  kind: 'assistant' | 'command' | 'story';
+  contextSummary: string;
+  message: string | null;
+  assistantBlocks: SimulationAssistantBlockOutput[];
+  timelineEvents: EventOutput[];
+  discoveryInventions: InventionOutput[];
+  storyFocus: StoryFocusCard | null;
+  deltaMessage: string | null;
+};

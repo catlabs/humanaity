@@ -1,10 +1,19 @@
 @use "sass:map";
 @use "tokens" as *;
 
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
 .layout {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  flex: 1 1 0%;
+  min-height: 0;
+  height: 100%;
 }
 
 .header-container {
