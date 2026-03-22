@@ -195,6 +195,25 @@
   border-top: 1px solid var(--mat-sys-outline-variant);
 }
 
+.insight-stack {
+  gap: map.get($spacing-scale, 2);
+}
+
+.insight-placeholder {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.82rem;
+}
+
+.insight-card {
+  display: flex;
+  flex-direction: column;
+  gap: map.get($spacing-scale, 2);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: $radius-sm;
+  background: var(--mat-sys-surface);
+  padding: map.get($spacing-scale, 3);
+}
+
 .status-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -522,7 +541,7 @@
   background: white;
   display: flex;
   flex-direction: column;
-  gap: map.get($spacing-scale, 3);
+  gap: map.get($spacing-scale, 2);
   position: sticky;
   top: 0;
   z-index: 10;

@@ -120,48 +120,11 @@
       <aside class="right-zone app-surface-bg">
         <section class="right-zone-section assistant-section">
           <div class="assistant-controls">
-            <div class="section-header">
-              <div>
-                <div class="section-title">Command builder</div>
-                <div class="section-subtitle">
-                  Structured actions for city reads and deterministic commands.
-                </div>
-              </div>
-            </div>
+            <div class="section-title">Command builder</div>
 
             @if (commandBuilderError()) {
               <div class="command-error">{{ commandBuilderError() }}</div>
             }
-
-            @if (selectedHuman(); as human) {
-              <div class="inspector-card inspector-card--selected">
-                <div class="inspector-name">{{ human.name }}</div>
-                <div class="inspector-meta">
-                  {{ humanBusyLabel(human.busy) }} ·
-                  {{ selectedHumanCoordinates() }}
-                </div>
-              </div>
-            } @else {
-              <div class="empty-block">
-                Select a human on the board or from the list below.
-              </div>
-            }
-
-            <div class="human-list">
-              @for (human of filteredHumans(); track human.id) {
-                <button
-                  type="button"
-                  class="human-pill"
-                  [class.human-pill--selected]="selectedHumanId() === human.id"
-                  (click)="selectHuman(human)"
-                >
-                  <span>{{ human.name }}</span>
-                  <small>{{ humanBusyLabel(human.busy) }}</small>
-                </button>
-              } @empty {
-                <div class="empty">No humans available.</div>
-              }
-            </div>
 
             <select
               id="builder-action-select"
@@ -227,246 +190,264 @@
             @if (chatError()) {
               <div class="command-error">{{ chatError() }}</div>
             }
-
-            @if (queryText()) {
-              <div class="query-summary">{{ queryText() }}</div>
-            }
-
-            @if (queryBlocks().length > 0) {
-              <div class="assistant-block-list">
-                @for (block of queryBlocks(); track block.type + (block.title ?? "")) {
-                  <div class="assistant-block">
-                    <div class="assistant-block-title">{{ block.title }}</div>
-                    @if (block.subtitle) {
-                      <div class="assistant-block-subtitle">{{ block.subtitle }}</div>
-                    }
-                    @if ((block.metrics ?? []).length > 0) {
-                      <div class="assistant-metrics-grid">
-                        @for (metric of block.metrics ?? []; track metric.label) {
-                          <div class="assistant-metric-pill">
-                            <span>{{ metric.label }}</span>
-                            <strong>{{ metric.value }}</strong>
-                          </div>
-                        }
-                      </div>
-                    }
-                    @if ((block.items ?? []).length > 0) {
-                      <div class="assistant-items">
-                        @for (item of block.items ?? []; track item.title + (item.subtitle ?? "")) {
-                          <div class="assistant-item">
-                            <div class="assistant-item-title">{{ item.title }}</div>
-                            @if (item.subtitle) {
-                              <div class="assistant-item-subtitle">{{ item.subtitle }}</div>
-                            }
-                            @if (item.body) {
-                              <div class="assistant-item-body">{{ item.body }}</div>
-                            }
-                          </div>
-                        }
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            }
           </div>
         </section>
 
-        <section class="right-zone-section">
-          <div class="section-header">
-            <div>
-              <div class="section-title">Story focus</div>
-              <div class="section-subtitle">
-                The current event or discovery narrative stays aligned with
-                canonical facts.
-              </div>
-            </div>
-          </div>
-
-          @if (storyFocus(); as focus) {
-            <div class="story-focus">
-              <div class="story-focus-label">{{ focus.label }}</div>
-              <div class="story-focus-title">{{ focus.title }}</div>
-              <div class="story-focus-meta">{{ focus.meta }}</div>
-              @if (focus.actorSummary) {
-                <div class="story-focus-actors">{{ focus.actorSummary }}</div>
-              }
-              <div class="narration-row">
-                <span
-                  class="narration-chip"
-                  [class.narration-chip--fallback]="
-                    focus.narrationTone === 'fallback'
-                  "
-                  [class.narration-chip--muted]="
-                    focus.narrationTone === 'muted'
-                  "
-                >
-                  {{ focus.narrationLabel }}
-                </span>
-              </div>
-              <div
-                class="story-focus-copy"
-                [class.story-focus-copy--muted]="
-                  focus.narrationTone === 'muted'
-                "
-              >
-                {{ focus.narrationCopy }}
-              </div>
-            </div>
+        <section class="right-zone-section insight-stack">
+          @if (revealedInsightCards().length === 0) {
+            <div class="insight-placeholder">No revealed insights yet.</div>
           } @else {
-            <div class="empty-block">
-              Select an event or discovery to read the current story focus.
-            </div>
-          }
-        </section>
-
-        <section class="right-zone-section">
-          <div class="section-header">
-            <div>
-              <div class="section-title">Timeline</div>
-              <div class="section-subtitle">
-                History-driven feed from the latest timeline window, linked to
-                the board markers.
-              </div>
-            </div>
-            <button
-              type="button"
-              class="text-button"
-              (click)="openAllEventsDrawer()"
-            >
-              Open all
-            </button>
-          </div>
-
-          @if (latestTimelineDeltaMessage(); as deltaMessage) {
-            <div class="delta-banner">
-              <div class="delta-banner-title">Latest delta</div>
-              <div class="delta-banner-copy">{{ deltaMessage }}</div>
-            </div>
-          }
-
-          <div class="feed-list">
-            @for (event of activityFeed(); track event.id) {
-              <button
-                type="button"
-                class="feed-item"
-                [class.feed-item--selected]="selectedEventId() === event.id"
-                [class.feed-item--fresh]="isFreshEvent(event.id)"
-                (click)="selectEvent(event)"
-              >
-                <div class="feed-item-header">
-                  <span
-                    class="feed-tag"
-                    [class.feed-tag--invention]="
-                      eventType(event) === 'invention'
-                    "
-                    [class.feed-tag--warning]="eventType(event) === 'warning'"
-                  >
-                    {{ eventTypeLabel(event.eventType) }}
-                  </span>
-                  <span class="feed-meta"
-                    >Tick {{ event.tick }} · Year {{ event.year }}</span
-                  >
-                </div>
-                <div class="feed-title-row">
-                  <strong>{{ eventTitle(event) }}</strong>
-                  @if (isFreshEvent(event.id)) {
-                    <span class="delta-chip">New</span>
+            @for (card of revealedInsightCards(); track card.id) {
+              <article class="insight-card">
+                <div class="section-header">
+                  <div class="section-title">{{ card.title }}</div>
+                  @if (card.kind === "timeline") {
+                    <button
+                      type="button"
+                      class="text-button"
+                      (click)="openAllEventsDrawer()"
+                    >
+                      Open all
+                    </button>
                   }
                 </div>
-                @if (eventActorSummary(event); as actorSummary) {
-                  <div class="feed-actors">{{ actorSummary }}</div>
-                }
-                <div class="feed-facts">{{ eventCanonicalSummary(event) }}</div>
-                <div class="narration-block">
-                  <div class="narration-row">
-                    <span
-                      class="narration-chip"
-                      [class.narration-chip--fallback]="
-                        eventNarrationTone(event) === 'fallback'
-                      "
-                      [class.narration-chip--muted]="
-                        eventNarrationTone(event) === 'muted'
+
+                @if (card.kind === "story") {
+                  <div class="story-focus">
+                    <div class="story-focus-label">{{ card.focus.label }}</div>
+                    <div class="story-focus-title">{{ card.focus.title }}</div>
+                    <div class="story-focus-meta">{{ card.focus.meta }}</div>
+                    @if (card.focus.actorSummary) {
+                      <div class="story-focus-actors">
+                        {{ card.focus.actorSummary }}
+                      </div>
+                    }
+                    <div class="narration-row">
+                      <span
+                        class="narration-chip"
+                        [class.narration-chip--fallback]="
+                          card.focus.narrationTone === 'fallback'
+                        "
+                        [class.narration-chip--muted]="
+                          card.focus.narrationTone === 'muted'
+                        "
+                      >
+                        {{ card.focus.narrationLabel }}
+                      </span>
+                    </div>
+                    <div
+                      class="story-focus-copy"
+                      [class.story-focus-copy--muted]="
+                        card.focus.narrationTone === 'muted'
                       "
                     >
-                      {{ eventNarrationLabel(event) }}
-                    </span>
+                      {{ card.focus.narrationCopy }}
+                    </div>
                   </div>
-                  <div
-                    class="narration-copy"
-                    [class.narration-copy--muted]="
-                      eventNarrationTone(event) === 'muted'
-                    "
-                  >
-                    {{ eventNarrationCopy(event) }}
-                  </div>
-                </div>
-              </button>
-            } @empty {
-              <div class="empty-block">
-                {{
-                  historyLoading()
-                    ? "Loading recent activity…"
-                    : "No recent events yet. Step the simulation to populate the feed."
-                }}
-              </div>
-            }
-          </div>
+                }
 
-          <div class="discovery-strip">
-            <div class="section-title">Discoveries</div>
-            @for (invention of recentDiscoveries(); track invention.id) {
-              <button
-                type="button"
-                class="discovery-item"
-                [class.discovery-item--selected]="
-                  selectedInventionId() === invention.id
-                "
-                [class.discovery-item--fresh]="isFreshInvention(invention.id)"
-                (click)="selectInvention(invention)"
-              >
-                <div class="discovery-copy">
-                  <strong>{{ invention.title }}</strong>
-                  <small>{{ invention.summary }}</small>
-                  @if (inventionNarratedTitle(invention); as narratedTitle) {
-                    <div class="discovery-narrated-title">
-                      {{ narratedTitle }}
+                @if (card.kind === "timeline") {
+                  @if (card.deltaMessage) {
+                    <div class="delta-banner">
+                      <div class="delta-banner-title">Latest delta</div>
+                      <div class="delta-banner-copy">{{ card.deltaMessage }}</div>
                     </div>
                   }
-                  <div class="narration-row">
-                    <span
-                      class="narration-chip"
-                      [class.narration-chip--fallback]="
-                        inventionNarrationTone(invention) === 'fallback'
-                      "
-                      [class.narration-chip--muted]="
-                        inventionNarrationTone(invention) === 'muted'
-                      "
-                    >
-                      {{ inventionNarrationLabel(invention) }}
-                    </span>
+                  <div class="feed-list">
+                    @for (event of card.events; track event.id) {
+                      <button
+                        type="button"
+                        class="feed-item"
+                        [class.feed-item--selected]="selectedEventId() === event.id"
+                        [class.feed-item--fresh]="isFreshEvent(event.id)"
+                        (click)="selectEvent(event)"
+                      >
+                        <div class="feed-item-header">
+                          <span
+                            class="feed-tag"
+                            [class.feed-tag--invention]="
+                              eventType(event) === 'invention'
+                            "
+                            [class.feed-tag--warning]="
+                              eventType(event) === 'warning'
+                            "
+                          >
+                            {{ eventTypeLabel(event.eventType) }}
+                          </span>
+                          <span class="feed-meta"
+                            >Tick {{ event.tick }} · Year {{ event.year }}</span
+                          >
+                        </div>
+                        <div class="feed-title-row">
+                          <strong>{{ eventTitle(event) }}</strong>
+                          @if (isFreshEvent(event.id)) {
+                            <span class="delta-chip">New</span>
+                          }
+                        </div>
+                        @if (eventActorSummary(event); as actorSummary) {
+                          <div class="feed-actors">{{ actorSummary }}</div>
+                        }
+                        <div class="feed-facts">
+                          {{ eventCanonicalSummary(event) }}
+                        </div>
+                        <div class="narration-block">
+                          <div class="narration-row">
+                            <span
+                              class="narration-chip"
+                              [class.narration-chip--fallback]="
+                                eventNarrationTone(event) === 'fallback'
+                              "
+                              [class.narration-chip--muted]="
+                                eventNarrationTone(event) === 'muted'
+                              "
+                            >
+                              {{ eventNarrationLabel(event) }}
+                            </span>
+                          </div>
+                          <div
+                            class="narration-copy"
+                            [class.narration-copy--muted]="
+                              eventNarrationTone(event) === 'muted'
+                            "
+                          >
+                            {{ eventNarrationCopy(event) }}
+                          </div>
+                        </div>
+                      </button>
+                    } @empty {
+                      <div class="empty-block">
+                        {{
+                          historyLoading()
+                            ? "Loading recent activity…"
+                            : "No recent events yet."
+                        }}
+                      </div>
+                    }
                   </div>
-                  <div
-                    class="narration-copy"
-                    [class.narration-copy--muted]="
-                      inventionNarrationTone(invention) === 'muted'
-                    "
-                  >
-                    {{ inventionNarrationCopy(invention) }}
+                }
+
+                @if (card.kind === "discoveries") {
+                  <div class="discovery-strip">
+                    @for (invention of card.inventions; track invention.id) {
+                      <button
+                        type="button"
+                        class="discovery-item"
+                        [class.discovery-item--selected]="
+                          selectedInventionId() === invention.id
+                        "
+                        [class.discovery-item--fresh]="
+                          isFreshInvention(invention.id)
+                        "
+                        (click)="selectInvention(invention)"
+                      >
+                        <div class="discovery-copy">
+                          <strong>{{ invention.title }}</strong>
+                          <small>{{ invention.summary }}</small>
+                          @if (inventionNarratedTitle(invention); as narratedTitle) {
+                            <div class="discovery-narrated-title">
+                              {{ narratedTitle }}
+                            </div>
+                          }
+                          <div class="narration-row">
+                            <span
+                              class="narration-chip"
+                              [class.narration-chip--fallback]="
+                                inventionNarrationTone(invention) === 'fallback'
+                              "
+                              [class.narration-chip--muted]="
+                                inventionNarrationTone(invention) === 'muted'
+                              "
+                            >
+                              {{ inventionNarrationLabel(invention) }}
+                            </span>
+                          </div>
+                          <div
+                            class="narration-copy"
+                            [class.narration-copy--muted]="
+                              inventionNarrationTone(invention) === 'muted'
+                            "
+                          >
+                            {{ inventionNarrationCopy(invention) }}
+                          </div>
+                        </div>
+                        <div class="discovery-meta">
+                          <span>{{ inventionCategoryLabel(invention) }}</span>
+                          <span>Impact {{ invention.impactScore }}</span>
+                          @if (isFreshInvention(invention.id)) {
+                            <span class="delta-chip delta-chip--discovery"
+                              >New</span
+                            >
+                          }
+                        </div>
+                      </button>
+                    } @empty {
+                      <div class="empty">No discoveries yet.</div>
+                    }
                   </div>
-                </div>
-                <div class="discovery-meta">
-                  <span>{{ inventionCategoryLabel(invention) }}</span>
-                  <span>Impact {{ invention.impactScore }}</span>
-                  @if (isFreshInvention(invention.id)) {
-                    <span class="delta-chip delta-chip--discovery">New</span>
+                }
+
+                @if (card.kind === "assistant") {
+                  @if (card.text) {
+                    <div class="query-summary">{{ card.text }}</div>
                   }
-                </div>
-              </button>
-            } @empty {
-              <div class="empty">No discoveries yet.</div>
+                  @if (card.blocks.length > 0) {
+                    <div class="assistant-block-list">
+                      @for (
+                        block of card.blocks;
+                        track (block.type ?? "") + (block.title ?? "")
+                      ) {
+                        <div class="assistant-block">
+                          <div class="assistant-block-title">{{ block.title }}</div>
+                          @if (block.subtitle) {
+                            <div class="assistant-block-subtitle">
+                              {{ block.subtitle }}
+                            </div>
+                          }
+                          @if ((block.metrics ?? []).length > 0) {
+                            <div class="assistant-metrics-grid">
+                              @for (
+                                metric of block.metrics ?? [];
+                                track metric.label
+                              ) {
+                                <div class="assistant-metric-pill">
+                                  <span>{{ metric.label }}</span>
+                                  <strong>{{ metric.value }}</strong>
+                                </div>
+                              }
+                            </div>
+                          }
+                          @if ((block.items ?? []).length > 0) {
+                            <div class="assistant-items">
+                              @for (
+                                item of block.items ?? [];
+                                track item.title + (item.subtitle ?? "")
+                              ) {
+                                <div class="assistant-item">
+                                  <div class="assistant-item-title">
+                                    {{ item.title }}
+                                  </div>
+                                  @if (item.subtitle) {
+                                    <div class="assistant-item-subtitle">
+                                      {{ item.subtitle }}
+                                    </div>
+                                  }
+                                  @if (item.body) {
+                                    <div class="assistant-item-body">
+                                      {{ item.body }}
+                                    </div>
+                                  }
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                }
+              </article>
             }
-          </div>
+          }
         </section>
       </aside>
     </section>

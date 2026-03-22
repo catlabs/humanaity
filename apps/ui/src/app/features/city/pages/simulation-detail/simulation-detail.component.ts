@@ -92,6 +92,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
   chatBusy = signal(false);
   chatError = signal<string | null>(null);
   commandBuilderError = signal<string | null>(null);
+  revealedInsightCards = signal<RevealedInsightCard[]>([]);
   eventsDrawerOpen = signal(false);
   eventsDrawerType = signal<string | null>(null);
   eventsDrawerIds = signal<number[] | null>(null);
@@ -223,6 +224,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
   recentDeltaInventionIds = signal<number[]>([]);
   latestTimelineDeltaMessage = signal<string | null>(null);
   private pendingTimelineCommand: SimulationCommandOutput | null = null;
+  private revealedInsightCounter = 0;
   headerRunSummary = computed(
     () => `Era ${this.eraLabel()} · Year ${this.currentYear()}`,
   );
@@ -298,10 +300,6 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     const kind = this.selectedBuilderAction()?.targetKind ?? 'NONE';
     return kind !== 'NONE';
   });
-  queryBlocks = computed<SimulationAssistantBlockOutput[]>(
-    () => this.queryResponse()?.blocks ?? [],
-  );
-  queryText = computed(() => this.queryResponse()?.text?.trim() ?? null);
   canExecuteBuilderAction = computed(() => {
     if (this.chatBusy()) {
       return false;
@@ -448,13 +446,21 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  selectInvention(invention: InventionOutput): void {
+  selectInvention(
+    invention: InventionOutput,
+    options?: { revealStory?: boolean },
+  ): void {
     this.selectedInventionId.set(invention.id);
     this.selectedHumanId.set(null);
     this.selectedEventId.set(null);
+    if (options?.revealStory !== false) {
+      this.revealStoryFocus(this.storyFocusFromInvention(invention), {
+        dedupeKey: `story:discovery:${invention.id}`,
+      });
+    }
   }
 
-  selectEvent(event: EventOutput): void {
+  selectEvent(event: EventOutput, options?: { revealStory?: boolean }): void {
     this.selectedEventId.set(event.id);
     this.selectedInventionId.set(null);
 
@@ -464,6 +470,11 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     this.selectedHumanId.set(primaryActorId ?? null);
     if (primaryActorId !== undefined && primaryActorId !== null && this.needsBuilderActor()) {
       this.builderActorValue.set(String(primaryActorId));
+    }
+    if (options?.revealStory !== false) {
+      this.revealStoryFocus(this.storyFocusFromEvent(event), {
+        dedupeKey: `story:event:${event.id}`,
+      });
     }
   }
 
@@ -868,6 +879,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
         next: (response) => {
           this.chatBusy.set(false);
           this.queryResponse.set(response);
+          this.revealAssistantResponse(response);
           this.loadCommandBuilder();
         },
         error: (error) => {
@@ -926,12 +938,35 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
 
     const newestEvent = newEvents[newEvents.length - 1];
     if (newestEvent) {
-      this.selectEvent(newestEvent);
+      this.selectEvent(newestEvent, { revealStory: false });
     }
 
-    this.latestTimelineDeltaMessage.set(
-      this.summarizeTimelineDelta(newEvents.length, newInventions.length),
+    const deltaMessage = this.summarizeTimelineDelta(
+      newEvents.length,
+      newInventions.length,
     );
+    this.latestTimelineDeltaMessage.set(deltaMessage);
+    const revealCards: RevealedInsightCard[] = [];
+    if (newEvents.length > 0) {
+      revealCards.push({
+        id: this.nextRevealedInsightId(),
+        dedupeKey: `timeline:${newEvents[newEvents.length - 1]?.id ?? 'none'}`,
+        kind: 'timeline',
+        title: 'Timeline',
+        deltaMessage,
+        events: nextEvents.slice(-8).reverse(),
+      });
+    }
+    if (newInventions.length > 0) {
+      revealCards.push({
+        id: this.nextRevealedInsightId(),
+        dedupeKey: `discoveries:${newInventions[newInventions.length - 1]?.id ?? 'none'}`,
+        kind: 'discoveries',
+        title: 'Discoveries',
+        inventions: nextInventions.slice(-3).reverse(),
+      });
+    }
+    this.prependRevealedInsights(revealCards);
     this.pendingTimelineCommand = null;
   }
 
@@ -989,6 +1024,71 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
       narrationTone: this.inventionNarrationTone(invention),
       narrationCopy: this.inventionNarrationCopy(invention),
     };
+  }
+
+  private revealStoryFocus(
+    focus: StoryFocusCard,
+    options: { dedupeKey: string },
+  ): void {
+    this.prependRevealedInsights([
+      {
+        id: this.nextRevealedInsightId(),
+        dedupeKey: options.dedupeKey,
+        kind: 'story',
+        title: 'Story focus',
+        focus,
+      },
+    ]);
+  }
+
+  private revealAssistantResponse(
+    response: SimulationAssistantResponseOutput,
+  ): void {
+    const text = response.text?.trim() || null;
+    const blocks = response.blocks ?? [];
+    if (!text && blocks.length === 0) {
+      return;
+    }
+
+    const blockKey = blocks
+      .map((block) => `${block.type ?? 'GENERIC'}:${block.title ?? ''}`)
+      .join('|');
+    this.prependRevealedInsights([
+      {
+        id: this.nextRevealedInsightId(),
+        dedupeKey: `assistant:${response.commandType ?? 'UNKNOWN'}:${blockKey}:${text ?? ''}`,
+        kind: 'assistant',
+        title: 'Assistant',
+        text,
+        blocks,
+      },
+    ]);
+  }
+
+  private prependRevealedInsights(cards: RevealedInsightCard[]): void {
+    if (cards.length === 0) {
+      return;
+    }
+    this.revealedInsightCards.update((existing) => {
+      const nextCards: RevealedInsightCard[] = [];
+      let topKey = existing[0]?.dedupeKey ?? null;
+      for (const card of cards) {
+        if (card.dedupeKey === topKey) {
+          continue;
+        }
+        nextCards.push(card);
+        topKey = card.dedupeKey;
+      }
+      if (nextCards.length === 0) {
+        return existing;
+      }
+      return [...nextCards, ...existing];
+    });
+  }
+
+  private nextRevealedInsightId(): string {
+    this.revealedInsightCounter += 1;
+    return `insight-${this.revealedInsightCounter}`;
   }
 
   private runControlAction(
@@ -1081,3 +1181,35 @@ type StoryFocusCard = {
   narrationTone: 'ready' | 'fallback' | 'muted';
   narrationCopy: string;
 };
+
+type RevealedInsightCard =
+  | {
+      id: string;
+      dedupeKey: string;
+      kind: 'story';
+      title: string;
+      focus: StoryFocusCard;
+    }
+  | {
+      id: string;
+      dedupeKey: string;
+      kind: 'timeline';
+      title: string;
+      deltaMessage: string | null;
+      events: EventOutput[];
+    }
+  | {
+      id: string;
+      dedupeKey: string;
+      kind: 'discoveries';
+      title: string;
+      inventions: InventionOutput[];
+    }
+  | {
+      id: string;
+      dedupeKey: string;
+      kind: 'assistant';
+      title: string;
+      text: string | null;
+      blocks: SimulationAssistantBlockOutput[];
+    };
