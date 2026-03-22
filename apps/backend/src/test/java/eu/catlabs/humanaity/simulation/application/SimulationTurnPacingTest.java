@@ -3,6 +3,7 @@ package eu.catlabs.humanaity.simulation.application;
 import eu.catlabs.humanaity.city.domain.City;
 import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
 import eu.catlabs.humanaity.event.domain.Event;
+import eu.catlabs.humanaity.event.domain.EventType;
 import eu.catlabs.humanaity.event.infrastructure.persistence.EventRepository;
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
@@ -17,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,11 +65,21 @@ class SimulationTurnPacingTest {
         simulationApplicationService.step(city.getId(), 40);
 
         List<Event> events = eventRepository.findByCityIdOrderByTickAscSequenceInTickAscIdAsc(city.getId());
-        Map<Long, Long> eventsPerTick = events.stream()
+        Map<Long, Long> actionEventsPerTick = events.stream()
+                .filter(event -> event.getEventType() == EventType.HUMAN_ACTION_PERFORMED)
+                .collect(Collectors.groupingBy(Event::getTick, Collectors.counting()));
+        Set<EventType> boundedEventTypes = Set.of(
+                EventType.HUMANS_COLLIDED,
+                EventType.DIALOGUE_EXCHANGED,
+                EventType.DISCOVERY_UNLOCKED
+        );
+        Map<Long, Long> boundedOutcomesPerTick = events.stream()
+                .filter(event -> boundedEventTypes.contains(event.getEventType()))
                 .collect(Collectors.groupingBy(Event::getTick, Collectors.counting()));
 
         assertThat(events).isNotEmpty();
-        assertThat(eventsPerTick.values()).allMatch(count -> count <= 4L);
+        assertThat(actionEventsPerTick.values()).allMatch(count -> count <= 1L);
+        assertThat(boundedOutcomesPerTick.values()).allMatch(count -> count <= 4L);
     }
 
     private City createCityWithClusteredHumans() {

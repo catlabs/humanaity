@@ -12,6 +12,10 @@ import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
+import eu.catlabs.humanaity.simulation.domain.HumanGoal;
+import eu.catlabs.humanaity.simulation.domain.HumanGoalSource;
+import eu.catlabs.humanaity.simulation.domain.HumanGoalStatus;
+import eu.catlabs.humanaity.simulation.domain.HumanGoalType;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -181,7 +185,9 @@ class SimulationCommandsApiContractTest {
         assertThat(payload.path("referencedEntities").path("humanId").asLong()).isEqualTo(actor.getId());
         assertThat(payload.path("referencedEntities").path("targetHumanId").asLong()).isEqualTo(target.getId());
         assertThat(payload.get("uiEffects").toString()).contains("REFRESH_SNAPSHOT", "REFRESH_TIMELINE", "FOCUS_HUMAN");
-        assertThat(humanGoalRepository.count()).isEqualTo(1);
+        assertThat(humanGoalRepository.count()).isGreaterThanOrEqualTo(1);
+        assertThat(humanGoalRepository.findAll())
+                .anySatisfy(goal -> assertThatGoalMatchesMeetCommand(goal, actor.getId(), target.getId()));
     }
 
     @Test
@@ -253,6 +259,14 @@ class SimulationCommandsApiContractTest {
         human.setX(x);
         human.setY(y);
         return humanRepository.save(human);
+    }
+
+    private void assertThatGoalMatchesMeetCommand(HumanGoal goal, Long actorId, Long targetId) {
+        assertThat(goal.getHuman().getId()).isEqualTo(actorId);
+        assertThat(goal.getTargetHumanId()).isEqualTo(targetId);
+        assertThat(goal.getGoalType()).isEqualTo(HumanGoalType.MEET_HUMAN);
+        assertThat(goal.getSource()).isEqualTo(HumanGoalSource.CHAT_COMMAND);
+        assertThat(goal.getStatus()).isIn(HumanGoalStatus.ACTIVE, HumanGoalStatus.COMPLETED);
     }
 
     private record CommandRequest(String commandText) {

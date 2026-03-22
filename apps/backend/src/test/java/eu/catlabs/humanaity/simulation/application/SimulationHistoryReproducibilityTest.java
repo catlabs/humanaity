@@ -3,6 +3,7 @@ package eu.catlabs.humanaity.simulation.application;
 import eu.catlabs.humanaity.city.domain.City;
 import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
 import eu.catlabs.humanaity.event.domain.Event;
+import eu.catlabs.humanaity.event.domain.EventType;
 import eu.catlabs.humanaity.event.infrastructure.persistence.EventRepository;
 import eu.catlabs.humanaity.invention.application.InventionApplicationService;
 import eu.catlabs.humanaity.invention.domain.Invention;
@@ -10,6 +11,7 @@ import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionReposi
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,11 +45,14 @@ class SimulationHistoryReproducibilityTest {
     @Autowired
     private SimulationRunRepository simulationRunRepository;
     @Autowired
+    private HumanGoalRepository humanGoalRepository;
+    @Autowired
     private KnowledgeUnlockRepository knowledgeUnlockRepository;
 
     @BeforeEach
     void cleanDatabase() {
         knowledgeUnlockRepository.deleteAll();
+        humanGoalRepository.deleteAll();
         inventionRepository.deleteAll();
         eventRepository.deleteAll();
         simulationRunRepository.deleteAll();
@@ -81,6 +86,7 @@ class SimulationHistoryReproducibilityTest {
         inventionRepository.deleteAll();
         eventRepository.deleteAll();
         knowledgeUnlockRepository.deleteAll();
+        humanGoalRepository.deleteAll();
         simulationRunRepository.deleteAll();
         restoreHumans(city.getId(), initialState);
 
@@ -142,6 +148,9 @@ class SimulationHistoryReproducibilityTest {
     }
 
     private CanonicalEvent toCanonicalEvent(Event event) {
+        String canonicalEventKey = event.getEventType() == EventType.GOAL_ASSIGNED
+                ? normalizeGoalAssignedEventKey(event.getEventKey())
+                : event.getEventKey();
         return new CanonicalEvent(
                 event.getTick(),
                 event.getSequenceInTick(),
@@ -149,11 +158,24 @@ class SimulationHistoryReproducibilityTest {
                 event.getEra().name(),
                 event.getEventCategory().name(),
                 event.getEventType().name(),
-                event.getEventKey(),
+                canonicalEventKey,
                 event.getActorIds(),
                 event.getImportance(),
-                event.getPayload()
+                stablePayload(event.getPayload())
         );
+    }
+
+    private Map<String, String> stablePayload(Map<String, String> payload) {
+        Map<String, String> normalized = new java.util.LinkedHashMap<>(payload);
+        normalized.remove("goalId");
+        return normalized;
+    }
+
+    private String normalizeGoalAssignedEventKey(String eventKey) {
+        if (eventKey == null) {
+            return null;
+        }
+        return eventKey.replaceFirst("^GOAL_ASSIGNED:\\d+:", "GOAL_ASSIGNED:<id>:");
     }
 
     private CanonicalInvention toCanonicalInvention(Invention invention) {

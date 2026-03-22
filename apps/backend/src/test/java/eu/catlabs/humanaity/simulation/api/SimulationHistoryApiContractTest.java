@@ -9,6 +9,7 @@ import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionRepository;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,10 +50,13 @@ class SimulationHistoryApiContractTest {
     private CityRepository cityRepository;
     @Autowired
     private KnowledgeUnlockRepository knowledgeUnlockRepository;
+    @Autowired
+    private HumanGoalRepository humanGoalRepository;
 
     @BeforeEach
     void cleanDatabase() {
         knowledgeUnlockRepository.deleteAll();
+        humanGoalRepository.deleteAll();
         inventionRepository.deleteAll();
         eventRepository.deleteAll();
         simulationRunRepository.deleteAll();

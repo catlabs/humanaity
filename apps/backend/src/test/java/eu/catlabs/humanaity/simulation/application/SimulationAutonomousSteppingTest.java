@@ -82,6 +82,7 @@ class SimulationAutonomousSteppingTest {
         assertThat(firstRun.stream().anyMatch(event -> event.eventType() == EventType.HUMAN_ACTION_PERFORMED)).isTrue();
 
         knowledgeUnlockRepository.deleteAll();
+        humanGoalRepository.deleteAll();
         inventionRepository.deleteAll();
         eventRepository.deleteAll();
         simulationRunRepository.deleteAll();
@@ -153,9 +154,15 @@ class SimulationAutonomousSteppingTest {
                         event.getSequenceInTick(),
                         event.getEventType(),
                         event.getActorIds(),
-                        event.getPayload()
+                        stablePayload(event.getPayload())
                 ))
                 .toList();
+    }
+
+    private Map<String, String> stablePayload(Map<String, String> payload) {
+        Map<String, String> normalized = new java.util.LinkedHashMap<>(payload);
+        normalized.remove("goalId");
+        return normalized;
     }
 
     private record SeedState(Long id, Double x, Double y) {
