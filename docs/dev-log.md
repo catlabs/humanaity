@@ -1,6 +1,12 @@
+This document is for high-level understanding only. The source of truth is the code.
+
 # Dev log
 
 Use this file as the rolling dated log for milestone execution notes.
+
+## 2026-03-22
+
+- Docs cleanup: added `agent-code-source-of-truth.mdc`; relaxed doc-sync rules; moved former `docs/concepts/`, `docs/specs/`, `agent-context.md`, and `docs-migration-plan.md` to `docs/archive/2025-03-docs-consolidation/`; removed `docs/roadmap.md` (index lives in `docs/README.md` + `docs/milestones.md`); trimmed doc-related skills to code-first read order.
 
 ## 2026-03-18
 

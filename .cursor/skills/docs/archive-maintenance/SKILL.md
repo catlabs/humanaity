@@ -13,7 +13,7 @@ description: Maintain historical docs in `docs/archive/` for traceability withou
 ## Workflow
 1. Treat `docs/archive/` as mostly read-only.
 2. Apply only factual/path corrections or migration metadata updates.
-3. Prefer updates in active docs (`docs/concepts/`, `docs/roadmap.md`) for current guidance.
+3. Prefer factual fixes only; for current behavior, rely on code (see `agent-code-source-of-truth.mdc`).
 
 ## Guardrails
 - Do not restart sprint planning inside archive docs.

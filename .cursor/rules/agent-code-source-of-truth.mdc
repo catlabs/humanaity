@@ -1,0 +1,18 @@
+---
+description: Code is canonical; markdown and archives are non-authoritative guidance only.
+alwaysApply: true
+---
+
+# Source of truth
+
+- **The codebase** (application source, tests, and configuration) is the only authoritative description of current behavior.
+- **Markdown under `docs/`** (and README files elsewhere) is **background context** for humans. It may be incomplete or stale. Do **not** treat it as a specification.
+- **Archived material** (`docs/archive/**`, old plans, sprint prompt packs, historical prompts) is **not** a product spec. It may describe removed workflows, APIs, or UI.
+- **Removed or absent behavior** must **not** be reintroduced because a `.md` file, an archived plan, or an old prompt mentions it. Before implementing or restoring a feature, **verify in current code** (and tests) what exists; prefer reading the relevant modules, routes, and APIs over reading docs.
+
+## Conflict resolution
+
+If documentation conflicts with the repository:
+
+1. **Trust the code** (and tests) over markdown.
+2. **Generated API clients and types** produced from the backend OpenAPI document (`/v3/api-docs`) are **contracts**, not “markdown docs.” Keep them in sync per `agent-openapi-contract-sync.mdc` and `ui-api-generated-client.mdc`; that process does **not** mean narrative `.md` files are authoritative.

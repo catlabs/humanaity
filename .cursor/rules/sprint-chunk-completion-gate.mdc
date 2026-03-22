@@ -1,23 +1,21 @@
 ---
-description: Require docs sync and commit before marking documentation work complete
+description: Gate for tasks that explicitly include documentation changes
 alwaysApply: true
 ---
 
-# Documentation Completion Gate
+# Documentation work completion
 
-Do not report docs work as complete until this gate passes.
+When the **user’s task explicitly includes** updating repository documentation:
 
-## Mandatory checklist
+1. Confirm which files are in scope (`docs/README.md`, `docs/milestones.md`, `docs/dev-log.md`, `docs/archive/**`, etc.).
+2. Keep the diff aligned with that scope.
+3. Validate internal links and paths after moves or renames.
+4. If the work changed milestone status or logged a meaningful slice, update `docs/milestones.md` and/or append `docs/dev-log.md` as appropriate.
+5. List any deferred follow-ups.
+6. Commit documentation changes when the task expects a commit (no push unless requested).
 
-1. confirm active documentation scope (concept/spec/milestones/dev-log/archive/navigation)
-2. verify diff stays within that scope
-3. run relevant checks (at minimum link/path/reference validation)
-4. ensure active docs reflect the requested structure (`docs/concepts` first, `docs/milestones.md` for delivery order, `docs/dev-log.md` for execution notes, `docs/archive` historical)
-5. update `docs/milestones.md` if task status, task order, or execution plan changed
-6. append `docs/dev-log.md` if the work completed a meaningful slice
-7. list deferred follow-up items explicitly
-8. commit the docs changes (no push unless explicitly asked)
+If the task did **not** ask for documentation updates, **do not** block completion on markdown sync. See `agent-code-source-of-truth.mdc`.
 
-## No sync, no completion
+## No stale navigation
 
-- If docs were changed but active navigation/reference paths remain stale, the task is still in progress.
+If you edited docs, ensure references to old paths (e.g. removed top-level `docs/concepts/`) are not left dangling in the files you touched.

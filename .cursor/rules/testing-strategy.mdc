@@ -1,16 +1,15 @@
 ---
-description: Keep new and updated tests aligned with the repository testing strategy.
+description: Keep new and updated tests aligned with repository testing expectations.
 globs:
   - apps/backend/**/*
   - apps/ui/**/*
   - apps/mcp/**/*
-  - docs/concepts/testing-strategy.md
 alwaysApply: false
 ---
 
-# Testing Strategy Rule
+# Testing strategy
 
-Before adding or changing tests, read [docs/concepts/testing-strategy.md](mdc:docs/concepts/testing-strategy.md).
+Follow the principles below. Optional historical notes may exist under `docs/archive/2025-03-docs-consolidation/concepts/testing-strategy.md`; **behavior and conventions in code and this rule take precedence** (`agent-code-source-of-truth.mdc`).
 
 ## Add or update tests when
 

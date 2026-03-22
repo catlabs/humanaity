@@ -12,7 +12,7 @@ Create clear, human-readable Conventional Commit messages and make local commits
 Before writing a message, inspect:
 - `git status --porcelain`
 - `git diff --staged` (or `git diff` when nothing is staged)
-- related active docs (`docs/concepts/`, `docs/specs/`, `docs/roadmap.md`) when useful for context
+- related docs (`docs/milestones.md`, `docs/README.md`) when useful for context (non-authoritative)
 
 ## Format
 Title:

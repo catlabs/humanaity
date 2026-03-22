@@ -1,25 +1,14 @@
 ---
-description: Enforce review, validation, and handoff gates for active docs updates.
-globs: docs/concepts/**/*.md,docs/specs/**/*.md,docs/roadmap.md,docs/README.md,docs/milestones.md,docs/dev-log.md,docs/agent-context.md
+description: Review gate when editing active docs files
+globs: docs/README.md,docs/milestones.md,docs/dev-log.md
 alwaysApply: false
 ---
 
-# Docs Review/Test/Handoff Loop
+# Docs change review
 
-For each docs change set, use this gate before completion:
+For a documentation-only change set:
 
-1. Lock scope:
-   - confirm target concept/spec docs and explicit out-of-scope files
-2. Review diff scope:
-   - ensure changes stay aligned with the requested docs restructure
-3. Validate references:
-   - confirm links/paths point to active locations (`docs/concepts`, `docs/specs`, `docs/milestones.md`, `docs/dev-log.md`, `docs/archive`)
-4. Check readability:
-   - headings are concise and scanable
-   - filenames remain human-readable
-5. Prepare handoff notes:
-   - list files changed, migration implications, and Codex-facing update obligations
-6. Commit:
-   - stage only this docs change set and create a clear commit message; do not push unless requested
-7. Go/no-go:
-   - proceed only when scope is clean, docs are internally consistent, and commit is created
+1. Lock scope: which of `docs/README.md`, `docs/milestones.md`, `docs/dev-log.md` (and any archive touch) are in scope.
+2. Validate links/paths to `docs/archive/**` and root `README.md` where relevant.
+3. Keep headings concise.
+4. Commit with a clear message if the task expects it (no push unless requested).

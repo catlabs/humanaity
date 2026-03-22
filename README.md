@@ -40,14 +40,9 @@ The monorepo contains three applications:
 
 The project treats MCP as a first-class consumption surface. Critical flows (auth → city → simulation → history) are executable via MCP tools, enabling backend validation without the frontend. Smoke flows and contract drift checks are part of the workflow.
 
-## Documentation & Methodology
+## Documentation
 
-This project uses lightweight documentation centered on core system concepts:
-
-- **`docs/concepts/`** — Primary docs grouped by system blocks (`simulation-engine`, `commands`, `human-goals`, `tech-tree`, `ui-simulation`, `mcp`, `ci`)
-- **`docs/specs/`** — Locked domain/technical specs (determinism, read model, history ledger, orchestration)
-- **`docs/roadmap.md`** — Short docs-navigation roadmap and maintenance rules
-- **`docs/archive/`** — Historical sprint-by-sprint plans and legacy roadmap preserved for traceability
+Markdown under `docs/` is **non-authoritative** background. **Behavior is defined by the code** (and generated OpenAPI clients/types from `/v3/api-docs`). See [`docs/README.md`](docs/README.md) for the active file list; older material lives under [`docs/archive/`](docs/archive/).
 
 ## Project Structure
 
@@ -58,10 +53,9 @@ humanaity/
 │   ├── ui/          # Angular frontend
 │   └── mcp/         # MCP server
 ├── docs/
-│   ├── concepts/    # Primary concept docs
-│   ├── roadmap.md   # Documentation navigation
-│   ├── specs/       # Locked technical/domain specs
-│   └── archive/     # Legacy sprint and roadmap docs
+│   ├── milestones.md
+│   ├── dev-log.md
+│   └── archive/     # Historical docs and sprint material
 └── .cursor/         # Rules and skills for AI-assisted development
 ```
 
@@ -102,4 +96,4 @@ humanaity/
 - [Backend README](apps/backend/README.md) — API summary, modules, local config
 - [Frontend README](apps/ui/README.md) — Features, routing, OpenAPI client usage
 - [MCP README](apps/mcp/README.md) — Tools, smoke flow, contract workflow
-- [Docs structure](docs/README.md) — Roadmap, sprints, specs workflow
+- [Docs index](docs/README.md) — Active docs list and archive pointer

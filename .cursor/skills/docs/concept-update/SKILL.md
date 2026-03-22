@@ -1,24 +1,21 @@
 ---
 name: concept-update
-description: Create or update concept-first docs in `docs/concepts/` with short, human-readable structure and links to deeper specs/archive sources.
+description: Legacy: former concept docs live under docs/archive/2025-03-docs-consolidation/concepts. Use only when explicitly asked to edit archived narrative docs; code is canonical.
 ---
 
-# Concept Update
+# Concept update (archived tree)
+
+Former `docs/concepts/` files are under **`docs/archive/2025-03-docs-consolidation/concepts/`**. They are **not** the source of truth.
 
 ## Use when
-- user asks to document a feature/system block
-- docs should be simplified or consolidated
-- sprint-era content should be represented as concept docs
+
+- The user explicitly asks to fix or adjust text in that archive for traceability.
 
 ## Workflow
-1. Identify the concept block (e.g. `simulation-engine`, `commands`, `human-goals`).
-2. Update or create one short file in `docs/concepts/`.
-3. Keep sections minimal: `Scope`, `Covers`, `Source docs`.
-4. Prefer short names and scanable bullets.
-5. Link to `docs/specs/` for invariants and `docs/archive/` for legacy context.
+
+1. Edit only the files the user named; keep changes minimal.
+2. Do not treat concept markdown as a spec for new implementation.
 
 ## Guardrails
-- Do not recreate sprint planning inside concept docs.
-- Keep concept docs as current-state documentation, not task backlogs.
-- Put task status and work splitting in `docs/milestones.md` instead of `docs/concepts/*.md`.
-- If semantics are ambiguous, update a spec instead of overloading concept docs.
+
+- Prefer **`docs/milestones.md`** for delivery status, not long narrative docs.

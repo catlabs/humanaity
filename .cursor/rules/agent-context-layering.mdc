@@ -1,16 +1,16 @@
 ---
-description: Separate durable repo rules from workflow skills and surface the right context to external agents.
+description: Separate durable repo rules from workflow skills; code and rules before markdown.
 alwaysApply: true
 ---
 
-# Agent Context Layers
+# Agent context layers
 
-- Treat `.cursor/rules/` as durable repository policy that external agents like Codex may need.
-- Treat `.cursor/skills/` as Cursor and human workflow playbooks; do not assume external agents can discover them.
-- Put task and domain semantics in repo-visible docs under `docs/`.
-- If a skill contains durable constraints about architecture, file placement, scope, or required validation, promote those constraints into a rule or doc.
-- Do not create 1:1 rule and skill duplicates by default. Mirror only the durable policy layer in rules.
-- For active work, external agents should be pointed to `docs/agent-context.md`, `docs/milestones.md`, the relevant concept/spec docs, and the relevant `.cursor/rules/*.mdc`.
-- When a task changes delivery status or task order, update `docs/milestones.md`.
-- After a meaningful implementation slice or workday, append `docs/dev-log.md`.
-- When delegating work to Codex or another external agent, explicitly reference the relevant rule and doc files, and pass relevant skill paths with a short summary instead of relying on hidden skill discovery.
+- **`.cursor/rules/`** — Durable repository policy (coding constraints, boundaries). Apply these when writing or reviewing code.
+- **`.cursor/skills/`** — Procedural workflows for Cursor and humans; do not assume external tools discover them automatically.
+- **`docs/*.md`** — Optional background for people; **never** override what you see in source code. Read **code and tests first** when behavior matters.
+
+If a skill duplicates durable guidance that belongs in rules, mirror only that slice into a rule (avoid 1:1 duplicates).
+
+For active work, prefer pointing collaborators to **relevant source paths** and **`.cursor/rules/*.mdc`** over long doc reading lists.
+
+When a task changes delivery status or execution notes, **`docs/milestones.md`** and **`docs/dev-log.md`** may be updated as a human log; that is not a substitute for verifying behavior in code.

@@ -1,14 +1,12 @@
 ---
-description: Keep active docs concept-first, concise, and keep milestone execution order out of concept docs.
-globs: docs/concepts/**/*.md
+description: Keep milestone and dev-log entries concise; avoid turning them into specs
+globs: docs/milestones.md,docs/dev-log.md
 alwaysApply: false
 ---
 
-# Concept Doc Planning
+# Milestone and dev-log style
 
-- Keep each concept file focused on one system block.
-- Prefer short, human-readable names and headings.
-- Use concise sections (`Scope`, `Covers`, `Source docs`) unless more detail is explicitly requested.
-- Point to `docs/specs/` for invariants and `docs/archive/` for history.
-- Avoid sprint/task backlogs in concept docs.
-- Put active task splitting, status, and execution order in `docs/milestones.md`, not in `docs/concepts/*.md`.
+- **`docs/milestones.md`** — delivery order and status; not a substitute for reading code.
+- **`docs/dev-log.md`** — dated notes; optional background.
+
+Do not embed long specifications here; link to code paths or OpenAPI when precision is needed.

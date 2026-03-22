@@ -1,10 +1,7 @@
 # Archive
 
-This folder contains legacy planning and execution docs preserved for traceability.
+Legacy planning and execution material. **Not authoritative** for current behavior; see `agent-code-source-of-truth.mdc`.
 
-## Archived content
-- `roadmap-legacy.md` — previous sprint/epic-heavy roadmap
-- `sprints/` — sprint execution docs and prompt packs
-
-## Why archived
-The active docs model is now concept-based to reduce maintenance overhead and improve scanability.
+- **`2025-03-docs-consolidation/`** — former `docs/concepts/`, `docs/specs/`, and related top-level docs moved here
+- **`roadmap-legacy.md`** — older roadmap
+- **`sprints/`** — sprint docs and prompt packs

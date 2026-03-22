@@ -1,17 +1,15 @@
 ---
-description: Keep concept docs, specs, and archive references aligned with implementation decisions.
+description: Markdown docs are optional context; no mandatory sync with every code change.
 alwaysApply: true
 ---
 
-# Documentation Sync
+# Documentation
 
-- Treat `docs/concepts/` as the active documentation surface.
-- Treat `docs/milestones.md` as the active delivery-order surface.
-- Treat `docs/dev-log.md` as the rolling execution log.
-- Keep `docs/specs/` aligned when semantics/contracts change.
-- Treat `docs/archive/` as historical context, not active planning.
-- When implementation changes system behavior, update the corresponding concept doc and spec (if needed) in the same turn.
-- When implementation changes milestone status, task order, or active delivery framing, update `docs/milestones.md` in the same turn.
-- After a meaningful implementation slice, append `docs/dev-log.md`.
-- Do not declare docs sync complete if active docs still reference obsolete structure paths.
-- Preserve concise, scanable naming and avoid over-structuring.
+- **`docs/milestones.md`** — delivery tracker (operational, not a spec).
+- **`docs/dev-log.md`** — dated execution notes.
+- **`docs/README.md`** — short index; see also root `README.md`.
+- **`docs/archive/**`** — historical material; do not treat as current product truth.
+
+Do **not** assume markdown in the repo matches the implementation. When you change code, **you are not required** to update `.md` files unless the task explicitly includes documentation work.
+
+If you edit markdown for humans, keep it short. Any remaining narrative docs should state that the source of truth is the code (see `agent-code-source-of-truth.mdc`).

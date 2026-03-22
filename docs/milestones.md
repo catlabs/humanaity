@@ -1,11 +1,15 @@
+This document is for high-level understanding only. The source of truth is the code.
+
 # Milestones
+
+Index: [`README.md`](README.md), [`dev-log.md`](dev-log.md). Historical concept/spec docs: [`archive/2025-03-docs-consolidation/`](archive/2025-03-docs-consolidation/).
 
 This file is the active delivery tracker for the next development days.
 
-Execution rhythm:
+Execution rhythm (optional human log; not required for every code change):
 
-- update this file after each completed task or milestone slice
-- append one dated entry to `docs/dev-log.md` after each meaningful execution slice
+- update this file when a milestone slice completes or status changes
+- append `docs/dev-log.md` when a dated note is useful
 - do not create new sprint docs for active work
 
 ## M1 — Simulation UI
@@ -70,7 +74,7 @@ Execution rhythm:
   - send explicit commands and render backend feedback
   - refresh snapshot and timeline after mutation commands
 - Ordered tasks:
-  1. Implement the request and response DTOs from `docs/specs/deterministic-command-contract-spec.md`.
+  1. Implement the request and response DTOs from `docs/archive/2025-03-docs-consolidation/specs/deterministic-command-contract-spec.md` (historical reference; verify against code).
   2. Reuse deterministic backend command pieces where possible, but remove LLM fallback from the primary path.
   3. Wire the UI to the new endpoint and keep command errors explicit.
 - Recent slice updates:
