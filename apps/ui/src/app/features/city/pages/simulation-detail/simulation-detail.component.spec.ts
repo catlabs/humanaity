@@ -148,6 +148,10 @@ describe('SimulationDetailComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Command builder');
     expect(text).toContain('Spec City');
+    expect(text).toContain('No revealed insights yet.');
+    expect(text).not.toContain('Story focus');
+    expect(text).not.toContain('Timeline');
+    expect(text).not.toContain('Discoveries');
   });
 
   it('executes actorless query action without requiring actor/target', () => {
@@ -159,6 +163,8 @@ describe('SimulationDetailComponent', () => {
       7,
       'world status',
     );
+    expect(component.revealedInsightCards().length).toBe(1);
+    expect(component.revealedInsightCards()[0]?.kind).toBe('assistant');
   });
 
   it('builds and submits deterministic command text for actor+target actions', () => {
@@ -189,6 +195,71 @@ describe('SimulationDetailComponent', () => {
     expect(native.querySelector('.assistant-suggestions')).toBeNull();
     expect(native.querySelector('.console-feedback')).toBeNull();
     expect(native.querySelector('.chat-row')).toBeNull();
+    expect(native.querySelector('.human-list')).toBeNull();
+    expect(native.querySelector('.inspector-card')).toBeNull();
+  });
+
+  it('reveals story focus when selecting an event', () => {
+    const component = fixture.componentInstance;
+    component.events.set([
+      {
+        id: 42,
+        eventType: 'DIALOGUE_EXCHANGED',
+        eventCategory: 'DIALOGUE',
+        actorIds: [1],
+        tick: 3,
+        year: 1,
+        era: 'FOUNDING',
+        enrichmentStatus: 'READY',
+        enrichedSnippet: 'Ada and Ben exchanged ideas.',
+      } as any,
+    ]);
+
+    component.selectEvent(component.events()[0] as any);
+
+    const card = component.revealedInsightCards()[0];
+    expect(card.kind).toBe('story');
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      'Story focus',
+    );
+  });
+
+  it('prepends timeline and discoveries cards from timeline delta', () => {
+    const component = fixture.componentInstance as any;
+    component.captureTimelineDelta(
+      [],
+      [],
+      [
+        {
+          id: 100,
+          eventType: 'HUMAN_ACTION_PERFORMED',
+          eventCategory: 'ACTION',
+          actorIds: [1],
+          tick: 5,
+          year: 1,
+          era: 'FOUNDING',
+          enrichmentStatus: 'PENDING',
+          enrichedSnippet: null,
+        },
+      ],
+      [
+        {
+          id: 200,
+          title: 'Campfire Rhythm',
+          summary: 'Coordination improves.',
+          category: 'SOCIAL_PRACTICE',
+          impactScore: 3,
+          yearCreated: 1,
+          enrichmentStatus: 'PENDING',
+        },
+      ],
+      false,
+    );
+
+    expect(component.revealedInsightCards().length).toBe(2);
+    expect(component.revealedInsightCards()[0].kind).toBe('timeline');
+    expect(component.revealedInsightCards()[1].kind).toBe('discoveries');
   });
 
   it('shows start control when simulation is not running and calls start handler', () => {
