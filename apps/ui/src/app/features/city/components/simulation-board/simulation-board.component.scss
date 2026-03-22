@@ -96,6 +96,24 @@
     0 8px 18px rgb(37 99 235 / 0.18);
 }
 
+.human--tribe-a .human-dot {
+  background: #0f766e;
+  box-shadow:
+    0 0 0 4px rgb(13 148 136 / 0.18),
+    0 8px 18px rgb(13 148 136 / 0.18);
+}
+
+.human--tribe-b .human-dot {
+  background: #b45309;
+  box-shadow:
+    0 0 0 4px rgb(217 119 6 / 0.18),
+    0 8px 18px rgb(217 119 6 / 0.18);
+}
+
+.human--tribe-unknown .human-dot {
+  background: #2563eb;
+}
+
 .human--busy .human-dot {
   background: #f97316;
   box-shadow:
@@ -119,6 +137,14 @@
   line-height: 1;
   white-space: nowrap;
   box-shadow: 0 6px 16px rgb(15 23 42 / 0.08);
+}
+
+.human--tribe-a .human-name {
+  border: 1px solid rgb(13 148 136 / 0.16);
+}
+
+.human--tribe-b .human-name {
+  border: 1px solid rgb(217 119 6 / 0.16);
 }
 
 .event-marker {

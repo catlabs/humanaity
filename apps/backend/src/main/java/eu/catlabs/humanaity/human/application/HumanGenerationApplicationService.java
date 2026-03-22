@@ -1,45 +1,34 @@
 package eu.catlabs.humanaity.human.application;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javafaker.Faker;
-import eu.catlabs.humanaity.human.api.dto.HumanInput;
 import eu.catlabs.humanaity.city.domain.City;
-import eu.catlabs.humanaity.ai.application.AiGenerationService;
-import eu.catlabs.humanaity.ai.application.prompt.HumanGenerationPrompt;
-import eu.catlabs.humanaity.ai.domain.AiPrompt;
-import eu.catlabs.humanaity.ai.domain.AiResponse;
-import eu.catlabs.humanaity.ai.infrastructure.port.AiServiceException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import eu.catlabs.humanaity.human.api.dto.HumanInput;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Locale;
+import java.util.List;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 @Service
 public class HumanGenerationApplicationService {
 
-    private static final Logger logger = LoggerFactory.getLogger(HumanGenerationApplicationService.class);
+    private static final String TRIBE_A = "tribe-a";
+    private static final String TRIBE_B = "tribe-b";
+    private static final int HUMANS_PER_CITY = 6;
+    private static final List<String> LOCAL_NAMES = List.of("Ari", "Bo", "Cy", "Dee", "Ena", "Fio");
+    private static final double[][] TRIBE_A_POSITIONS = {
+            {0.18, 0.20},
+            {0.26, 0.30},
+            {0.30, 0.18}
+    };
+    private static final double[][] TRIBE_B_POSITIONS = {
+            {0.72, 0.72},
+            {0.80, 0.64},
+            {0.86, 0.78}
+    };
 
-    private final AiGenerationService aiGenerationService;
-    private final HumanGenerationPrompt promptBuilder;
     private final HumanApplicationService humanApplicationService;
-    private final Faker faker = new Faker(new Locale("en"));
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final Random random = new Random();
 
-    public HumanGenerationApplicationService(AiGenerationService aiGenerationService,
-                                            HumanGenerationPrompt promptBuilder,
-                                            HumanApplicationService humanApplicationService) {
-        this.aiGenerationService = aiGenerationService;
-        this.promptBuilder = promptBuilder;
+    public HumanGenerationApplicationService(HumanApplicationService humanApplicationService) {
         this.humanApplicationService = humanApplicationService;
     }
 
@@ -48,121 +37,67 @@ public class HumanGenerationApplicationService {
         if (city == null || city.getId() == null) {
             throw new IllegalArgumentException("City must be saved before generating humans");
         }
-        
-        try {
-            JsonNode humans;
-            try {
-                humans = generateHumansWithAiAsync();
-                logger.info("Successfully generated humans using AI service for city {}", city.getId());
-            } catch (Exception e) {
-                logger.warn("OpenAI service unavailable, creating test data manually: {}", e.getMessage());
-                humans = createHumansManually();
-            }
 
-            if (humans == null || !humans.isArray()) {
-                logger.error("Invalid humans data structure for city {}", city.getId());
-                throw new RuntimeException("Invalid humans data structure");
-            }
+        Random random = new Random(seedFor(city));
+        for (int index = 0; index < HUMANS_PER_CITY; index++) {
+            boolean tribeA = index < (HUMANS_PER_CITY / 2);
+            double[] basePosition = tribeA
+                    ? TRIBE_A_POSITIONS[index % TRIBE_A_POSITIONS.length]
+                    : TRIBE_B_POSITIONS[index % TRIBE_B_POSITIONS.length];
 
-            int createdCount = 0;
-            for (JsonNode node : humans) {
-                try {
-                    HumanInput humanInput = new HumanInput();
-                    humanInput.setName(node.get("name").asText());
-                    humanInput.setCityId(city.getId());
-                    humanInput.setBusy(false);
-                    humanInput.setCreativity(node.get("creativity").asDouble());
-                    humanInput.setIntellect(node.get("intellect").asDouble());
-                    humanInput.setSociability(node.get("sociability").asDouble());
-                    humanInput.setPracticality(node.get("practicality").asDouble());
-                    humanInput.setPersonality(this.humanApplicationService.derivePersonality(
-                            humanInput.getCreativity(),
-                            humanInput.getIntellect(),
-                            humanInput.getSociability(),
-                            humanInput.getPracticality()
-                    ));
-                    humanInput.setX(faker.number().randomDouble(3, 0, 1));
-                    humanInput.setY(faker.number().randomDouble(3, 0, 1));
-                    this.humanApplicationService.createHuman(humanInput);
-                    createdCount++;
-                } catch (Exception e) {
-                    logger.error("Error creating human for city {}: {}", city.getId(), e.getMessage(), e);
-                }
-            }
-            
-            if (createdCount == 0) {
-                throw new RuntimeException("Failed to create any humans for city " + city.getId());
-            }
-            
-            logger.info("Successfully created {} humans for city {}", createdCount, city.getId());
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            logger.error("Error generating humans for city {}: {}", city.getId(), e.getMessage(), e);
-            throw new RuntimeException("Failed to generate humans for city: " + e.getMessage(), e);
+            double creativity = trait(random);
+            double intellect = trait(random);
+            double sociability = trait(random);
+            double practicality = trait(random);
+
+            HumanInput humanInput = new HumanInput();
+            humanInput.setCityId(city.getId());
+            humanInput.setBusy(false);
+            humanInput.setName(determineName(index));
+            humanInput.setTribeId(tribeA ? TRIBE_A : TRIBE_B);
+            humanInput.setX(clamp(basePosition[0] + jitter(random, 0.018)));
+            humanInput.setY(clamp(basePosition[1] + jitter(random, 0.018)));
+            humanInput.setCreativity(creativity);
+            humanInput.setIntellect(intellect);
+            humanInput.setSociability(sociability);
+            humanInput.setPracticality(practicality);
+            humanInput.setPersonality(humanApplicationService.derivePersonality(
+                    creativity,
+                    intellect,
+                    sociability,
+                    practicality
+            ));
+            humanApplicationService.createHuman(humanInput);
         }
     }
 
-    private JsonNode generateHumansWithAiAsync() throws Exception {
-        CompletableFuture<JsonNode> future = CompletableFuture.supplyAsync(() -> {
-            try {
-                AiPrompt prompt = promptBuilder.createHumanGenerationPrompt();
-                AiResponse response = aiGenerationService.generate(prompt);
-                JsonNode jsonContent = response.getJsonContent();
-                if (jsonContent == null && response.getRawContent() != null) {
-                    jsonContent = objectMapper.readTree(response.getRawContent());
-                }
-                return jsonContent;
-            } catch (AiServiceException e) {
-                throw new RuntimeException("AI service error: " + e.getMessage(), e);
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("JSON parsing error: " + e.getMessage(), e);
-            }
-        });
-        
-        try {
-            return future.get(30, TimeUnit.SECONDS);
-        } catch (TimeoutException e) {
-            future.cancel(true);
-            throw new RuntimeException("AI service call timed out", e);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof RuntimeException) {
-                throw (RuntimeException) cause;
-            }
-            throw new RuntimeException("Error calling AI service", cause);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("AI service call interrupted", e);
-        }
+    private long seedFor(City city) {
+        long seed = 17L;
+        seed = (seed * 31L) + city.getId();
+        seed = (seed * 31L) + (city.getName() == null ? 0L : city.getName().hashCode());
+        return seed;
     }
 
-    private JsonNode createHumansManually() throws JsonProcessingException {
-        com.fasterxml.jackson.databind.node.ArrayNode arrayNode = objectMapper.createArrayNode();
-        
-        for (int i = 0; i < 5; i++) {
-            double creativity = random.nextDouble();
-            double intellect = random.nextDouble();
-            double sociability = random.nextDouble();
-            double practicality = 2.0 - creativity - intellect - sociability;
-
-            double sum = creativity + intellect + sociability + practicality;
-            creativity = (creativity / sum) * 2.0;
-            intellect = (intellect / sum) * 2.0;
-            sociability = (sociability / sum) * 2.0;
-            practicality = (practicality / sum) * 2.0;
-
-            com.fasterxml.jackson.databind.node.ObjectNode humanNode = objectMapper.createObjectNode();
-            humanNode.put("name", faker.name().fullName());
-            humanNode.put("creativity", Math.round(creativity * 100.0) / 100.0);
-            humanNode.put("intellect", Math.round(intellect * 100.0) / 100.0);
-            humanNode.put("sociability", Math.round(sociability * 100.0) / 100.0);
-            humanNode.put("practicality", Math.round(practicality * 100.0) / 100.0);
-            humanNode.put("personality", "BALANCED");
-            
-            arrayNode.add(humanNode);
+    private String determineName(int index) {
+        if (index % 2 == 0) {
+            return "";
         }
-        
-        return arrayNode;
+        return LOCAL_NAMES.get(index % LOCAL_NAMES.size());
+    }
+
+    private double jitter(Random random, double range) {
+        return ((random.nextDouble() * 2.0) - 1.0) * range;
+    }
+
+    private double clamp(double value) {
+        return Math.max(0.05, Math.min(0.95, value));
+    }
+
+    private double trait(Random random) {
+        return round(0.35 + (random.nextDouble() * 0.55));
+    }
+
+    private double round(double value) {
+        return Math.round(Math.max(0.0, Math.min(1.0, value)) * 100.0) / 100.0;
     }
 }

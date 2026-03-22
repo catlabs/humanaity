@@ -7,6 +7,7 @@ import eu.catlabs.humanaity.event.domain.Event;
 import eu.catlabs.humanaity.event.domain.EventType;
 import eu.catlabs.humanaity.event.infrastructure.persistence.EventRepository;
 import eu.catlabs.humanaity.history.domain.HistoryEra;
+import eu.catlabs.humanaity.human.application.HumanDisplayNameFormatter;
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.invention.domain.Invention;
@@ -182,7 +183,7 @@ public class SimulationAssistantService {
     private SimulationAssistantResponseOutput relationshipsResponse(Long cityId) {
         List<Human> humans = humanRepository.findByCityIdOrderByIdAsc(cityId);
         Map<Long, String> humanNames = humans.stream()
-                .collect(LinkedHashMap::new, (map, human) -> map.put(human.getId(), human.getName()), Map::putAll);
+                .collect(LinkedHashMap::new, (map, human) -> map.put(human.getId(), HumanDisplayNameFormatter.displayName(human)), Map::putAll);
 
         List<RelationshipSummary> relationships = eventRepository
                 .findByCityIdOrderByTickAscSequenceInTickAscIdAsc(cityId)

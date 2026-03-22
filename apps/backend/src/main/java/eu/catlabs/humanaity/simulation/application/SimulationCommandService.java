@@ -7,6 +7,7 @@ import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
 import eu.catlabs.humanaity.event.application.EventApplicationService;
 import eu.catlabs.humanaity.event.application.EventDraft;
 import eu.catlabs.humanaity.event.domain.EventType;
+import eu.catlabs.humanaity.human.application.HumanDisplayNameFormatter;
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationCommandInput;
@@ -114,7 +115,11 @@ public class SimulationCommandService {
             return reject("Could not resolve a single human for `focus`. Use an exact human id or exact name.");
         }
 
-        SimulationCommandOutput output = success("FOCUS_HUMAN", "Focused " + human.getName() + ".", false);
+        SimulationCommandOutput output = success(
+                "FOCUS_HUMAN",
+                "Focused " + HumanDisplayNameFormatter.displayName(human) + ".",
+                false
+        );
         output.getReferencedEntities().setHumanId(human.getId());
         AgentUiEffectOutput focus = new AgentUiEffectOutput("FOCUS_HUMAN");
         focus.setHumanId(human.getId());
@@ -147,7 +152,7 @@ public class SimulationCommandService {
 
         SimulationCommandOutput output = success(
                 "MOVE_HUMAN_TO_PLACE",
-                "Assigned " + human.getName() + " to move toward " + place.id() + " and advanced city by 1 step.",
+                "Assigned " + HumanDisplayNameFormatter.displayName(human) + " to move toward " + place.id() + " and advanced city by 1 step.",
                 true
         );
         output.getReferencedEntities().setHumanId(human.getId());
@@ -202,7 +207,7 @@ public class SimulationCommandService {
 
         SimulationCommandOutput output = success(
                 "MEET_HUMAN",
-                "Assigned " + actor.getName() + " to meet " + target.getName() + " and advanced city by 1 step.",
+                "Assigned " + HumanDisplayNameFormatter.displayName(actor) + " to meet " + HumanDisplayNameFormatter.displayName(target) + " and advanced city by 1 step.",
                 true
         );
         output.getReferencedEntities().setHumanId(actor.getId());
@@ -232,7 +237,7 @@ public class SimulationCommandService {
         }
 
         List<Human> matches = humans.stream()
-                .filter(human -> human.getName() != null && human.getName().equalsIgnoreCase(token))
+                .filter(human -> HumanDisplayNameFormatter.displayName(human).equalsIgnoreCase(token))
                 .toList();
         return matches.size() == 1 ? matches.get(0) : null;
     }

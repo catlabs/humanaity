@@ -515,7 +515,11 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
 
     const names = event.actorIds
       .map(
-        (actorId) => this.humans().find((human) => human.id === actorId)?.name,
+        (actorId) =>
+          this.humanDisplayName(
+            this.humans().find((human) => human.id === actorId),
+            actorId,
+          ),
       )
       .filter((name): name is string => !!name);
 
@@ -1163,6 +1167,16 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
       .split('_')
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ');
+  }
+
+  private humanDisplayName(
+    human: SimulationSnapshotOutput['humans'][number] | undefined,
+    fallbackId: number,
+  ): string {
+    if (human && typeof human.name === 'string' && human.name.trim().length > 0) {
+      return human.name.trim();
+    }
+    return `Human ${fallbackId}`;
   }
 
   private applyUiEffects(effects: AgentUiEffectOutput[]): void {

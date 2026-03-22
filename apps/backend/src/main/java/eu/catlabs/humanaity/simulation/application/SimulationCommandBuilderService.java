@@ -3,6 +3,7 @@ package eu.catlabs.humanaity.simulation.application;
 import eu.catlabs.humanaity.auth.domain.User;
 import eu.catlabs.humanaity.city.domain.City;
 import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
+import eu.catlabs.humanaity.human.application.HumanDisplayNameFormatter;
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationCommandBuilderActionOutput;
@@ -100,10 +101,10 @@ public class SimulationCommandBuilderService {
     }
 
     private SimulationCommandBuilderOptionOutput toHumanOption(Human human) {
-        String label = human.getName() == null || human.getName().isBlank()
-                ? "Human " + human.getId()
-                : human.getName();
-        return new SimulationCommandBuilderOptionOutput(String.valueOf(human.getId()), label);
+        return new SimulationCommandBuilderOptionOutput(
+                String.valueOf(human.getId()),
+                HumanDisplayNameFormatter.displayName(human)
+        );
     }
 
     private String labelForPlace(String placeId) {
