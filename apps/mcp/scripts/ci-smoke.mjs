@@ -2,8 +2,8 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const apiBaseUrl = process.env.HUMANAITY_API_BASE_URL ?? "http://localhost:8080";
-const email = process.env.HUMANAITY_API_EMAIL ?? "julien-test-1773263365@example.com";
-const password = process.env.HUMANAITY_API_PASSWORD ?? "Test1234!";
+const email = process.env.HUMANAITY_API_EMAIL;
+const password = process.env.HUMANAITY_API_PASSWORD;
 
 function fail(message, details) {
   const suffix = details ? `\n${JSON.stringify(details, null, 2)}` : "";
@@ -32,6 +32,9 @@ async function callTool(client, name, args = {}) {
 }
 
 async function run() {
+  assert(typeof email === "string" && email.length > 0, "HUMANAITY_API_EMAIL must be set for smoke:ci");
+  assert(typeof password === "string" && password.length > 0, "HUMANAITY_API_PASSWORD must be set for smoke:ci");
+
   const transport = new StdioClientTransport({
     command: "node",
     args: ["dist/index.js"],

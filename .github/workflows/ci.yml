@@ -82,11 +82,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate smoke credentials
+        run: |
+          echo "HUMANAITY_API_EMAIL=ci-mcp-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}@example.invalid" >> "$GITHUB_ENV"
+          echo "HUMANAITY_API_PASSWORD=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+
       - name: Start backend
         working-directory: apps/backend
         env:
           OPENAI_API_KEY: test-key
           HUMANAITY_H2_TCP_ENABLED: "false"
+          HUMANAITY_API_EMAIL: ${{ env.HUMANAITY_API_EMAIL }}
+          HUMANAITY_API_PASSWORD: ${{ env.HUMANAITY_API_PASSWORD }}
           SPRING_DATASOURCE_URL: jdbc:h2:mem:devdb;MODE=LEGACY;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
           SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
         run: |
@@ -116,4 +123,6 @@ jobs:
       - name: MCP smoke
         env:
           HUMANAITY_API_BASE_URL: http://localhost:8080
+          HUMANAITY_API_EMAIL: ${{ env.HUMANAITY_API_EMAIL }}
+          HUMANAITY_API_PASSWORD: ${{ env.HUMANAITY_API_PASSWORD }}
         run: npm run smoke:ci

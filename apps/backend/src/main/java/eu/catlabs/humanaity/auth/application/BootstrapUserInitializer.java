@@ -31,6 +31,9 @@ public class BootstrapUserInitializer implements ApplicationRunner {
         for (BootstrapUsersProperties.BootstrapUser bootstrapUser : bootstrapUsersProperties.getUsers()) {
             String email = normalize(bootstrapUser.getEmail());
             String password = bootstrapUser.getPassword();
+            if (email == null && (password == null || password.isBlank())) {
+                continue;
+            }
             if (email == null || password == null || password.isBlank()) {
                 throw new IllegalStateException("Each bootstrap user must define non-empty email and password");
             }
