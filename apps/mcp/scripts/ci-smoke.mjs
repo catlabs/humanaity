@@ -2,7 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const apiBaseUrl = process.env.HUMANAITY_API_BASE_URL ?? "http://localhost:8080";
-const email = process.env.HUMANAITY_API_EMAIL ?? `ci-mcp-${Date.now()}@example.com`;
+const email = process.env.HUMANAITY_API_EMAIL ?? "julien-test-1773263365@example.com";
 const password = process.env.HUMANAITY_API_PASSWORD ?? "Test1234!";
 
 function fail(message, details) {
