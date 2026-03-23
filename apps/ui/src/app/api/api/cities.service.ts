@@ -44,9 +44,9 @@ export class CitiesService extends BaseService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public createCity(cityInput: CityInput, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<CityOutput>;
-    public createCity(cityInput: CityInput, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<CityOutput>>;
-    public createCity(cityInput: CityInput, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<CityOutput>>;
+    public createCity(cityInput: CityInput, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<object>;
+    public createCity(cityInput: CityInput, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<object>>;
+    public createCity(cityInput: CityInput, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<object>>;
     public createCity(cityInput: CityInput, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (cityInput === null || cityInput === undefined) {
             throw new Error('Required parameter cityInput was null or undefined when calling createCity.');
@@ -91,7 +91,7 @@ export class CitiesService extends BaseService {
 
         let localVarPath = `/api/cities`;
         const { basePath, withCredentials } = this.configuration;
-        return this.httpClient.request<CityOutput>('post', `${basePath}${localVarPath}`,
+        return this.httpClient.request<object>('post', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 body: cityInput,
@@ -338,7 +338,7 @@ export class CitiesService extends BaseService {
     }
 
     /**
-     * Get all cities owned by the current user
+     * Get all cities available to the current authenticated user (legacy alias)
      * @endpoint get /api/cities/mine
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.

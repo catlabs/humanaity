@@ -42,22 +42,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/signup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["signup"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/auth/refresh": {
         parameters: {
             query?: never;
@@ -472,8 +456,42 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get all cities owned by the current user */
+        /** Get all cities available to the current authenticated user (legacy alias) */
         get: operations["getMyCities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List persisted AI call logs */
+        get: operations["listLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/logs/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Aggregate persisted AI call logs */
+        get: operations["summarizeLogs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -490,6 +508,8 @@ export interface components {
             busy?: boolean;
             name?: string;
             tribeId?: string;
+            /** @enum {string} */
+            tribeRole?: "CHIEF" | "SCOUT" | "MEMBER";
             /** Format: double */
             x?: number;
             /** Format: double */
@@ -512,6 +532,8 @@ export interface components {
             id: number;
             name: string;
             tribeId?: string;
+            /** @enum {string} */
+            tribeRole?: "CHIEF" | "SCOUT" | "MEMBER";
             /** Format: double */
             x: number;
             /** Format: double */
@@ -549,11 +571,6 @@ export interface components {
             name: string;
             humans?: unknown[];
         };
-        SignupRequest: {
-            email?: string;
-            password?: string;
-            confirmPassword?: string;
-        };
         RefreshTokenRequest: {
             refreshToken?: string;
         };
@@ -581,6 +598,9 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        ApiErrorResponse: {
+            message?: string;
         };
         SimulationCommandInput: {
             commandText?: string;
@@ -691,7 +711,7 @@ export interface components {
             /** @enum {string} */
             eventCategory: "LIFECYCLE" | "INTERACTION" | "DISCOVERY" | "DIALOGUE" | "MILESTONE";
             /** @enum {string} */
-            eventType: "SIMULATION_STARTED" | "SIMULATION_PAUSED" | "SIMULATION_RESUMED" | "SIMULATION_COMPLETED" | "HUMANS_COLLIDED" | "GOAL_ASSIGNED" | "GOAL_COMPLETED" | "HUMAN_ACTION_PERFORMED" | "DISCOVERY_UNLOCKED" | "DIALOGUE_EXCHANGED" | "INVENTION_EMERGED";
+            eventType: "SIMULATION_STARTED" | "SIMULATION_PAUSED" | "SIMULATION_RESUMED" | "SIMULATION_COMPLETED" | "HUMANS_COLLIDED" | "GOAL_ASSIGNED" | "GOAL_COMPLETED" | "HUMAN_ACTION_PERFORMED" | "DISCOVERY_UNLOCKED" | "DIALOGUE_EXCHANGED" | "INVENTION_EMERGED" | "TRIBE_PLACE_DISCOVERED" | "TRIBE_DISCOVERY_REPORTED" | "TRIBE_SCOUT_REPORT" | "TRIBE_PLAN_CHOSEN" | "TRIBE_GROUP_TRAVEL_COORDINATED";
             actorIds: number[];
             payload: {
                 [key: string]: string;
@@ -703,6 +723,8 @@ export interface components {
             /** @enum {string} */
             era: "FOUNDING" | "EXPANSION" | "CONSOLIDATION" | "LEGACY";
             eventKey: string;
+            title?: string;
+            summary?: string;
             /** Format: date-time */
             createdAt: string;
             /** @enum {string} */
@@ -776,6 +798,7 @@ export interface components {
             id: number;
             name: string;
             tribeId?: string;
+            tribeRole?: string;
             /** Format: double */
             x?: number;
             /** Format: double */
@@ -801,6 +824,7 @@ export interface components {
             run: components["schemas"]["SimulationSnapshotRunOutput"];
             timelineSummary: components["schemas"]["SimulationTimelineSummaryOutput"];
             knowledge: components["schemas"]["SimulationKnowledgeOutput"];
+            tribes: components["schemas"]["TribeSnapshotOutput"][];
             humans: components["schemas"]["SimulationSnapshotHumanOutput"][];
             metrics: components["schemas"]["SimulationSnapshotMetricsOutput"];
             recentEvents: components["schemas"]["EventOutput"][];
@@ -839,6 +863,29 @@ export interface components {
             recentInventionCount: number;
             /** Format: int32 */
             recentKnowledgeUnlockCount: number;
+        };
+        TribeHouseOutput: {
+            /** Format: double */
+            x: number;
+            /** Format: double */
+            y: number;
+        };
+        TribeKnownPlaceOutput: {
+            placeId: string;
+            /** Format: int64 */
+            discoveredByHumanId: number;
+            /** Format: int64 */
+            discoveredTick: number;
+            /** Format: int64 */
+            reportedTick?: number;
+            reported: boolean;
+        };
+        TribeSnapshotOutput: {
+            tribeId: string;
+            house: components["schemas"]["TribeHouseOutput"];
+            /** Format: int64 */
+            scoutHumanId: number;
+            knownPlaces: components["schemas"]["TribeKnownPlaceOutput"][];
         };
         TimelineOutput: {
             /** Format: int64 */
@@ -907,6 +954,50 @@ export interface components {
             canonicalText?: string;
             label?: string;
             description?: string;
+        };
+        AiCallLogOutput: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: date-time */
+            timestamp?: string;
+            /** Format: int64 */
+            cityId?: number;
+            contextType?: string;
+            contextEntityType?: string;
+            contextEntityId?: string;
+            provider?: string;
+            model?: string;
+            success?: boolean;
+            fallbackUsed?: boolean;
+            /** Format: int64 */
+            durationMs?: number;
+            promptSummary?: string;
+            promptHash?: string;
+            responseHash?: string;
+            errorCode?: string;
+            errorMessage?: string;
+        };
+        AiCallLogContextSummaryOutput: {
+            contextType?: string;
+            /** Format: int64 */
+            totalCount?: number;
+            /** Format: int64 */
+            successCount?: number;
+            /** Format: int64 */
+            failureCount?: number;
+            /** Format: int64 */
+            fallbackCount?: number;
+        };
+        AiCallLogSummaryOutput: {
+            /** Format: int64 */
+            totalCount?: number;
+            /** Format: int64 */
+            successCount?: number;
+            /** Format: int64 */
+            failureCount?: number;
+            /** Format: int64 */
+            fallbackCount?: number;
+            byContextType?: components["schemas"]["AiCallLogContextSummaryOutput"][];
         };
     };
     responses: never;
@@ -1053,30 +1144,6 @@ export interface operations {
             };
         };
     };
-    signup: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SignupRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": Record<string, never>;
-                };
-            };
-        };
-    };
     refresh: {
         parameters: {
             query?: never;
@@ -1186,13 +1253,22 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
+            /** @description Simulation run created */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "*/*": components["schemas"]["SimulationRunOutput"];
+                };
+            };
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiErrorResponse"];
                 };
             };
         };
@@ -1214,9 +1290,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": {
-                        [key: string]: string;
-                    };
+                    "*/*": Record<string, never>;
                 };
             };
         };
@@ -1232,13 +1306,22 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Simulation step executed */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "*/*": components["schemas"]["SimulationRunOutput"];
+                };
+            };
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiErrorResponse"];
                 };
             };
         };
@@ -1260,9 +1343,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": {
-                        [key: string]: string;
-                    };
+                    "*/*": Record<string, never>;
                 };
             };
         };
@@ -1278,13 +1359,22 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Simulation run resumed */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "*/*": components["schemas"]["SimulationRunOutput"];
+                };
+            };
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiErrorResponse"];
                 };
             };
         };
@@ -1300,13 +1390,22 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Simulation run paused */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "*/*": components["schemas"]["SimulationRunOutput"];
+                };
+            };
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiErrorResponse"];
                 };
             };
         };
@@ -1326,13 +1425,22 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
+            /** @description Simulation command executed */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "*/*": components["schemas"]["SimulationCommandOutput"];
+                };
+            };
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiErrorResponse"];
                 };
             };
         };
@@ -1352,13 +1460,22 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
+            /** @description Simulation assistant response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "*/*": components["schemas"]["SimulationAssistantResponseOutput"];
+                };
+            };
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiErrorResponse"];
                 };
             };
         };
@@ -1426,7 +1543,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["CityOutput"];
+                    "*/*": Record<string, never>;
                 };
             };
         };
@@ -1446,13 +1563,22 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
+            /** @description Agent chat response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "*/*": components["schemas"]["AgentChatResponseOutput"];
+                };
+            };
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiErrorResponse"];
                 };
             };
         };
@@ -1703,6 +1829,61 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CityOutput"][];
+                };
+            };
+        };
+    };
+    listLogs: {
+        parameters: {
+            query?: {
+                cityId?: number;
+                contextType?: "CHAT_FALLBACK" | "EVENT_ENRICHMENT" | "INVENTION_ENRICHMENT" | "CHIEF_DECISION" | "UNSPECIFIED";
+                success?: boolean;
+                fallbackUsed?: boolean;
+                provider?: string;
+                model?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AiCallLogOutput"][];
+                };
+            };
+        };
+    };
+    summarizeLogs: {
+        parameters: {
+            query?: {
+                cityId?: number;
+                contextType?: "CHAT_FALLBACK" | "EVENT_ENRICHMENT" | "INVENTION_ENRICHMENT" | "CHIEF_DECISION" | "UNSPECIFIED";
+                success?: boolean;
+                fallbackUsed?: boolean;
+                provider?: string;
+                model?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AiCallLogSummaryOutput"];
                 };
             };
         };

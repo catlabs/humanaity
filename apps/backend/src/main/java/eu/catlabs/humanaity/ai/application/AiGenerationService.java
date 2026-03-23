@@ -24,9 +24,11 @@ public class AiGenerationService {
     private static final Logger logger = LoggerFactory.getLogger(AiGenerationService.class);
     
     private final List<AiProviderPort> providers;
+    private final AiCallLogService aiCallLogService;
     
-    public AiGenerationService(List<AiProviderPort> providers) {
+    public AiGenerationService(List<AiProviderPort> providers, AiCallLogService aiCallLogService) {
         this.providers = providers;
+        this.aiCallLogService = aiCallLogService;
         logger.info("Initialized AiGenerationService with {} provider(s)", providers.size());
     }
     
@@ -38,8 +40,11 @@ public class AiGenerationService {
      * @throws AiServiceException if no provider is available or generation fails
      */
     public AiResponse generate(AiPrompt prompt) throws AiServiceException {
-        AiProviderPort provider = selectProvider();
-        return provider.generate(prompt);
+        return generate(prompt, AiGenerationContext.unspecified());
+    }
+
+    public AiResponse generate(AiPrompt prompt, AiGenerationContext context) throws AiServiceException {
+        return generateInternal(prompt, context, null);
     }
     
     /**
@@ -51,11 +56,15 @@ public class AiGenerationService {
      * @throws AiServiceException if the provider is not available or generation fails
      */
     public AiResponse generateWithProvider(AiProvider providerType, AiPrompt prompt) throws AiServiceException {
-        AiProviderPort provider = findProvider(providerType);
-        if (provider == null) {
-            throw new AiServiceException("Provider " + providerType + " is not available");
-        }
-        return provider.generate(prompt);
+        return generateWithProvider(providerType, prompt, AiGenerationContext.unspecified());
+    }
+
+    public AiResponse generateWithProvider(AiProvider providerType, AiPrompt prompt, AiGenerationContext context) throws AiServiceException {
+        return generateInternal(prompt, context, providerType);
+    }
+
+    public void markFallbackUsed(Long logId) {
+        aiCallLogService.markFallbackUsed(logId);
     }
     
     /**
@@ -84,5 +93,56 @@ public class AiGenerationService {
                 .filter(AiProviderPort::isAvailable)
                 .findFirst()
                 .orElse(null);
+    }
+
+    private AiResponse generateInternal(AiPrompt prompt, AiGenerationContext context, AiProvider requestedProviderType) {
+        long startedAt = System.currentTimeMillis();
+        AiProviderPort provider = null;
+        try {
+            if (requestedProviderType == null) {
+                provider = selectProvider();
+            } else {
+                provider = findProvider(requestedProviderType);
+                if (provider == null) {
+                    throw new AiServiceException("Provider " + requestedProviderType + " is not available");
+                }
+            }
+
+            AiResponse response = provider.generate(prompt);
+            long durationMs = resolveDurationMs(startedAt, response);
+            var log = aiCallLogService.recordSuccess(
+                    context == null ? AiGenerationContext.unspecified() : context,
+                    prompt,
+                    provider.getProviderType().name(),
+                    response.getModel(),
+                    response,
+                    durationMs
+            );
+            response.setLogId(log.getId());
+            return response;
+        } catch (Exception ex) {
+            AiServiceException wrapped = ex instanceof AiServiceException aiServiceException
+                    ? aiServiceException
+                    : new AiServiceException("AI generation failed: " + ex.getMessage(), ex);
+            long durationMs = Math.max(0L, System.currentTimeMillis() - startedAt);
+            aiCallLogService.recordFailure(
+                    context == null ? AiGenerationContext.unspecified() : context,
+                    prompt,
+                    provider == null
+                            ? (requestedProviderType == null ? null : requestedProviderType.name())
+                            : provider.getProviderType().name(),
+                    null,
+                    durationMs,
+                    wrapped
+            );
+            throw wrapped;
+        }
+    }
+
+    private long resolveDurationMs(long startedAt, AiResponse response) {
+        if (response != null && response.getResponseTime() != null) {
+            return Math.max(response.getResponseTime().toMillis(), 0L);
+        }
+        return Math.max(0L, System.currentTimeMillis() - startedAt);
     }
 }

@@ -14,6 +14,7 @@ import { EventOutput } from './eventOutput';
 import { InventionOutput } from './inventionOutput';
 import { SimulationKnowledgeOutput } from './simulationKnowledgeOutput';
 import { SimulationSnapshotRunOutput } from './simulationSnapshotRunOutput';
+import { TribeSnapshotOutput } from './tribeSnapshotOutput';
 import { SimulationSnapshotMetricsOutput } from './simulationSnapshotMetricsOutput';
 
 
@@ -22,6 +23,7 @@ export interface SimulationSnapshotOutput {
     run: SimulationSnapshotRunOutput;
     timelineSummary: SimulationTimelineSummaryOutput;
     knowledge: SimulationKnowledgeOutput;
+    tribes: Array<TribeSnapshotOutput>;
     humans: Array<SimulationSnapshotHumanOutput>;
     metrics: SimulationSnapshotMetricsOutput;
     recentEvents: Array<EventOutput>;

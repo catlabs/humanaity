@@ -15,6 +15,8 @@ import eu.catlabs.humanaity.simulation.domain.HumanGoalType;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeHouseRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeKnownPlaceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,9 +53,15 @@ class SimulationGoalExecutionTest {
     private SimulationRunRepository simulationRunRepository;
     @Autowired
     private KnowledgeUnlockRepository knowledgeUnlockRepository;
+    @Autowired
+    private TribeHouseRepository tribeHouseRepository;
+    @Autowired
+    private TribeKnownPlaceRepository tribeKnownPlaceRepository;
 
     @BeforeEach
     void cleanDatabase() {
+        tribeKnownPlaceRepository.deleteAll();
+        tribeHouseRepository.deleteAll();
         knowledgeUnlockRepository.deleteAll();
         humanGoalRepository.deleteAll();
         inventionRepository.deleteAll();
@@ -64,7 +72,7 @@ class SimulationGoalExecutionTest {
     }
 
     @Test
-    void moveToPlaceGoalCompletesDeterministicallyAndRecordsLifecycleEvent() {
+    void moveToPlaceGoalCompletesDeterministicallyWithoutVisibleGoalEvents() {
         City city = createCity("Goals-Move");
         Human human = createHuman(city, "Elsa", 0.90, 0.90);
         simulationApplicationService.createRun(city.getId(), 90210L);
@@ -82,22 +90,24 @@ class SimulationGoalExecutionTest {
 
         HumanGoal persistedGoal = humanGoalRepository.findById(assigned.getId()).orElseThrow();
         Human updatedHuman = humanRepository.findById(human.getId()).orElseThrow();
-        List<Event> completionEvents = eventRepository.findByCityIdAndEventTypeOrderByTickAscSequenceInTickAscIdAsc(
-                city.getId(),
-                EventType.GOAL_COMPLETED
+        List<Event> goalEvents = new java.util.ArrayList<>(
+                eventRepository.findByCityIdAndEventTypeOrderByTickAscSequenceInTickAscIdAsc(
+                        city.getId(),
+                        EventType.GOAL_ASSIGNED
+                )
+        );
+        goalEvents.addAll(
+                eventRepository.findByCityIdAndEventTypeOrderByTickAscSequenceInTickAscIdAsc(
+                        city.getId(),
+                        EventType.GOAL_COMPLETED
+                )
         );
 
         assertThat(persistedGoal.getStatus()).isEqualTo(HumanGoalStatus.COMPLETED);
         assertThat(persistedGoal.getCompletedTick()).isNotNull();
         assertThat(updatedHuman.getX()).isBetween(0.0, 1.0);
         assertThat(updatedHuman.getY()).isBetween(0.0, 1.0);
-        assertThat(completionEvents).isNotEmpty();
-        assertThat(completionEvents).anyMatch(
-                event -> String.valueOf(assigned.getId()).equals(event.getPayload().get("goalId"))
-        );
-        assertThat(completionEvents).anyMatch(
-                event -> HumanGoalType.MOVE_TO_PLACE.name().equals(event.getPayload().get("goalType"))
-        );
+        assertThat(goalEvents).isEmpty();
     }
 
     @Test
@@ -138,9 +148,17 @@ class SimulationGoalExecutionTest {
 
         Human afterReassignment = humanRepository.findById(human.getId()).orElseThrow();
         HumanGoal reassigned = humanGoalApplicationService.findActiveGoal(human.getId()).orElseThrow();
-        List<Event> assignedEvents = eventRepository.findByCityIdAndEventTypeOrderByTickAscSequenceInTickAscIdAsc(
-                city.getId(),
-                EventType.GOAL_ASSIGNED
+        List<Event> goalEvents = new java.util.ArrayList<>(
+                eventRepository.findByCityIdAndEventTypeOrderByTickAscSequenceInTickAscIdAsc(
+                        city.getId(),
+                        EventType.GOAL_ASSIGNED
+                )
+        );
+        goalEvents.addAll(
+                eventRepository.findByCityIdAndEventTypeOrderByTickAscSequenceInTickAscIdAsc(
+                        city.getId(),
+                        EventType.GOAL_COMPLETED
+                )
         );
         assertThat(reassigned.getSource()).isEqualTo(HumanGoalSource.AUTONOMOUS);
         assertThat(reassigned.getGoalType()).isEqualTo(HumanGoalType.MOVE_TO_PLACE);
@@ -148,9 +166,7 @@ class SimulationGoalExecutionTest {
         assertThat(afterReassignment.getX()).isNotEqualTo(dwellX);
         assertThat(afterReassignment.getY()).isNotEqualTo(dwellY);
         assertThat(afterReassignment.getNextGoalAssignTick()).isNull();
-        assertThat(assignedEvents).anyMatch(
-                event -> HumanGoalSource.AUTONOMOUS.name().equals(event.getPayload().get("source"))
-        );
+        assertThat(goalEvents).isEmpty();
     }
 
     @Test
@@ -178,7 +194,13 @@ class SimulationGoalExecutionTest {
         Human actor = createHuman(city, "Pierre", 0.20, 0.20);
         Human target = createHuman(city, "Lucas", 0.82, 0.82);
         List<HumanSeedState> initialState = humanRepository.findByCityIdOrderByIdAsc(city.getId()).stream()
-                .map(human -> new HumanSeedState(human.getId(), human.getX(), human.getY()))
+                .map(human -> new HumanSeedState(
+                        human.getId(),
+                        human.getX(),
+                        human.getY(),
+                        human.isBusy(),
+                        human.getNextGoalAssignTick()
+                ))
                 .toList();
 
         CanonicalMeetResult first = runMeetGoalScenario(city.getId(), actor.getId(), target.getId(), seed);
@@ -223,15 +245,53 @@ class SimulationGoalExecutionTest {
         simulationApplicationService.step(cityId, 60);
 
         Human finalActor = humanRepository.findById(actorId).orElseThrow();
-        List<Event> completionEvents = eventRepository.findByCityIdAndEventTypeOrderByTickAscSequenceInTickAscIdAsc(
-                cityId,
-                EventType.GOAL_COMPLETED
-        );
         return new CanonicalMeetResult(
                 finalActor.getX(),
                 finalActor.getY(),
-                completionEvents.stream().map(Event::getTick).toList()
+                eventRepository.findByCityIdOrderByTickAscSequenceInTickAscIdAsc(cityId).stream()
+                        .filter(event -> event.getEventType() != EventType.HUMAN_ACTION_PERFORMED)
+                        .map(this::toCanonicalEvent)
+                        .toList()
         );
+    }
+
+    private CanonicalEvent toCanonicalEvent(Event event) {
+        return new CanonicalEvent(
+                event.getEventCategory().name(),
+                event.getEventType().name(),
+                normalizeText(event.getEventKey()),
+                actorCount(event.getActorIds()),
+                event.getImportance(),
+                stablePayload(event.getPayload())
+        );
+    }
+
+    private Map<String, String> stablePayload(Map<String, String> payload) {
+        Map<String, String> normalized = new java.util.LinkedHashMap<>(payload);
+        normalized.remove("goalId");
+        normalized.replaceAll((key, value) -> normalizeText(value));
+        return normalized;
+    }
+
+    private Integer actorCount(List<Long> actorIds) {
+        return actorIds == null ? 0 : actorIds.size();
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+        return value.replaceAll("\\d+", "<n>");
+    }
+
+    private record CanonicalEvent(
+            String eventCategory,
+            String eventType,
+            String eventKey,
+            Integer actorCount,
+            Integer importance,
+            Map<String, String> payload
+    ) {
     }
 
     private void restoreHumans(Long cityId, List<HumanSeedState> initialState) {
@@ -240,16 +300,17 @@ class SimulationGoalExecutionTest {
         List<Human> humans = humanRepository.findByCityIdOrderByIdAsc(cityId);
         for (Human human : humans) {
             HumanSeedState state = stateById.get(human.getId());
-            human.setBusy(false);
+            human.setBusy(state.busy());
             human.setX(state.x());
             human.setY(state.y());
+            human.setNextGoalAssignTick(state.nextGoalAssignTick());
         }
         humanRepository.saveAll(humans);
     }
 
-    private record HumanSeedState(Long id, Double x, Double y) {
+    private record HumanSeedState(Long id, Double x, Double y, boolean busy, Long nextGoalAssignTick) {
     }
 
-    private record CanonicalMeetResult(Double x, Double y, List<Long> completionTicks) {
+    private record CanonicalMeetResult(Double x, Double y, List<CanonicalEvent> events) {
     }
 }

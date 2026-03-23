@@ -20,6 +20,8 @@ public class SimulationSnapshotOutput {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private SimulationKnowledgeOutput knowledge;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+    private List<TribeSnapshotOutput> tribes;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private List<SimulationSnapshotHumanOutput> humans;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private SimulationSnapshotMetricsOutput metrics;

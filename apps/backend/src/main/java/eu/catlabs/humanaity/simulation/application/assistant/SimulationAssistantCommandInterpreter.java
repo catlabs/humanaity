@@ -12,6 +12,8 @@ public class SimulationAssistantCommandInterpreter {
         String normalized = normalize(safeRawCommand);
 
         SimulationAssistantCommandType commandType = switch (normalized) {
+            case "sichef", "chef", "chief", "chiefplan" ->
+                    SimulationAssistantCommandType.CHIEF_PLAN;
             case "inventions", "inventory", "inventoryofinventions", "inventioninventory" ->
                     SimulationAssistantCommandType.INVENTIONS;
             case "worldstatus", "world", "status", "simulationstatus", "worldsummary" ->
@@ -20,6 +22,10 @@ public class SimulationAssistantCommandInterpreter {
                     SimulationAssistantCommandType.RECENT_EVENTS;
             case "relationships", "relations", "interactions" ->
                     SimulationAssistantCommandType.RELATIONSHIPS;
+            case "ailogs", "aialogs", "llmlogs" ->
+                    SimulationAssistantCommandType.AI_LOGS;
+            case "aistats", "llmstats", "llmusage", "aiusage" ->
+                    SimulationAssistantCommandType.AI_STATS;
             default -> SimulationAssistantCommandType.UNSUPPORTED;
         };
 

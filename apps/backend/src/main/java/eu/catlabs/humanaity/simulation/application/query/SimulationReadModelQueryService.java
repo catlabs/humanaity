@@ -6,12 +6,20 @@ import eu.catlabs.humanaity.event.domain.Event;
 import eu.catlabs.humanaity.event.infrastructure.persistence.EventRepository;
 import eu.catlabs.humanaity.history.domain.HistoryEra;
 import eu.catlabs.humanaity.history.domain.HistoryTimelineMapper;
+import eu.catlabs.humanaity.human.application.HumanDisplayNameFormatter;
 import eu.catlabs.humanaity.human.domain.Human;
+import eu.catlabs.humanaity.human.domain.HumanTribeRole;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionRepository;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
 import eu.catlabs.humanaity.simulation.domain.SimulationRunStatus;
+import eu.catlabs.humanaity.simulation.domain.TribeHouse;
+import eu.catlabs.humanaity.simulation.domain.TribeKnownPlace;
+import eu.catlabs.humanaity.simulation.domain.TribePlan;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeHouseRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeKnownPlaceRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribePlanRepository;
 import eu.catlabs.humanaity.simulation.domain.TechTreeNodeType;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
@@ -22,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -37,6 +46,9 @@ public class SimulationReadModelQueryService {
     private final EventRepository eventRepository;
     private final InventionRepository inventionRepository;
     private final KnowledgeUnlockRepository knowledgeUnlockRepository;
+    private final TribeHouseRepository tribeHouseRepository;
+    private final TribeKnownPlaceRepository tribeKnownPlaceRepository;
+    private final TribePlanRepository tribePlanRepository;
 
     public SimulationReadModelQueryService(
             CityRepository cityRepository,
@@ -44,7 +56,10 @@ public class SimulationReadModelQueryService {
             HumanRepository humanRepository,
             EventRepository eventRepository,
             InventionRepository inventionRepository,
-            KnowledgeUnlockRepository knowledgeUnlockRepository
+            KnowledgeUnlockRepository knowledgeUnlockRepository,
+            TribeHouseRepository tribeHouseRepository,
+            TribeKnownPlaceRepository tribeKnownPlaceRepository,
+            TribePlanRepository tribePlanRepository
     ) {
         this.cityRepository = cityRepository;
         this.simulationRunRepository = simulationRunRepository;
@@ -52,6 +67,9 @@ public class SimulationReadModelQueryService {
         this.eventRepository = eventRepository;
         this.inventionRepository = inventionRepository;
         this.knowledgeUnlockRepository = knowledgeUnlockRepository;
+        this.tribeHouseRepository = tribeHouseRepository;
+        this.tribeKnownPlaceRepository = tribeKnownPlaceRepository;
+        this.tribePlanRepository = tribePlanRepository;
     }
 
     @Transactional(readOnly = true)
@@ -76,6 +94,8 @@ public class SimulationReadModelQueryService {
         List<Invention> inventions = inventionRepository.findByCityIdOrderByTickCreatedAscInventionKeyAscIdAsc(cityId);
         List<eu.catlabs.humanaity.simulation.domain.KnowledgeUnlock> knowledgeUnlocks =
                 knowledgeUnlockRepository.findByCityIdOrderByUnlockedTickAscNodeIdAsc(cityId);
+        List<TribeHouse> tribeHouses = tribeHouseRepository.findByCityIdOrderByTribeIdAsc(cityId);
+        List<TribeKnownPlace> tribeKnownPlaces = tribeKnownPlaceRepository.findByCityIdOrderByTribeIdAscDiscoveredTickAscIdAsc(cityId);
 
         int busyCount = (int) humans.stream().filter(Human::isBusy).count();
         int population = humans.size();
@@ -101,11 +121,13 @@ public class SimulationReadModelQueryService {
                         maybeRun.map(SimulationRun::getCreatedAt).orElse(null),
                         maybeRun.map(SimulationRun::getUpdatedAt).orElse(null)
                 ),
+                buildTribeProjection(tribeHouses, tribeKnownPlaces, humans),
                 humans.stream()
                         .map(human -> new HumanProjection(
                                 human.getId(),
                                 human.getName(),
                                 human.getTribeId(),
+                                human.getTribeRole() == null ? null : human.getTribeRole().name(),
                                 human.getX(),
                                 human.getY(),
                                 human.isBusy()
@@ -124,6 +146,68 @@ public class SimulationReadModelQueryService {
                 recentEvents,
                 recentInventions
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<CurrentTribePlanProjection> listCurrentTribePlans(Long cityId) {
+        Objects.requireNonNull(cityId, "cityId must not be null");
+        cityRepository.findById(cityId)
+                .orElseThrow(() -> new EntityNotFoundException("City not found with id: " + cityId));
+
+        List<Human> humans = humanRepository.findByCityIdOrderByIdAsc(cityId);
+        Map<Long, String> humanNames = humans.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        Human::getId,
+                        HumanDisplayNameFormatter::displayName,
+                        (left, right) -> left,
+                        java.util.LinkedHashMap::new
+                ));
+        Map<String, TribePlan> plansByTribe = tribePlanRepository.findByCityIdOrderByTribeIdAsc(cityId).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        TribePlan::getTribeId,
+                        plan -> plan,
+                        (left, right) -> right,
+                        java.util.LinkedHashMap::new
+                ));
+        java.util.LinkedHashSet<String> tribeIds = new java.util.LinkedHashSet<>();
+        tribeHouseRepository.findByCityIdOrderByTribeIdAsc(cityId).stream()
+                .map(TribeHouse::getTribeId)
+                .forEach(tribeIds::add);
+        humans.stream()
+                .map(Human::getTribeId)
+                .filter(tribeId -> tribeId != null && !tribeId.isBlank())
+                .sorted()
+                .forEach(tribeIds::add);
+        plansByTribe.keySet().forEach(tribeIds::add);
+
+        return tribeIds.stream()
+                .sorted()
+                .map(tribeId -> {
+                    TribePlan plan = plansByTribe.get(tribeId);
+                    List<Long> assignedHumanIds = plan == null || plan.getAssignedHumanIds() == null
+                            ? List.of()
+                            : List.copyOf(plan.getAssignedHumanIds());
+                    return new CurrentTribePlanProjection(
+                            tribeId,
+                            plan == null ? null : plan.getChiefHumanId(),
+                            plan == null || plan.getChiefHumanId() == null
+                                    ? null
+                                    : humanNames.getOrDefault(plan.getChiefHumanId(), "Human " + plan.getChiefHumanId()),
+                            plan == null ? null : plan.getPlanType(),
+                            plan == null ? null : plan.getPlanStatus(),
+                            plan == null ? null : plan.getTargetPlaceId(),
+                            assignedHumanIds,
+                            assignedHumanIds.stream()
+                                    .map(humanId -> humanNames.getOrDefault(humanId, "Human " + humanId))
+                                    .toList(),
+                            plan == null ? null : plan.getDecisionSource(),
+                            plan == null ? null : plan.getReasonSummary(),
+                            plan != null,
+                            plan == null ? null : plan.getLastAssignedTick(),
+                            plan == null ? null : plan.getCompletedTick()
+                    );
+                })
+                .toList();
     }
 
     private CityOverviewProjection buildCityOverviewProjection(City city, Predicate<Long> runningLookup) {
@@ -219,6 +303,43 @@ public class SimulationReadModelQueryService {
         );
     }
 
+    private List<TribeProjection> buildTribeProjection(
+            List<TribeHouse> tribeHouses,
+            List<TribeKnownPlace> tribeKnownPlaces,
+            List<Human> humans
+    ) {
+        Map<String, List<Human>> humansByTribe = humans.stream()
+                .filter(human -> human.getTribeId() != null && !human.getTribeId().isBlank())
+                .collect(java.util.stream.Collectors.groupingBy(Human::getTribeId, java.util.LinkedHashMap::new, java.util.stream.Collectors.toList()));
+
+        return tribeHouses.stream()
+                .map(house -> {
+                    String tribeId = house.getTribeId();
+                    Long scoutHumanId = humansByTribe.getOrDefault(tribeId, List.of()).stream()
+                            .filter(human -> human.getTribeRole() == HumanTribeRole.SCOUT)
+                            .map(Human::getId)
+                            .findFirst()
+                            .orElse(null);
+                    List<KnownPlaceProjection> knownPlaces = tribeKnownPlaces.stream()
+                            .filter(place -> tribeId.equals(place.getTribeId()))
+                            .map(place -> new KnownPlaceProjection(
+                                    place.getPlaceId(),
+                                    place.getDiscoveredByHumanId(),
+                                    place.getDiscoveredTick(),
+                                    place.getReportedTick(),
+                                    place.isReported()
+                            ))
+                            .toList();
+                    return new TribeProjection(
+                            tribeId,
+                            new TribeHouseProjection(house.getX(), house.getY()),
+                            scoutHumanId,
+                            knownPlaces
+                    );
+                })
+                .toList();
+    }
+
     private <T> List<T> takeRecent(List<T> all, int recentLimit) {
         if (all.size() <= recentLimit) {
             return all;
@@ -248,6 +369,7 @@ public class SimulationReadModelQueryService {
     public record SimulationSnapshotProjection(
             CityProjection city,
             RunProjection run,
+            List<TribeProjection> tribes,
             List<HumanProjection> humans,
             MetricsProjection metrics,
             TimelineSummaryProjection timelineSummary,
@@ -281,6 +403,7 @@ public class SimulationReadModelQueryService {
             Long id,
             String name,
             String tribeId,
+            String tribeRole,
             Double x,
             Double y,
             boolean busy
@@ -326,6 +449,46 @@ public class SimulationReadModelQueryService {
             List<String> unlockedDiscoveries,
             List<String> unlockedInventions,
             List<String> unlockedApplications
+    ) {
+    }
+
+    public record TribeProjection(
+            String tribeId,
+            TribeHouseProjection house,
+            Long scoutHumanId,
+            List<KnownPlaceProjection> knownPlaces
+    ) {
+    }
+
+    public record TribeHouseProjection(
+            Double x,
+            Double y
+    ) {
+    }
+
+    public record KnownPlaceProjection(
+            String placeId,
+            Long discoveredByHumanId,
+            Long discoveredTick,
+            Long reportedTick,
+            boolean reported
+    ) {
+    }
+
+    public record CurrentTribePlanProjection(
+            String tribeId,
+            Long chiefHumanId,
+            String chiefHumanName,
+            eu.catlabs.humanaity.simulation.application.tribe.TribeDecisionType planType,
+            eu.catlabs.humanaity.simulation.domain.TribePlanStatus planStatus,
+            String targetPlaceId,
+            List<Long> assignedHumanIds,
+            List<String> assignedHumanNames,
+            eu.catlabs.humanaity.simulation.domain.TribeDecisionSource decisionSource,
+            String reasonSummary,
+            boolean hasPlan,
+            Long lastAssignedTick,
+            Long completedTick
     ) {
     }
 }

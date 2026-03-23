@@ -1,6 +1,10 @@
 package eu.catlabs.humanaity.simulation.application.assistant;
 
 import eu.catlabs.humanaity.auth.domain.User;
+import eu.catlabs.humanaity.ai.application.AiCallLogFilter;
+import eu.catlabs.humanaity.ai.application.AiCallLogService;
+import eu.catlabs.humanaity.ai.application.AiCallLogService.AiCallLogSummary;
+import eu.catlabs.humanaity.ai.domain.AiCallLog;
 import eu.catlabs.humanaity.city.domain.City;
 import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
 import eu.catlabs.humanaity.event.domain.Event;
@@ -19,7 +23,6 @@ import eu.catlabs.humanaity.simulation.api.dto.SimulationAssistantRequestInput;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationAssistantResponseOutput;
 import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +33,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.time.Instant;
 
 @Service
 public class SimulationAssistantService {
@@ -42,6 +46,7 @@ public class SimulationAssistantService {
     private final HumanRepository humanRepository;
     private final EventRepository eventRepository;
     private final InventionRepository inventionRepository;
+    private final AiCallLogService aiCallLogService;
     private final SimulationReadModelQueryService simulationReadModelQueryService;
     private final SimulationAssistantCommandInterpreter commandInterpreter;
 
@@ -50,6 +55,7 @@ public class SimulationAssistantService {
             HumanRepository humanRepository,
             EventRepository eventRepository,
             InventionRepository inventionRepository,
+            AiCallLogService aiCallLogService,
             SimulationReadModelQueryService simulationReadModelQueryService,
             SimulationAssistantCommandInterpreter commandInterpreter
     ) {
@@ -57,15 +63,15 @@ public class SimulationAssistantService {
         this.humanRepository = humanRepository;
         this.eventRepository = eventRepository;
         this.inventionRepository = inventionRepository;
+        this.aiCallLogService = aiCallLogService;
         this.simulationReadModelQueryService = simulationReadModelQueryService;
         this.commandInterpreter = commandInterpreter;
     }
 
     @Transactional(readOnly = true)
     public SimulationAssistantResponseOutput handle(Long cityId, User currentUser, SimulationAssistantRequestInput input) {
-        City city = cityRepository.findById(cityId)
+        cityRepository.findById(cityId)
                 .orElseThrow(() -> new EntityNotFoundException("City not found with id: " + cityId));
-        ensureOwnership(city, currentUser);
 
         String commandText = input == null || input.getCommandText() == null
                 ? ""
@@ -73,10 +79,13 @@ public class SimulationAssistantService {
         SimulationAssistantCommandInterpretation interpretation = commandInterpreter.interpret(commandText);
 
         return switch (interpretation.commandType()) {
+            case CHIEF_PLAN -> chiefPlanResponse(cityId);
             case INVENTIONS -> inventionsResponse(cityId);
             case WORLD_STATUS -> worldStatusResponse(cityId);
             case RECENT_EVENTS -> recentEventsResponse(cityId);
             case RELATIONSHIPS -> relationshipsResponse(cityId);
+            case AI_LOGS -> aiLogsResponse();
+            case AI_STATS -> aiStatsResponse();
             case UNSUPPORTED -> unsupportedResponse();
         };
     }
@@ -109,6 +118,33 @@ public class SimulationAssistantService {
         response.setText(inventions.isEmpty()
                 ? "No inventions are available yet."
                 : "Here is the current invention inventory for this simulation.");
+        response.setBlocks(List.of(block));
+        return response;
+    }
+
+    private SimulationAssistantResponseOutput chiefPlanResponse(Long cityId) {
+        List<SimulationReadModelQueryService.CurrentTribePlanProjection> tribePlans =
+                simulationReadModelQueryService.listCurrentTribePlans(cityId);
+
+        SimulationAssistantBlockOutput block = new SimulationAssistantBlockOutput();
+        block.setType("CHIEF_PLAN");
+        block.setTitle("Chief plan");
+        block.setSubtitle("Current persisted tribe plan state per tribe.");
+        block.setMetrics(List.of(
+                metric("Tribes", String.valueOf(tribePlans.size())),
+                metric("Active plans", String.valueOf(tribePlans.stream()
+                        .filter(plan -> plan.planStatus() == eu.catlabs.humanaity.simulation.domain.TribePlanStatus.ACTIVE)
+                        .count()))
+        ));
+        block.setItems(tribePlans.stream()
+                .map(this::toChiefPlanItem)
+                .toList());
+        block.setEmptyState("No chief plan state is available yet.");
+
+        SimulationAssistantResponseOutput response = baseResponse(true, SimulationAssistantCommandType.CHIEF_PLAN);
+        response.setText(tribePlans.stream().noneMatch(SimulationReadModelQueryService.CurrentTribePlanProjection::hasPlan)
+                ? "No chief plans have been selected yet."
+                : "Here is the current chief plan state for each tribe.");
         response.setBlocks(List.of(block));
         return response;
     }
@@ -241,14 +277,121 @@ public class SimulationAssistantService {
         block.setTitle("Supported commands");
         block.setSubtitle("Use one of the deterministic assistant commands below.");
         block.setItems(List.of(
+                new SimulationAssistantItemOutput("si chef", "Chief plan", "Read the current persisted chief plan by tribe.", List.of()),
                 new SimulationAssistantItemOutput("inventions", "Inventory", "Read the current invention inventory.", List.of()),
                 new SimulationAssistantItemOutput("world status", "Summary", "Read the current global state of the simulation.", List.of()),
                 new SimulationAssistantItemOutput("recent events", "Timeline", "Read the most recent history entries.", List.of()),
-                new SimulationAssistantItemOutput("relationships", "Interactions", "Read the strongest interaction pairs.", List.of())
+                new SimulationAssistantItemOutput("relationships", "Interactions", "Read the strongest interaction pairs.", List.of()),
+                new SimulationAssistantItemOutput("ai logs", "Observability", "Read the most recent AI and LLM call entries.", List.of()),
+                new SimulationAssistantItemOutput("ai stats", "Observability", "Read app-wide AI and LLM usage stats.", List.of())
         ));
 
         SimulationAssistantResponseOutput response = baseResponse(false, SimulationAssistantCommandType.UNSUPPORTED);
         response.setText("Unsupported command. Use one of the predefined deterministic commands.");
+        response.setBlocks(List.of(block));
+        return response;
+    }
+
+    private SimulationAssistantResponseOutput aiStatsResponse() {
+        AiCallLogSummary summary = aiCallLogService.summarize(new AiCallLogFilter(null, null, null, null, null, null, null));
+
+        SimulationAssistantBlockOutput overviewBlock = new SimulationAssistantBlockOutput();
+        overviewBlock.setType("AI_STATS_OVERVIEW");
+        overviewBlock.setTitle("AI usage summary");
+        overviewBlock.setSubtitle("App-wide AI and LLM observability.");
+        overviewBlock.setMetrics(List.of(
+                metric("Total", String.valueOf(summary.totalCount())),
+                metric("Success", String.valueOf(summary.successCount())),
+                metric("Failure", String.valueOf(summary.failureCount())),
+                metric("Fallback", String.valueOf(summary.fallbackCount())),
+                metric("Avg ms", formatDuration(summary.averageDurationMs())),
+                metric("Last call", formatInstant(summary.latestRequestedAt()))
+        ));
+        overviewBlock.setEmptyState("No AI calls have been recorded yet.");
+
+        SimulationAssistantBlockOutput contextBlock = breakdownBlock(
+                "AI_STATS_CONTEXT",
+                "By context",
+                "Calls grouped by deterministic AI context.",
+                summary.byContextType().stream()
+                        .map(contextSummary -> new SimulationAssistantItemOutput(
+                                formatEnumLabel(contextSummary.contextType()),
+                                contextSummary.totalCount() + " calls",
+                                contextSummary.successCount() + " success · " + contextSummary.failureCount() + " failure · " + contextSummary.fallbackCount() + " fallback",
+                                List.of(
+                                        "success " + contextSummary.successCount(),
+                                        "failure " + contextSummary.failureCount(),
+                                        "fallback " + contextSummary.fallbackCount()
+                                )
+                        ))
+                        .toList(),
+                "No AI context data yet."
+        );
+
+        SimulationAssistantBlockOutput providerBlock = breakdownBlock(
+                "AI_STATS_PROVIDER",
+                "By provider",
+                "Calls grouped by AI provider.",
+                summary.byProvider().stream()
+                        .map(providerSummary -> new SimulationAssistantItemOutput(
+                                humanizeGroupKey(providerSummary.key()),
+                                providerSummary.totalCount() + " calls",
+                                providerSummary.successCount() + " success · " + providerSummary.failureCount() + " failure · " + providerSummary.fallbackCount() + " fallback",
+                                List.of(
+                                        "success " + providerSummary.successCount(),
+                                        "failure " + providerSummary.failureCount(),
+                                        "fallback " + providerSummary.fallbackCount()
+                                )
+                        ))
+                        .toList(),
+                "No provider data yet."
+        );
+
+        SimulationAssistantBlockOutput modelBlock = breakdownBlock(
+                "AI_STATS_MODEL",
+                "By model",
+                "Calls grouped by AI model.",
+                summary.byModel().stream()
+                        .map(modelSummary -> new SimulationAssistantItemOutput(
+                                humanizeGroupKey(modelSummary.key()),
+                                modelSummary.totalCount() + " calls",
+                                modelSummary.successCount() + " success · " + modelSummary.failureCount() + " failure · " + modelSummary.fallbackCount() + " fallback",
+                                List.of(
+                                        "success " + modelSummary.successCount(),
+                                        "failure " + modelSummary.failureCount(),
+                                        "fallback " + modelSummary.fallbackCount()
+                                )
+                        ))
+                        .toList(),
+                "No model data yet."
+        );
+
+        SimulationAssistantResponseOutput response = baseResponse(true, SimulationAssistantCommandType.AI_STATS);
+        response.setText(summary.totalCount() == 0
+                ? "No AI calls have been recorded yet."
+                : "Here is the current AI usage summary.");
+        response.setBlocks(List.of(overviewBlock, contextBlock, providerBlock, modelBlock));
+        return response;
+    }
+
+    private SimulationAssistantResponseOutput aiLogsResponse() {
+        List<AiCallLog> logs = aiCallLogService.list(new AiCallLogFilter(null, null, null, null, null, null, 20));
+
+        SimulationAssistantBlockOutput block = new SimulationAssistantBlockOutput();
+        block.setType("AI_LOGS");
+        block.setTitle("Recent AI calls");
+        block.setSubtitle("Most recent app-wide AI and LLM call entries.");
+        block.setMetrics(List.of(
+                metric("Visible", String.valueOf(logs.size())),
+                metric("Limit", "20")
+        ));
+        block.setItems(logs.stream().map(this::toAiLogItem).toList());
+        block.setEmptyState("No AI calls have been recorded yet.");
+
+        SimulationAssistantResponseOutput response = baseResponse(true, SimulationAssistantCommandType.AI_LOGS);
+        response.setText(logs.isEmpty()
+                ? "No AI calls have been recorded yet."
+                : "Here are the most recent AI and LLM calls.");
         response.setBlocks(List.of(block));
         return response;
     }
@@ -264,6 +407,84 @@ public class SimulationAssistantService {
         return new SimulationAssistantMetricOutput(label, value);
     }
 
+    private SimulationAssistantBlockOutput breakdownBlock(
+            String type,
+            String title,
+            String subtitle,
+            List<SimulationAssistantItemOutput> items,
+            String emptyState
+    ) {
+        SimulationAssistantBlockOutput block = new SimulationAssistantBlockOutput();
+        block.setType(type);
+        block.setTitle(title);
+        block.setSubtitle(subtitle);
+        block.setItems(items);
+        block.setEmptyState(emptyState);
+        return block;
+    }
+
+    private SimulationAssistantItemOutput toAiLogItem(AiCallLog log) {
+        List<String> chips = new ArrayList<>();
+        chips.add(log.isSuccess() ? "Success" : "Failure");
+        if (log.isFallbackUsed()) {
+            chips.add("Fallback");
+        }
+        chips.add(formatDuration(log.getDurationMs()));
+        if (log.getCity() != null) {
+            chips.add("City " + log.getCity().getId());
+        }
+        if (log.getContextEntityType() != null || log.getContextEntityId() != null) {
+            chips.add(buildEntityLabel(log.getContextEntityType(), log.getContextEntityId()));
+        }
+        if (log.getProvider() != null && !log.getProvider().isBlank()) {
+            chips.add(log.getProvider());
+        }
+        if (log.getModel() != null && !log.getModel().isBlank()) {
+            chips.add(log.getModel());
+        }
+
+        return new SimulationAssistantItemOutput(
+                formatInstant(log.getRequestedAt()),
+                formatEnumLabel(log.getContextType()),
+                buildAiLogBody(log),
+                chips
+        );
+    }
+
+    private String buildAiLogBody(AiCallLog log) {
+        StringBuilder body = new StringBuilder();
+        body.append("Prompt: ").append(orUnknown(log.getPromptSummary()));
+        body.append("\n");
+        if (log.isSuccess()) {
+            body.append("Result: ").append(orUnknown(log.getResponseSummary()));
+        } else {
+            body.append("Error: ").append(orUnknown(log.getErrorMessage()));
+        }
+        return body.toString();
+    }
+
+    private String buildEntityLabel(String entityType, String entityId) {
+        String type = entityType == null || entityType.isBlank() ? "Entity" : formatEnumLabel(entityType);
+        String id = entityId == null || entityId.isBlank() ? "unknown" : entityId;
+        return type + " #" + id;
+    }
+
+    private String formatDuration(long durationMs) {
+        return durationMs + " ms";
+    }
+
+    private String formatInstant(Instant instant) {
+        return instant == null ? "Never" : instant.toString();
+    }
+
+    private String humanizeGroupKey(String value) {
+        return value == null || value.isBlank() ? "Unknown" : value;
+    }
+
+    private String orUnknown(String value) {
+        return value == null || value.isBlank() ? "Unknown" : value;
+    }
+
     private String buildWorldStatusBody(SimulationReadModelQueryService.SimulationSnapshotProjection snapshot) {
         HistoryEra era = snapshot.run().era();
         String runState = snapshot.run().hasRun()
@@ -275,6 +496,58 @@ public class SimulationAssistantService {
                 + " era, with " + snapshot.metrics().population()
                 + " humans and " + snapshot.metrics().eventCount()
                 + " recorded events.";
+    }
+
+    private SimulationAssistantItemOutput toChiefPlanItem(SimulationReadModelQueryService.CurrentTribePlanProjection plan) {
+        String chief = plan.chiefHumanName() == null || plan.chiefHumanName().isBlank() ? "None" : plan.chiefHumanName();
+        String planType = plan.planType() == null ? "None" : formatEnumLabel(plan.planType());
+        String planStatus = plan.planStatus() == null ? "None" : formatEnumLabel(plan.planStatus());
+        String targetPlace = plan.targetPlaceId() == null || plan.targetPlaceId().isBlank()
+                ? "None"
+                : formatEnumLabel(plan.targetPlaceId());
+        String assignedHumans = plan.assignedHumanNames() == null || plan.assignedHumanNames().isEmpty()
+                ? "None"
+                : String.join(", ", plan.assignedHumanNames());
+        String decisionSource = plan.decisionSource() == null ? "None" : formatEnumLabel(plan.decisionSource());
+        String reason = plan.reasonSummary() == null || plan.reasonSummary().isBlank()
+                ? "No chief plan selected yet."
+                : plan.reasonSummary();
+
+        return new SimulationAssistantItemOutput(
+                formatEnumLabel(plan.tribeId()),
+                plan.hasPlan() ? "Chief " + chief : "No chief plan yet",
+                """
+                        Chief: %s
+                        Plan: %s
+                        Status: %s
+                        Target place: %s
+                        Assigned humans: %s
+                        Decision source: %s
+                        Reason: %s
+                        """.formatted(chief, planType, planStatus, targetPlace, assignedHumans, decisionSource, reason).trim(),
+                buildChiefPlanChips(plan, planStatus, decisionSource, targetPlace)
+        );
+    }
+
+    private List<String> buildChiefPlanChips(
+            SimulationReadModelQueryService.CurrentTribePlanProjection plan,
+            String planStatus,
+            String decisionSource,
+            String targetPlace
+    ) {
+        List<String> chips = new ArrayList<>();
+        chips.add(planStatus);
+        chips.add(decisionSource);
+        if (plan.targetPlaceId() != null && !plan.targetPlaceId().isBlank()) {
+            chips.add(targetPlace);
+        }
+        if (plan.assignedHumanIds() != null && !plan.assignedHumanIds().isEmpty()) {
+            chips.add(plan.assignedHumanIds().size() + " assigned");
+        }
+        if (plan.lastAssignedTick() != null) {
+            chips.add("Tick " + plan.lastAssignedTick());
+        }
+        return chips;
     }
 
     private String describeEvent(Event event, Long cityId) {
@@ -351,6 +624,7 @@ public class SimulationAssistantService {
         }
         return value.toLowerCase(Locale.ROOT)
                 .replace('_', ' ')
+                .replace('-', ' ')
                 .trim()
                 .replaceAll("\\s+", " ")
                 .transform(label -> {
@@ -366,13 +640,6 @@ public class SimulationAssistantService {
                     return builder.toString();
                 });
     }
-
-    private void ensureOwnership(City city, User currentUser) {
-        if (city.getOwner() == null || currentUser == null || !city.getOwner().getId().equals(currentUser.getId())) {
-            throw new AccessDeniedException("City does not belong to current user");
-        }
-    }
-
     private record PairKey(long leftHumanId, long rightHumanId) {
         String displayName(Map<Long, String> humanNames) {
             return humanNames.getOrDefault(leftHumanId, "Human " + leftHumanId)

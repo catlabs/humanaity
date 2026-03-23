@@ -106,10 +106,8 @@ public class AgentChatOrchestrationService {
     public AgentChatResponseOutput orchestrate(Long cityId, User currentUser, AgentChatRequestInput input) {
         validateInput(input);
 
-        City city = cityRepository.findById(cityId)
+        cityRepository.findById(cityId)
                 .orElseThrow(() -> new EntityNotFoundException("City not found with id: " + cityId));
-
-        ensureOwnership(city, currentUser);
 
         String normalizedMessage = input.getMessage().trim().toLowerCase(Locale.ROOT);
         AgentChatResponseOutput response = new AgentChatResponseOutput();
@@ -918,16 +916,6 @@ public class AgentChatOrchestrationService {
     private void validateInput(AgentChatRequestInput input) {
         if (input == null || input.getMessage() == null || input.getMessage().trim().isEmpty()) {
             throw new IllegalArgumentException("message is required");
-        }
-    }
-
-    private void ensureOwnership(City city, User currentUser) {
-        Objects.requireNonNull(currentUser, "currentUser must not be null");
-        if (city.getOwner() == null || city.getOwner().getId() == null || currentUser.getId() == null) {
-            throw new AccessDeniedException("City ownership cannot be verified");
-        }
-        if (!city.getOwner().getId().equals(currentUser.getId())) {
-            throw new AccessDeniedException("You do not own this city");
         }
     }
 

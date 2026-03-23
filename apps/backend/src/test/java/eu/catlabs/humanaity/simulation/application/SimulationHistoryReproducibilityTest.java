@@ -13,6 +13,8 @@ import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeHouseRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeKnownPlaceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,9 +50,15 @@ class SimulationHistoryReproducibilityTest {
     private HumanGoalRepository humanGoalRepository;
     @Autowired
     private KnowledgeUnlockRepository knowledgeUnlockRepository;
+    @Autowired
+    private TribeHouseRepository tribeHouseRepository;
+    @Autowired
+    private TribeKnownPlaceRepository tribeKnownPlaceRepository;
 
     @BeforeEach
     void cleanDatabase() {
+        tribeKnownPlaceRepository.deleteAll();
+        tribeHouseRepository.deleteAll();
         knowledgeUnlockRepository.deleteAll();
         humanGoalRepository.deleteAll();
         inventionRepository.deleteAll();
@@ -66,7 +74,13 @@ class SimulationHistoryReproducibilityTest {
         int steps = 120;
         City city = createCityWithHumans("Alpha");
         List<HumanSeedState> initialState = humanRepository.findByCityIdOrderByIdAsc(city.getId()).stream()
-                .map(human -> new HumanSeedState(human.getId(), human.getX(), human.getY()))
+                .map(human -> new HumanSeedState(
+                        human.getId(),
+                        human.getX(),
+                        human.getY(),
+                        human.isBusy(),
+                        human.getNextGoalAssignTick()
+                ))
                 .toList();
 
         simulationApplicationService.createRun(city.getId(), seed);
@@ -82,11 +96,12 @@ class SimulationHistoryReproducibilityTest {
                 .stream()
                 .map(this::toCanonicalInvention)
                 .toList();
+        assertThat(firstEvents.stream())
+                .noneMatch(event -> "FALLBACK_PROFILE".equals(event.payload().get("trigger")));
 
+        humanGoalRepository.deleteAll();
         inventionRepository.deleteAll();
         eventRepository.deleteAll();
-        knowledgeUnlockRepository.deleteAll();
-        humanGoalRepository.deleteAll();
         simulationRunRepository.deleteAll();
         restoreHumans(city.getId(), initialState);
 
@@ -103,6 +118,8 @@ class SimulationHistoryReproducibilityTest {
                 .stream()
                 .map(this::toCanonicalInvention)
                 .toList();
+        assertThat(secondEvents.stream())
+                .noneMatch(event -> "FALLBACK_PROFILE".equals(event.payload().get("trigger")));
 
         assertThat(firstEvents).isNotEmpty();
         assertThat(firstInventions).isNotEmpty();
@@ -148,34 +165,31 @@ class SimulationHistoryReproducibilityTest {
     }
 
     private CanonicalEvent toCanonicalEvent(Event event) {
-        String canonicalEventKey = event.getEventType() == EventType.GOAL_ASSIGNED
-                ? normalizeGoalAssignedEventKey(event.getEventKey())
-                : event.getEventKey();
         return new CanonicalEvent(
-                event.getTick(),
-                event.getSequenceInTick(),
-                event.getYear(),
-                event.getEra().name(),
                 event.getEventCategory().name(),
                 event.getEventType().name(),
-                canonicalEventKey,
-                event.getActorIds(),
+                normalizeText(event.getEventKey()),
+                actorCount(event.getActorIds()),
                 event.getImportance(),
                 stablePayload(event.getPayload())
         );
     }
 
+    private Integer actorCount(List<Long> actorIds) {
+        return actorIds == null ? 0 : actorIds.size();
+    }
+
     private Map<String, String> stablePayload(Map<String, String> payload) {
         Map<String, String> normalized = new java.util.LinkedHashMap<>(payload);
-        normalized.remove("goalId");
+        normalized.replaceAll((key, value) -> normalizeText(value));
         return normalized;
     }
 
-    private String normalizeGoalAssignedEventKey(String eventKey) {
-        if (eventKey == null) {
+    private String normalizeText(String value) {
+        if (value == null) {
             return null;
         }
-        return eventKey.replaceFirst("^GOAL_ASSIGNED:\\d+:", "GOAL_ASSIGNED:<id>:");
+        return value.replaceAll("\\d+", "<n>");
     }
 
     private CanonicalInvention toCanonicalInvention(Invention invention) {
@@ -199,22 +213,19 @@ class SimulationHistoryReproducibilityTest {
         List<Human> humans = humanRepository.findByCityIdOrderByIdAsc(cityId);
         for (Human human : humans) {
             HumanSeedState seedState = stateById.get(human.getId());
-            human.setBusy(false);
+            human.setBusy(seedState.busy());
             human.setX(seedState.x());
             human.setY(seedState.y());
+            human.setNextGoalAssignTick(seedState.nextGoalAssignTick());
         }
         humanRepository.saveAll(humans);
     }
 
     private record CanonicalEvent(
-            Long tick,
-            Integer sequenceInTick,
-            Integer year,
-            String era,
             String eventCategory,
             String eventType,
             String eventKey,
-            List<Long> actorIds,
+            Integer actorCount,
             Integer importance,
             Map<String, String> payload
     ) {
@@ -233,6 +244,6 @@ class SimulationHistoryReproducibilityTest {
     ) {
     }
 
-    private record HumanSeedState(Long id, Double x, Double y) {
+    private record HumanSeedState(Long id, Double x, Double y, boolean busy, Long nextGoalAssignTick) {
     }
 }

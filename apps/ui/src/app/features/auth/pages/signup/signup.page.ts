@@ -1,14 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { AuthService } from '../../auth.service';
-import { SignupRequest } from '@api';
 
 @Component({
   selector: 'app-signup',
@@ -28,8 +26,6 @@ import { SignupRequest } from '@api';
 })
 export class SignupPage {
   private fb = inject(FormBuilder);
-  private authService = inject(AuthService);
-  private router = inject(Router);
 
   signupForm: FormGroup;
   errorMessage: string = '';
@@ -58,18 +54,7 @@ export class SignupPage {
 
   onSubmit(): void {
     if (this.signupForm.valid) {
-      this.errorMessage = '';
-      const { email, password, confirmPassword } = this.signupForm.value;
-
-      const signupRequest: SignupRequest = { email, password, confirmPassword };
-      this.authService.signup(signupRequest).subscribe({
-        next: () => {
-          this.router.navigate(['/cities']);
-        },
-        error: (error) => {
-          this.errorMessage = error.error?.message || 'An error occurred during signup';
-        }
-      });
+      this.errorMessage = 'Public signup is disabled. Contact an administrator for access.';
     } else {
       this.markFormGroupTouched();
     }
@@ -103,4 +88,3 @@ export class SignupPage {
     return '';
   }
 }
-

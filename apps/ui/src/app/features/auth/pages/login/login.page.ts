@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, ActivatedRoute, RouterLink } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -20,8 +20,7 @@ import { AuthRequest } from '@api';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule,
-    RouterLink
+    MatIconModule
   ],
   templateUrl: './login.page.html',
   styleUrl: './login.page.scss'
@@ -84,4 +83,3 @@ export class LoginPage {
     return '';
   }
 }
-

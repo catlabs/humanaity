@@ -12,6 +12,8 @@ import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeHouseRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeKnownPlaceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,9 +54,15 @@ class SimulationHistoryApiContractTest {
     private KnowledgeUnlockRepository knowledgeUnlockRepository;
     @Autowired
     private HumanGoalRepository humanGoalRepository;
+    @Autowired
+    private TribeHouseRepository tribeHouseRepository;
+    @Autowired
+    private TribeKnownPlaceRepository tribeKnownPlaceRepository;
 
     @BeforeEach
     void cleanDatabase() {
+        tribeKnownPlaceRepository.deleteAll();
+        tribeHouseRepository.deleteAll();
         knowledgeUnlockRepository.deleteAll();
         humanGoalRepository.deleteAll();
         inventionRepository.deleteAll();
@@ -169,6 +177,8 @@ class SimulationHistoryApiContractTest {
 
     private void assertContractFieldsPresent(JsonNode event) {
         assertThat(event.hasNonNull("eventKey")).isTrue();
+        assertThat(event.has("title")).isTrue();
+        assertThat(event.has("summary")).isTrue();
         assertThat(event.hasNonNull("eventType")).isTrue();
         assertThat(event.hasNonNull("eventCategory")).isTrue();
         assertThat(event.has("payload")).isTrue();

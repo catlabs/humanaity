@@ -131,8 +131,6 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     { id: 'forest', label: 'Forest', icon: '🌳', leftPct: 14, topPct: 18 },
     { id: 'river', label: 'River', icon: '🌊', leftPct: 82, topPct: 22 },
     { id: 'church', label: 'Church', icon: '⛪', leftPct: 52, topPct: 30 },
-    { id: 'campfire', label: 'Campfire', icon: '🔥', leftPct: 34, topPct: 72 },
-    { id: 'house', label: 'House', icon: '🏠', leftPct: 72, topPct: 74 },
   ]);
 
   selectedHuman = computed(() => {
@@ -487,13 +485,18 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
       DISCOVERY_UNLOCKED: 'invention',
       DIALOGUE_EXCHANGED: 'other',
       INVENTION_EMERGED: 'invention',
+      TRIBE_PLACE_DISCOVERED: 'other',
+      TRIBE_DISCOVERY_REPORTED: 'other',
+      TRIBE_SCOUT_REPORT: 'other',
+      TRIBE_PLAN_CHOSEN: 'other',
+      TRIBE_GROUP_TRAVEL_COORDINATED: 'other',
     };
 
     return typeMap[event.eventType] ?? 'other';
   }
 
   eventTitle(event: EventOutput): string {
-    return this.formatEnumLabel(event.eventType);
+    return event.title?.trim() || this.formatEnumLabel(event.eventType);
   }
 
   eventTypeLabel(value: string): string {
@@ -505,7 +508,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
   }
 
   eventCanonicalSummary(event: EventOutput): string {
-    return `${this.eventDescription(event)} • ${this.formatEnumLabel(event.eventCategory)}`;
+    return event.summary?.trim() || this.eventDescription(event);
   }
 
   eventActorSummary(event: EventOutput): string | null {
@@ -516,10 +519,7 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
     const names = event.actorIds
       .map(
         (actorId) =>
-          this.humanDisplayName(
-            this.humans().find((human) => human.id === actorId),
-            actorId,
-          ),
+          this.humanDisplayName(this.humans().find((human) => human.id === actorId)),
       )
       .filter((name): name is string => !!name);
 
@@ -1171,12 +1171,11 @@ export class SimulationDetailComponent implements OnInit, OnDestroy {
 
   private humanDisplayName(
     human: SimulationSnapshotOutput['humans'][number] | undefined,
-    fallbackId: number,
-  ): string {
+  ): string | null {
     if (human && typeof human.name === 'string' && human.name.trim().length > 0) {
       return human.name.trim();
     }
-    return `Human ${fallbackId}`;
+    return null;
   }
 
   private applyUiEffects(effects: AgentUiEffectOutput[]): void {

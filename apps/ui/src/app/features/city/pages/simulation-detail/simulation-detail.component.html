@@ -357,6 +357,18 @@
                                     {{ item.body }}
                                   </div>
                                 }
+                                @if ((item.chips ?? []).length > 0) {
+                                  <div class="assistant-item-chips">
+                                    @for (
+                                      chip of item.chips ?? [];
+                                      track chip
+                                    ) {
+                                      <span class="assistant-item-chip">
+                                        {{ chip }}
+                                      </span>
+                                    }
+                                  </div>
+                                }
                               </div>
                             }
                           </div>

@@ -2,6 +2,8 @@ package eu.catlabs.humanaity.simulation.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.catlabs.humanaity.ai.domain.AiCallContextType;
+import eu.catlabs.humanaity.ai.domain.AiCallLog;
 import eu.catlabs.humanaity.ai.domain.AiEnrichmentStatus;
 import eu.catlabs.humanaity.auth.domain.User;
 import eu.catlabs.humanaity.auth.infrastructure.persistence.UserRepository;
@@ -18,10 +20,18 @@ import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.invention.domain.InventionCategory;
 import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionRepository;
+import eu.catlabs.humanaity.ai.infrastructure.persistence.AiCallLogRepository;
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
+import eu.catlabs.humanaity.simulation.application.tribe.TribeDecisionType;
+import eu.catlabs.humanaity.simulation.domain.TribeDecisionSource;
+import eu.catlabs.humanaity.simulation.domain.TribePlan;
+import eu.catlabs.humanaity.simulation.domain.TribePlanStatus;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeHouseRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeKnownPlaceRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribePlanRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +43,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
 import java.util.Map;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -58,6 +69,8 @@ class SimulationAssistantApiContractTest {
     @Autowired
     private HumanRepository humanRepository;
     @Autowired
+    private AiCallLogRepository aiCallLogRepository;
+    @Autowired
     private EventRepository eventRepository;
     @Autowired
     private InventionRepository inventionRepository;
@@ -68,15 +81,25 @@ class SimulationAssistantApiContractTest {
     @Autowired
     private KnowledgeUnlockRepository knowledgeUnlockRepository;
     @Autowired
+    private TribeHouseRepository tribeHouseRepository;
+    @Autowired
+    private TribeKnownPlaceRepository tribeKnownPlaceRepository;
+    @Autowired
+    private TribePlanRepository tribePlanRepository;
+    @Autowired
     private SimulationApplicationService simulationApplicationService;
     @Autowired
     private JwtService jwtService;
 
     @BeforeEach
     void cleanDatabase() {
+        tribePlanRepository.deleteAll();
+        tribeKnownPlaceRepository.deleteAll();
+        tribeHouseRepository.deleteAll();
         knowledgeUnlockRepository.deleteAll();
         humanGoalRepository.deleteAll();
         inventionRepository.deleteAll();
+        aiCallLogRepository.deleteAll();
         eventRepository.deleteAll();
         simulationRunRepository.deleteAll();
         humanRepository.deleteAll();
@@ -96,6 +119,19 @@ class SimulationAssistantApiContractTest {
     }
 
     @Test
+    void assistantAllowsOtherAuthenticatedUsersOnSharedCities() throws Exception {
+        User owner = persistUser("assistant-owner-shared@example.com");
+        User other = persistUser("assistant-other-shared@example.com");
+        City city = persistCity("Assistant Shared City", owner);
+
+        mockMvc.perform(post("/api/simulations/{cityId}/assistant", city.getId())
+                        .header("Authorization", bearerFor(other))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("world status")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void assistantCommandsListRequiresAuth() throws Exception {
         mockMvc.perform(get("/api/simulations/assistant/commands"))
                 .andExpect(status().isUnauthorized());
@@ -112,11 +148,81 @@ class SimulationAssistantApiContractTest {
 
         JsonNode root = objectMapper.readTree(result.getResponse().getContentAsString());
         assertThat(root.isArray()).isTrue();
-        assertThat(root).hasSize(4);
+        assertThat(root).hasSize(7);
+        assertThat(root.toString()).contains("si chef");
         assertThat(root.toString()).contains("inventions");
         assertThat(root.toString()).contains("world status");
         assertThat(root.toString()).contains("recent events");
         assertThat(root.toString()).contains("relationships");
+        assertThat(root.toString()).contains("ai logs");
+        assertThat(root.toString()).contains("ai stats");
+    }
+
+    @Test
+    void assistantReturnsStableEmptyChiefPlanState() throws Exception {
+        User owner = persistUser("assistant-owner-chief-empty@example.com");
+        City city = persistCity("Chief Empty City", owner);
+        Human tribeA = persistHuman(city, "Ari", 0.20, 0.20);
+        tribeA.setTribeId("tribe-a");
+        humanRepository.save(tribeA);
+        Human tribeB = persistHuman(city, "Bo", 0.70, 0.70);
+        tribeB.setTribeId("tribe-b");
+        humanRepository.save(tribeB);
+
+        MvcResult result = mockMvc.perform(post("/api/simulations/{cityId}/assistant", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("si chef")))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(payload.get("ok").asBoolean()).isTrue();
+        assertThat(payload.get("commandType").asText()).isEqualTo("CHIEF_PLAN");
+        assertThat(payload.get("text").asText()).contains("No chief plans");
+        assertThat(payload.get("blocks").get(0).get("items")).hasSize(2);
+        assertThat(payload.get("blocks").get(0).toString()).contains("No chief plan yet");
+    }
+
+    @Test
+    void assistantReturnsPersistedChiefPlanState() throws Exception {
+        User owner = persistUser("assistant-owner-chief-data@example.com");
+        City city = persistCity("Chief Data City", owner);
+        Human chief = persistHuman(city, "Ari", 0.20, 0.20);
+        chief.setTribeId("tribe-a");
+        chief = humanRepository.save(chief);
+        Human member = persistHuman(city, "Bo", 0.28, 0.24);
+        member.setTribeId("tribe-a");
+        member = humanRepository.save(member);
+
+        TribePlan plan = new TribePlan();
+        plan.setCity(city);
+        plan.setTribeId("tribe-a");
+        plan.setChiefHumanId(chief.getId());
+        plan.setPlanType(TribeDecisionType.GROUP_TRAVEL);
+        plan.setPlanStatus(TribePlanStatus.ACTIVE);
+        plan.setTargetPlaceId("forest");
+        plan.setAssignedHumanIds(List.of(member.getId(), chief.getId()));
+        plan.setDecisionSource(TribeDecisionSource.DETERMINISTIC);
+        plan.setReasonSummary("Two tribe members travel together to forest");
+        plan.setPlanMetadataKey("tribe-a:forest:10");
+        plan.setLastAssignedTick(10L);
+        tribePlanRepository.save(plan);
+
+        MvcResult result = mockMvc.perform(post("/api/simulations/{cityId}/assistant", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("chief plan")))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(payload.get("commandType").asText()).isEqualTo("CHIEF_PLAN");
+        JsonNode item = payload.get("blocks").get(0).get("items").get(0);
+        assertThat(item.get("subtitle").asText()).contains("Chief Ari");
+        assertThat(item.get("body").asText()).contains("Plan: Group Travel", "Status: Active", "Target place: Forest");
+        assertThat(item.get("body").asText()).contains("Assigned humans: Bo, Ari");
+        assertThat(item.get("body").asText()).contains("Decision source: Deterministic");
     }
 
     @Test
@@ -209,7 +315,46 @@ class SimulationAssistantApiContractTest {
         JsonNode payload = objectMapper.readTree(result.getResponse().getContentAsString());
         assertThat(payload.get("ok").asBoolean()).isFalse();
         assertThat(payload.get("commandType").asText()).isEqualTo("UNSUPPORTED");
-        assertThat(payload.get("blocks").get(0).get("items")).hasSize(4);
+        assertThat(payload.get("blocks").get(0).get("items")).hasSize(7);
+    }
+
+    @Test
+    void assistantReturnsAiStatsAndLogsBlocks() throws Exception {
+        User owner = persistUser("assistant-owner-ai-observability@example.com");
+        City city = persistCity("AI Observatory City", owner);
+
+        aiCallLogRepository.save(aiLog(city, AiCallContextType.CHAT_FALLBACK, true, false, "OPENAI", "gpt-4", 12L, "Fallback prompt", "Fallback response", null, Instant.parse("2026-03-23T10:03:00Z")));
+        aiCallLogRepository.save(aiLog(city, AiCallContextType.EVENT_ENRICHMENT, false, true, "OPENAI", "gpt-4", 24L, "Event prompt", null, "No JSON", Instant.parse("2026-03-23T10:02:00Z")));
+        aiCallLogRepository.save(aiLog(city, AiCallContextType.CHIEF_DECISION, true, false, "ANTHROPIC", "claude-3", 36L, "Chief prompt", "Chief response", null, Instant.parse("2026-03-23T10:01:00Z")));
+
+        MvcResult statsResult = mockMvc.perform(post("/api/simulations/{cityId}/assistant", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("ai stats")))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode statsPayload = objectMapper.readTree(statsResult.getResponse().getContentAsString());
+        assertThat(statsPayload.get("commandType").asText()).isEqualTo("AI_STATS");
+        assertThat(statsPayload.get("blocks")).hasSize(4);
+        assertThat(statsPayload.get("blocks").get(0).get("metrics").toString()).contains("Total", "3", "Fallback", "1");
+        assertThat(statsPayload.get("blocks").get(1).get("items").toString()).contains("Chat Fallback", "Chief Decision", "Event Enrichment");
+        assertThat(statsPayload.get("blocks").get(2).get("items").toString()).contains("OPENAI", "ANTHROPIC");
+        assertThat(statsPayload.get("blocks").get(3).get("items").toString()).contains("gpt-4", "claude-3");
+
+        MvcResult logsResult = mockMvc.perform(post("/api/simulations/{cityId}/assistant", city.getId())
+                        .header("Authorization", bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request("ai logs")))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode logsPayload = objectMapper.readTree(logsResult.getResponse().getContentAsString());
+        assertThat(logsPayload.get("commandType").asText()).isEqualTo("AI_LOGS");
+        JsonNode logItems = logsPayload.get("blocks").get(0).get("items");
+        assertThat(logItems).hasSize(3);
+        assertThat(logItems.get(0).get("chips").toString()).contains("Success", "OPENAI", "gpt-4");
+        assertThat(logItems.toString()).contains("Prompt", "Result", "Fallback", "City");
     }
 
     private String bearerFor(User user) {
@@ -295,6 +440,39 @@ class SimulationAssistantApiContractTest {
         event.setEnrichmentStatus(AiEnrichmentStatus.NONE);
         event.setEnrichmentFallback(false);
         return event;
+    }
+
+    private AiCallLog aiLog(
+            City city,
+            AiCallContextType contextType,
+            boolean success,
+            boolean fallbackUsed,
+            String provider,
+            String model,
+            long durationMs,
+            String promptSummary,
+            String responseSummary,
+            String errorMessage,
+            Instant requestedAt
+    ) {
+        AiCallLog log = new AiCallLog();
+        log.setCity(city);
+        log.setContextType(contextType);
+        log.setContextEntityType("TEST");
+        log.setContextEntityId(contextType.name());
+        log.setProvider(provider);
+        log.setModel(model);
+        log.setSuccess(success);
+        log.setFallbackUsed(fallbackUsed);
+        log.setDurationMs(durationMs);
+        log.setPromptSummary(promptSummary);
+        log.setResponseSummary(responseSummary);
+        log.setPromptHash("abc");
+        log.setResponseHash(responseSummary == null ? null : "def");
+        log.setErrorCode(errorMessage == null ? null : "TEST_ERROR");
+        log.setErrorMessage(errorMessage);
+        log.setRequestedAt(requestedAt);
+        return aiCallLogRepository.save(log);
     }
 
     private record AssistantRequest(String commandText) {

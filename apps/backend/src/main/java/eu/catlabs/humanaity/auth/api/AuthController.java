@@ -3,8 +3,8 @@ package eu.catlabs.humanaity.auth.api;
 import eu.catlabs.humanaity.auth.api.dto.AuthRequest;
 import eu.catlabs.humanaity.auth.api.dto.AuthResponse;
 import eu.catlabs.humanaity.auth.api.dto.RefreshTokenRequest;
-import eu.catlabs.humanaity.auth.api.dto.SignupRequest;
 import eu.catlabs.humanaity.auth.application.AuthApplicationService;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -22,18 +22,11 @@ public class AuthController {
         this.authApplicationService = authApplicationService;
     }
 
+    @Hidden
     @PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody SignupRequest request) {
-        try {
-            AuthResponse response = authApplicationService.signup(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorResponse(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("An error occurred during signup"));
-        }
+    public ResponseEntity<ErrorResponse> signupDisabled() {
+        return ResponseEntity.status(HttpStatus.GONE)
+                .body(new ErrorResponse("Public signup is disabled"));
     }
 
     @PostMapping("/login")

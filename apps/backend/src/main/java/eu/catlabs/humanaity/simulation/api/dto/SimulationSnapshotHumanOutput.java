@@ -14,6 +14,7 @@ public class SimulationSnapshotHumanOutput {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String name;
     private String tribeId;
+    private String tribeRole;
     private Double x;
     private Double y;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)

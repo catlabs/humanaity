@@ -12,7 +12,6 @@ import eu.catlabs.humanaity.simulation.api.dto.SimulationCommandBuilderOutput;
 import eu.catlabs.humanaity.simulation.application.assistant.SimulationAssistantCommandsCatalog;
 import eu.catlabs.humanaity.simulation.api.dto.SimulationAssistantCommandDescriptorOutput;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -37,9 +36,8 @@ public class SimulationCommandBuilderService {
     }
 
     public SimulationCommandBuilderOutput load(Long cityId, User currentUser) {
-        City city = cityRepository.findById(cityId)
+        cityRepository.findById(cityId)
                 .orElseThrow(() -> new EntityNotFoundException("City not found with id: " + cityId));
-        ensureOwnership(city, currentUser);
 
         List<SimulationCommandBuilderOptionOutput> humans = humanRepository.findByCityIdOrderByIdAsc(cityId).stream()
                 .map(this::toHumanOption)
@@ -121,11 +119,5 @@ public class SimulationCommandBuilderService {
             label.append(Character.toUpperCase(lower.charAt(0))).append(lower.substring(1));
         }
         return label.toString();
-    }
-
-    private void ensureOwnership(City city, User currentUser) {
-        if (city.getOwner() == null || currentUser == null || !city.getOwner().getId().equals(currentUser.getId())) {
-            throw new AccessDeniedException("City does not belong to current user");
-        }
     }
 }

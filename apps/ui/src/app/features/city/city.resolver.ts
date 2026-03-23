@@ -13,8 +13,3 @@ export const cityDetailsResolver: ResolveFn<CityOutput> = (route, state) => {
   const cityId = route.paramMap.get('id')!;
   return service.getCity(cityId);
 };
-
-export const myCitiesResolver: ResolveFn<CityOutput[]> = (route, state) => {
-  const service = inject(CityService);
-  return service.getMyCities();
-};

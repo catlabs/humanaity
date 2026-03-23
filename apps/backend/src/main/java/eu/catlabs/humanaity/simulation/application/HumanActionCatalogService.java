@@ -17,17 +17,11 @@ public class HumanActionCatalogService {
 
     public EnumSet<HumanActionType> actionsForApplications(Set<String> unlockedApplicationIds) {
         EnumSet<HumanActionType> actions = EnumSet.noneOf(HumanActionType.class);
-        if (unlockedApplicationIds.contains("APP_COOK_FOOD")) {
-            actions.add(HumanActionType.COOK_FOOD);
-        }
         if (unlockedApplicationIds.contains("APP_TELL_STORIES")) {
             actions.add(HumanActionType.TELL_STORIES);
         }
         if (unlockedApplicationIds.contains("APP_CREATE_ART")) {
             actions.add(HumanActionType.CREATE_ART);
-        }
-        if (unlockedApplicationIds.contains("APP_STORE_FOOD")) {
-            actions.add(HumanActionType.STORE_FOOD);
         }
         if (unlockedApplicationIds.contains("APP_TRADE_GOODS")) {
             actions.add(HumanActionType.TRADE_GOODS);
@@ -71,11 +65,10 @@ public class HumanActionCatalogService {
             Optional<SimulationPlaceRegistry.SimulationPlace> currentPlace
     ) {
         return switch (actionType) {
-            case COOK_FOOD -> currentPlace.map(place -> "campfire".equals(place.id())).orElse(false);
             case TELL_STORIES -> hasNearbyHuman(actor, allHumans, 0.18);
             case CREATE_ART -> true;
-            case STORE_FOOD -> currentPlace.map(place -> "house".equals(place.id())).orElse(false);
             case TRADE_GOODS -> hasNearbyHuman(actor, allHumans, 0.15);
+            case COOK_FOOD, STORE_FOOD -> false;
         };
     }
 

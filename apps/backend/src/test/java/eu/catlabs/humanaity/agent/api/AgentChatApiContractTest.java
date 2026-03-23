@@ -84,7 +84,7 @@ class AgentChatApiContractTest {
     }
 
     @Test
-    void chatRejectsNonOwner() throws Exception {
+    void chatAllowsOtherAuthenticatedUsersOnSharedCities() throws Exception {
         User owner = persistUser("owner-agent-forbidden@example.com");
         User other = persistUser("other-agent-forbidden@example.com");
         City city = persistCity("OwnedCity", owner);
@@ -93,7 +93,7 @@ class AgentChatApiContractTest {
                         .header("Authorization", bearerFor(other))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(request("show snapshot")))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     @Test

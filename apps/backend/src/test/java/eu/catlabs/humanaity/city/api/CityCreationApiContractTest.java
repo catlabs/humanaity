@@ -6,9 +6,12 @@ import eu.catlabs.humanaity.auth.infrastructure.persistence.UserRepository;
 import eu.catlabs.humanaity.auth.infrastructure.security.JwtService;
 import eu.catlabs.humanaity.city.domain.City;
 import eu.catlabs.humanaity.human.domain.Human;
+import eu.catlabs.humanaity.human.domain.HumanTribeRole;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeHouseRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeKnownPlaceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,10 +47,16 @@ class CityCreationApiContractTest {
     @Autowired
     private HumanRepository humanRepository;
     @Autowired
+    private TribeHouseRepository tribeHouseRepository;
+    @Autowired
+    private TribeKnownPlaceRepository tribeKnownPlaceRepository;
+    @Autowired
     private JwtService jwtService;
 
     @BeforeEach
     void cleanDatabase() {
+        tribeKnownPlaceRepository.deleteAll();
+        tribeHouseRepository.deleteAll();
         humanRepository.deleteAll();
         cityRepository.deleteAll();
         userRepository.deleteAll();
@@ -68,12 +77,25 @@ class CityCreationApiContractTest {
         Long cityId = created.get("id").asLong();
         City city = cityRepository.findById(cityId).orElseThrow();
         List<Human> humans = humanRepository.findByCityIdOrderByIdAsc(city.getId());
+        List<eu.catlabs.humanaity.simulation.domain.TribeHouse> houses = tribeHouseRepository.findByCityIdOrderByTribeIdAsc(city.getId());
 
         assertThat(humans).hasSize(6);
         assertThat(humans.stream().map(Human::getTribeId).collect(java.util.stream.Collectors.toSet()))
                 .containsExactlyInAnyOrder("tribe-a", "tribe-b");
-        assertThat(humans).anySatisfy(human -> assertThat(human.getName()).isBlank());
-        assertThat(humans).anySatisfy(human -> assertThat(human.getName()).isNotBlank());
+        assertThat(humans.stream().filter(human -> human.getTribeRole() == HumanTribeRole.CHIEF).count()).isEqualTo(2L);
+        assertThat(humans.stream().filter(human -> human.getTribeRole() == HumanTribeRole.SCOUT).count()).isEqualTo(2L);
+        assertThat(humans.stream().filter(human -> human.getTribeRole() == HumanTribeRole.MEMBER).count()).isEqualTo(2L);
+        assertThat(humans.stream().filter(human -> "tribe-a".equals(human.getTribeId()) && human.getTribeRole() == HumanTribeRole.CHIEF).count()).isEqualTo(1L);
+        assertThat(humans.stream().filter(human -> "tribe-a".equals(human.getTribeId()) && human.getTribeRole() == HumanTribeRole.SCOUT).count()).isEqualTo(1L);
+        assertThat(humans.stream().filter(human -> "tribe-a".equals(human.getTribeId()) && human.getTribeRole() == HumanTribeRole.MEMBER).count()).isEqualTo(1L);
+        assertThat(humans.stream().filter(human -> "tribe-b".equals(human.getTribeId()) && human.getTribeRole() == HumanTribeRole.CHIEF).count()).isEqualTo(1L);
+        assertThat(humans.stream().filter(human -> "tribe-b".equals(human.getTribeId()) && human.getTribeRole() == HumanTribeRole.SCOUT).count()).isEqualTo(1L);
+        assertThat(humans.stream().filter(human -> "tribe-b".equals(human.getTribeId()) && human.getTribeRole() == HumanTribeRole.MEMBER).count()).isEqualTo(1L);
+        assertThat(houses).hasSize(2);
+        assertThat(houses.stream().map(eu.catlabs.humanaity.simulation.domain.TribeHouse::getTribeId).toList())
+                .containsExactly("tribe-a", "tribe-b");
+        double distance = Math.sqrt(Math.pow(houses.get(0).getX() - houses.get(1).getX(), 2) + Math.pow(houses.get(0).getY() - houses.get(1).getY(), 2));
+        assertThat(distance).isGreaterThanOrEqualTo(0.45);
         assertThat(humans.stream().map(Human::getX)).allMatch(value -> value != null && value >= 0.05 && value <= 0.95);
         assertThat(humans.stream().map(Human::getY)).allMatch(value -> value != null && value >= 0.05 && value <= 0.95);
     }

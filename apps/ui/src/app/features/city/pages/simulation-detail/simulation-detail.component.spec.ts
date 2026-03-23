@@ -154,7 +154,23 @@ describe('SimulationDetailComponent', () => {
         ok: true,
         text: 'World status summary.',
         commandType: 'WORLD_STATUS',
-        blocks: [],
+        blocks: [
+          {
+            type: 'AI_LOGS',
+            title: 'Recent AI calls',
+            subtitle: null,
+            metrics: [],
+            items: [
+              {
+                title: '2026-03-23T10:00:00Z',
+                subtitle: 'Chat fallback',
+                body: 'Prompt: Example\nResult: Example response',
+                chips: ['Success', 'OPENAI', 'gpt-4'],
+              },
+            ],
+            emptyState: null,
+          },
+        ],
       } as any),
     );
 
@@ -216,6 +232,11 @@ describe('SimulationDetailComponent', () => {
     ]);
     expect(component.chatTurns()[0]?.contextSummary).toBe('World status');
     expect(component.chatTurns()[1]?.message).toBe('World status summary.');
+
+    const native = fixture.nativeElement as HTMLElement;
+    expect(native.textContent).toContain('Success');
+    expect(native.textContent).toContain('OPENAI');
+    expect(native.textContent).toContain('gpt-4');
   });
 
   it('builds and submits deterministic command text for actor+target actions', () => {

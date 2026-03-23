@@ -10,6 +10,8 @@ import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeHouseRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeKnownPlaceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,10 +45,16 @@ class SimulationCommandBuilderApiContractTest {
     @Autowired
     private SimulationRunRepository simulationRunRepository;
     @Autowired
+    private TribeHouseRepository tribeHouseRepository;
+    @Autowired
+    private TribeKnownPlaceRepository tribeKnownPlaceRepository;
+    @Autowired
     private JwtService jwtService;
 
     @BeforeEach
     void cleanDatabase() {
+        tribeKnownPlaceRepository.deleteAll();
+        tribeHouseRepository.deleteAll();
         simulationRunRepository.deleteAll();
         humanRepository.deleteAll();
         cityRepository.deleteAll();
@@ -63,14 +71,15 @@ class SimulationCommandBuilderApiContractTest {
     }
 
     @Test
-    void commandBuilderRejectsNonOwner() throws Exception {
+    void commandBuilderAllowsOtherAuthenticatedUsersOnSharedCities() throws Exception {
         User owner = persistUser("command-builder-owner@example.com");
         User other = persistUser("command-builder-other@example.com");
         City city = persistCity("Builder City", owner);
+        persistHuman(city, "Ada", 0.2, 0.3);
 
         mockMvc.perform(get("/api/simulations/{cityId}/command-builder", city.getId())
                         .header("Authorization", bearerFor(other)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -89,8 +98,18 @@ class SimulationCommandBuilderApiContractTest {
         assertThat(payload.path("actorOptions").isArray()).isTrue();
         assertThat(payload.path("actorOptions").toString()).contains(String.valueOf(ada.getId()), String.valueOf(ben.getId()));
         assertThat(payload.path("actions").isArray()).isTrue();
-        assertThat(payload.path("actions").toString()).contains("WORLD_STATUS", "RECENT_EVENTS", "INVENTIONS", "RELATIONSHIPS");
+        assertThat(payload.path("actions").toString()).contains(
+                "CHIEF_PLAN",
+                "WORLD_STATUS",
+                "RECENT_EVENTS",
+                "INVENTIONS",
+                "RELATIONSHIPS",
+                "AI_LOGS",
+                "AI_STATS"
+        );
+        assertThat(payload.path("actions").toString()).contains("si chef");
         assertThat(payload.path("actions").toString()).contains("FOCUS_HUMAN", "MOVE_HUMAN_TO_PLACE", "MEET_HUMAN");
+        assertThat(payload.path("actions").toString()).doesNotContain("campfire", "house");
 
         JsonNode meetAction = null;
         for (JsonNode action : payload.path("actions")) {
@@ -105,6 +124,17 @@ class SimulationCommandBuilderApiContractTest {
         assertThat(meetAction.path("targetKind").asText()).isEqualTo("HUMAN");
         assertThat(meetAction.path("requiresDifferentTarget").asBoolean()).isTrue();
         assertThat(meetAction.path("targetOptions").toString()).contains(String.valueOf(ada.getId()), String.valueOf(ben.getId()));
+
+        JsonNode moveAction = null;
+        for (JsonNode action : payload.path("actions")) {
+            if ("MOVE_HUMAN_TO_PLACE".equals(action.path("actionKey").asText())) {
+                moveAction = action;
+                break;
+            }
+        }
+        assertThat(moveAction).isNotNull();
+        assertThat(moveAction.path("targetOptions").toString()).contains("forest", "river", "church");
+        assertThat(moveAction.path("targetOptions").toString()).doesNotContain("campfire", "house");
     }
 
     private String bearerFor(User user) {

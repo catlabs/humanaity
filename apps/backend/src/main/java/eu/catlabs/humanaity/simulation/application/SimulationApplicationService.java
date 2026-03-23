@@ -8,14 +8,18 @@ import eu.catlabs.humanaity.event.domain.Event;
 import eu.catlabs.humanaity.event.domain.EventType;
 import eu.catlabs.humanaity.human.application.HumanApplicationService;
 import eu.catlabs.humanaity.human.domain.Human;
+import eu.catlabs.humanaity.human.domain.HumanTribeRole;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.invention.application.InventionApplicationService;
 import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.invention.domain.InventionCategory;
 import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
+import eu.catlabs.humanaity.simulation.application.tribe.TribeExplorationService;
+import eu.catlabs.humanaity.simulation.application.tribe.TribePlanApplicationService;
 import eu.catlabs.humanaity.simulation.domain.HumanGoal;
 import eu.catlabs.humanaity.simulation.domain.HumanActionType;
 import eu.catlabs.humanaity.simulation.domain.KnowledgeUnlock;
+import eu.catlabs.humanaity.simulation.domain.HumanGoalStatus;
 import eu.catlabs.humanaity.simulation.domain.HumanGoalSource;
 import eu.catlabs.humanaity.simulation.domain.HumanGoalType;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
@@ -56,7 +60,7 @@ public class SimulationApplicationService {
     private static final double GOAL_COMPLETION_DISTANCE = 0.03;
     private static final long GOAL_DWELL_TICKS = 5L;
     private static final int MAX_ACTION_OUTCOMES_PER_TICK = 1;
-    private static final int MAX_EVENT_OUTCOMES_PER_TICK = 4;
+    private static final int MAX_EVENT_OUTCOMES_PER_TICK = 3;
     private static final long RECENT_DIALOGUE_WINDOW_TICKS = 3L;
     private static final long RECENT_COLLISION_DISCOVERY_WINDOW_TICKS = 6L;
     private static final long REACHED_PLACE_COOLDOWN_TICKS = 5L;
@@ -93,6 +97,8 @@ public class SimulationApplicationService {
     private final KnowledgeProgressionService knowledgeProgressionService;
     private final KnowledgeUnlockRepository knowledgeUnlockRepository;
     private final HumanActionCatalogService humanActionCatalogService;
+    private final TribeExplorationService tribeExplorationService;
+    private final TribePlanApplicationService tribePlanApplicationService;
     private final long scheduledStepPeriodMs;
 
     public SimulationApplicationService(
@@ -107,6 +113,8 @@ public class SimulationApplicationService {
             KnowledgeProgressionService knowledgeProgressionService,
             KnowledgeUnlockRepository knowledgeUnlockRepository,
             HumanActionCatalogService humanActionCatalogService,
+            TribeExplorationService tribeExplorationService,
+            TribePlanApplicationService tribePlanApplicationService,
             @Value("${humanaity.simulation.scheduler.period-ms:" + DEFAULT_SCHEDULED_STEP_PERIOD_MS + "}") long scheduledStepPeriodMs
     ) {
         this.humanRepository = humanRepository;
@@ -120,6 +128,8 @@ public class SimulationApplicationService {
         this.knowledgeProgressionService = knowledgeProgressionService;
         this.knowledgeUnlockRepository = knowledgeUnlockRepository;
         this.humanActionCatalogService = humanActionCatalogService;
+        this.tribeExplorationService = tribeExplorationService;
+        this.tribePlanApplicationService = tribePlanApplicationService;
         this.scheduledStepPeriodMs = scheduledStepPeriodMs <= 0 ? DEFAULT_SCHEDULED_STEP_PERIOD_MS : scheduledStepPeriodMs;
     }
 
@@ -339,14 +349,9 @@ public class SimulationApplicationService {
             return;
         }
 
-        Map<Long, String> previousPlaceByHuman = new HashMap<>();
         Map<Long, Human> humansById = new HashMap<>();
         for (Human human : orderedHumans) {
             humansById.put(human.getId(), human);
-            previousPlaceByHuman.put(
-                    human.getId(),
-                    resolvePlaceForPosition(human.getX(), human.getY()).map(SimulationPlaceRegistry.SimulationPlace::id).orElse(null)
-            );
         }
 
         Map<Long, HumanGoal> activeGoalsByHuman = new HashMap<>();
@@ -356,9 +361,18 @@ public class SimulationApplicationService {
 
         long nextTick = run.getTick() + 1;
         List<GoalTickOutcome> goalOutcomes = new ArrayList<>();
-        List<EventDraft> autonomousGoalAssignmentDrafts = new ArrayList<>();
         for (Human human : orderedHumans) {
             human.setBusy(false);
+            if (human.getTribeRole() == HumanTribeRole.CHIEF) {
+                HumanGoal chiefGoal = activeGoalsByHuman.remove(human.getId());
+                if (chiefGoal != null) {
+                    humanGoalApplicationService.cancelGoal(chiefGoal, run.getTick());
+                    tribePlanApplicationService.updatePlanStatusForGoal(chiefGoal, HumanGoalStatus.CANCELLED, run.getTick());
+                }
+                human.setNextGoalAssignTick(null);
+                goalOutcomes.add(GoalTickOutcome.none());
+                continue;
+            }
             HumanGoal goal = activeGoalsByHuman.get(human.getId());
             if (goal != null) {
                 human.setNextGoalAssignTick(null);
@@ -366,7 +380,6 @@ public class SimulationApplicationService {
                 goal = assignAutonomousGoalIfReady(cityId, run.getSeed(), run.getTick(), human);
                 if (goal != null) {
                     activeGoalsByHuman.put(human.getId(), goal);
-                    autonomousGoalAssignmentDrafts.add(buildGoalAssignedDraft(goal, nextTick));
                 }
             }
             GoalTickOutcome outcome = goal == null
@@ -379,12 +392,19 @@ public class SimulationApplicationService {
             }
             goalOutcomes.add(outcome);
         }
-
+        List<EventDraft> goalOutcomeDrafts = finalizeGoalOutcomes(run.getCity().getId(), goalOutcomes, nextTick, orderedHumans, activeGoalsByHuman);
+        List<EventDraft> tribeDrafts = tribeExplorationService.planTribeActions(
+                cityId,
+                run.getSeed(),
+                nextTick,
+                orderedHumans,
+                activeGoalsByHuman
+        );
+        InteractionOutcome interactionOutcome = buildInteractionOutcomes(run.getCity().getId(), nextTick, orderedHumans);
+        applyInteractionBusyState(orderedHumans, interactionOutcome);
         humanRepository.saveAll(orderedHumans);
         humanApplicationService.publishHumanUpdates(orderedHumans);
 
-        List<EventDraft> goalLifecycleDrafts = new ArrayList<>(autonomousGoalAssignmentDrafts);
-        goalLifecycleDrafts.addAll(finalizeGoalOutcomes(goalOutcomes, nextTick));
         List<EventDraft> actionDrafts = buildHumanActionDrafts(run, nextTick, orderedHumans, activeGoalsByHuman);
         run.setTick(nextTick);
         simulationRunRepository.save(run);
@@ -392,10 +412,10 @@ public class SimulationApplicationService {
         List<EventDraft> stepEvents = buildStepEventDrafts(
                 run,
                 nextTick,
-                orderedHumans,
-                previousPlaceByHuman,
-                goalLifecycleDrafts,
-                actionDrafts
+                actionDrafts,
+                interactionOutcome,
+                goalOutcomeDrafts,
+                tribeDrafts
         );
         List<EventDraft> pacedStepEvents = applyTurnPacing(stepEvents);
         eventApplicationService.emitEventsAtTick(cityId, nextTick, pacedStepEvents, false);
@@ -406,6 +426,9 @@ public class SimulationApplicationService {
     }
 
     private HumanGoal assignAutonomousGoalIfReady(Long cityId, Long runSeed, Long tick, Human human) {
+        if (human.getTribeRole() == HumanTribeRole.CHIEF) {
+            return null;
+        }
         Long nextGoalAssignTick = human.getNextGoalAssignTick();
         if (nextGoalAssignTick != null && tick < nextGoalAssignTick) {
             return null;
@@ -557,7 +580,13 @@ public class SimulationApplicationService {
         return distance <= COLLISION_DISTANCE_THRESHOLD;
     }
 
-    private List<EventDraft> finalizeGoalOutcomes(List<GoalTickOutcome> outcomes, long tick) {
+    private List<EventDraft> finalizeGoalOutcomes(
+            Long cityId,
+            List<GoalTickOutcome> outcomes,
+            long tick,
+            List<Human> humans,
+            Map<Long, HumanGoal> activeGoalsByHuman
+    ) {
         List<EventDraft> drafts = new ArrayList<>();
         for (GoalTickOutcome outcome : outcomes) {
             if (outcome.goal() == null || outcome.result() == GoalTickResult.NONE) {
@@ -569,7 +598,19 @@ public class SimulationApplicationService {
                 case NONE -> outcome.goal();
             };
             if (outcome.result() == GoalTickResult.COMPLETED) {
+                tribePlanApplicationService.updatePlanStatusForGoal(updatedGoal, HumanGoalStatus.COMPLETED, tick);
+            } else if (outcome.result() == GoalTickResult.CANCELLED) {
+                tribePlanApplicationService.updatePlanStatusForGoal(updatedGoal, HumanGoalStatus.CANCELLED, tick);
+            }
+            if (outcome.result() == GoalTickResult.COMPLETED) {
                 drafts.add(buildGoalCompletedDraft(updatedGoal, tick));
+                drafts.addAll(tribeExplorationService.processCompletedGoal(
+                        cityId,
+                        tick,
+                        updatedGoal,
+                        humans,
+                        activeGoalsByHuman
+                ));
             }
         }
         return drafts;
@@ -599,30 +640,6 @@ public class SimulationApplicationService {
         );
     }
 
-    private EventDraft buildGoalAssignedDraft(HumanGoal goal, long tick) {
-        Map<String, String> payload = new HashMap<>();
-        payload.put("goalId", String.valueOf(goal.getId()));
-        payload.put("goalType", goal.getGoalType().name());
-        payload.put("source", goal.getSource().name());
-        if (goal.getTargetPlaceId() != null) {
-            payload.put("targetPlaceId", goal.getTargetPlaceId());
-        }
-        if (goal.getTargetHumanId() != null) {
-            payload.put("targetHumanId", String.valueOf(goal.getTargetHumanId()));
-        }
-        if (goal.getMetadataKey() != null) {
-            payload.put("metadataKey", goal.getMetadataKey());
-        }
-        String eventKey = "GOAL_ASSIGNED:" + goal.getId() + ":" + tick;
-        return new EventDraft(
-                EventType.GOAL_ASSIGNED,
-                List.of(goal.getHuman().getId()),
-                payload,
-                18,
-                eventKey
-        );
-    }
-
     private long deriveDeterministicSeed(Long runSeed, Long tick, Long humanId) {
         long mixed = runSeed;
         mixed = 31L * mixed + tick;
@@ -633,33 +650,194 @@ public class SimulationApplicationService {
     private List<EventDraft> buildStepEventDrafts(
             SimulationRun run,
             long tick,
-            List<Human> orderedHumans,
-            Map<Long, String> previousPlaceByHuman,
-            List<EventDraft> goalLifecycleDrafts,
-            List<EventDraft> actionDrafts
+            List<EventDraft> actionDrafts,
+            InteractionOutcome interactionOutcome,
+            List<EventDraft> goalOutcomeDrafts,
+            List<EventDraft> tribeDrafts
     ) {
-        List<Human> humans = orderedHumans.stream()
-                .sorted(Comparator.comparing(Human::getId))
-                .toList();
         List<EventDraft> drafts = new ArrayList<>();
-        drafts.addAll(goalLifecycleDrafts);
+        drafts.addAll(goalOutcomeDrafts);
+        drafts.addAll(tribeDrafts);
         drafts.addAll(actionDrafts);
-        drafts.addAll(buildCollisionDrafts(tick, humans));
-        drafts.addAll(buildDialogueDrafts(run.getCity().getId(), tick, humans));
-        drafts.addAll(buildReachedPlaceDrafts(run.getCity().getId(), tick, humans, previousPlaceByHuman));
-        drafts.addAll(buildStayedAtPlaceDrafts(run.getCity().getId(), tick, humans));
-        List<EventDraft> proximityGroupDrafts = buildProximityGroupDrafts(run.getCity().getId(), tick, humans);
-        drafts.addAll(proximityGroupDrafts);
-        List<EventDraft> collisionDiscoveries = buildCollisionDiscoveryDrafts(run.getCity().getId(), tick, humans);
-        drafts.addAll(collisionDiscoveries);
-        List<EventDraft> contextDiscoveries = new ArrayList<>(collisionDiscoveries);
-        for (EventDraft draft : proximityGroupDrafts) {
-            if (draft.eventType() == EventType.DISCOVERY_UNLOCKED) {
-                contextDiscoveries.add(draft);
+        if (interactionOutcome != null) {
+            drafts.addAll(interactionOutcome.drafts());
+        }
+        return drafts;
+    }
+
+    private void applyInteractionBusyState(List<Human> humans, InteractionOutcome interactionOutcome) {
+        if (interactionOutcome == null || interactionOutcome.busyHumanIds().isEmpty()) {
+            return;
+        }
+
+        java.util.Set<Long> busyHumanIds = interactionOutcome.busyHumanIds();
+        for (Human human : humans) {
+            if (busyHumanIds.contains(human.getId())) {
+                human.setBusy(true);
             }
         }
-        drafts.addAll(buildDiscoveryDrafts(run.getSeed(), tick, humans, humansWithContextDiscovery(contextDiscoveries)));
-        return drafts;
+    }
+
+    private Map<String, String> buildInteractionPayload(
+            String groupKey,
+            List<Long> actorIds,
+            Optional<SimulationPlaceRegistry.SimulationPlace> place,
+            long tick
+    ) {
+        Map<String, String> payload = new HashMap<>();
+        payload.put("interactionKey", "INTERACTION:" + groupKey + ":" + tick);
+        payload.put("groupKey", groupKey);
+        payload.put("trigger", "PROXIMITY_GROUP");
+        payload.put("interactionType", actorIds.size() >= 3 ? "GROUP_CONVERSATION" : "PAIR_INTERACTION");
+        payload.put("participantCount", String.valueOf(actorIds.size()));
+        place.ifPresent(simulationPlace -> {
+            payload.put("placeId", simulationPlace.id());
+            payload.put("placeCategory", simulationPlace.category().name());
+        });
+        return payload;
+    }
+
+    private Optional<EventDraft> buildInteractionDiscoveryDraft(
+            long tick,
+            List<Human> group,
+            String groupKey,
+            Optional<SimulationPlaceRegistry.SimulationPlace> place,
+            int streak
+    ) {
+        if (!shouldEmitInteractionDiscovery(group, place, streak)) {
+            return Optional.empty();
+        }
+
+        List<Long> actorIds = group.stream().map(Human::getId).toList();
+        InventionCategory category = place
+                .map(SimulationPlaceRegistry.SimulationPlace::category)
+                .orElseGet(() -> group.size() >= 3 ? InventionCategory.SOCIAL_PRACTICE : InventionCategory.KNOWLEDGE);
+        String discoveryKey = "DISCOVERY:interaction:" + groupKey + ":" + tick;
+        String title = place
+                .map(simulationPlace -> formatLabel(simulationPlace.id()) + " insight")
+                .orElseGet(() -> group.size() >= 3 ? "Shared practice insight" : "Shared observation");
+        String summary = place
+                .map(simulationPlace -> "A recurring interaction near " + formatLabel(simulationPlace.id()) + " unlocked a new insight.")
+                .orElseGet(() -> "A recurring interaction among humans unlocked a new insight.");
+
+        Map<String, String> payload = new HashMap<>();
+        int impactScore = discoveryImpact(actorIds.stream().mapToLong(Long::longValue).sum(), tick, 37);
+        payload.put("discoveryKey", discoveryKey);
+        payload.put("inventionKey", discoveryKey);
+        payload.put("inventionCategory", category.name());
+        payload.put("title", title);
+        payload.put("summary", summary);
+        payload.put("impactScore", String.valueOf(impactScore));
+        payload.put("trigger", "PROXIMITY_GROUP");
+        payload.put("groupKey", groupKey);
+        place.ifPresent(simulationPlace -> payload.put("placeId", simulationPlace.id()));
+
+        return Optional.of(new EventDraft(
+                EventType.DISCOVERY_UNLOCKED,
+                actorIds,
+                payload,
+                impactScore,
+                discoveryKey
+        ));
+    }
+
+    private boolean shouldEmitInteractionDiscovery(
+            List<Human> group,
+            Optional<SimulationPlaceRegistry.SimulationPlace> place,
+            int streak
+    ) {
+        if (group.size() >= 3) {
+            return streak >= PROXIMITY_GROUP_SUSTAIN_TICKS;
+        }
+        return place.isPresent() && streak >= (PROXIMITY_GROUP_SUSTAIN_TICKS + 1);
+    }
+
+    private Optional<SimulationPlaceRegistry.SimulationPlace> resolveGroupPlace(List<Human> group) {
+        if (group.isEmpty()) {
+            return Optional.empty();
+        }
+
+        double averageX = group.stream().mapToDouble(human -> safeCoordinate(human.getX())).average().orElse(0.5);
+        double averageY = group.stream().mapToDouble(human -> safeCoordinate(human.getY())).average().orElse(0.5);
+        return resolvePlaceForPosition(averageX, averageY);
+    }
+
+    private String formatLabel(String value) {
+        String[] parts = value.split("_");
+        StringBuilder builder = new StringBuilder();
+        for (String part : parts) {
+            if (part.isBlank()) {
+                continue;
+            }
+            if (builder.length() > 0) {
+                builder.append(' ');
+            }
+            String lower = part.toLowerCase(Locale.ROOT);
+            builder.append(Character.toUpperCase(lower.charAt(0))).append(lower.substring(1));
+        }
+        return builder.toString();
+    }
+
+    private InteractionOutcome buildInteractionOutcomes(Long cityId, long tick, List<Human> humans) {
+        List<EventDraft> drafts = new ArrayList<>();
+        java.util.Set<Long> busyHumanIds = new java.util.HashSet<>();
+
+        List<List<Human>> groups = buildProximityGroups(humans);
+        java.util.Set<String> previousGroups = previousProximityGroupsByCity
+                .getOrDefault(cityId, java.util.Collections.emptySet());
+        java.util.Set<String> currentGroups = new java.util.HashSet<>();
+        boolean discoveryEmitted = false;
+
+        for (List<Human> group : groups) {
+            if (group.size() < 2) {
+                continue;
+            }
+
+            String groupKey = groupSignature(group);
+            currentGroups.add(groupKey);
+            String streakKey = proximityGroupStateKey(cityId, groupKey);
+            int streak = previousGroups.contains(groupKey)
+                    ? proximityGroupStreakByKey.getOrDefault(streakKey, 0) + 1
+                    : 1;
+            proximityGroupStreakByKey.put(streakKey, streak);
+            if (streak < PROXIMITY_GROUP_SUSTAIN_TICKS) {
+                continue;
+            }
+            if (hasRecentProximityGroupEvent(cityId, tick, groupKey)) {
+                continue;
+            }
+
+            List<Human> orderedGroup = group.stream()
+                    .sorted(Comparator.comparing(Human::getId))
+                    .toList();
+            List<Long> actorIds = orderedGroup.stream().map(Human::getId).toList();
+            busyHumanIds.addAll(actorIds);
+
+            Optional<SimulationPlaceRegistry.SimulationPlace> place = resolveGroupPlace(orderedGroup);
+            Map<String, String> interactionPayload = buildInteractionPayload(groupKey, actorIds, place, tick);
+            String interactionKey = "INTERACTION:" + groupKey + ":" + tick;
+            drafts.add(new EventDraft(
+                    EventType.DIALOGUE_EXCHANGED,
+                    actorIds,
+                    interactionPayload,
+                    34,
+                    interactionKey
+            ));
+
+            if (!discoveryEmitted) {
+                Optional<EventDraft> discoveryDraft = buildInteractionDiscoveryDraft(tick, orderedGroup, groupKey, place, streak);
+                if (discoveryDraft.isPresent()) {
+                    drafts.add(discoveryDraft.get());
+                    discoveryEmitted = true;
+                }
+            }
+        }
+
+        previousProximityGroupsByCity.put(cityId, currentGroups);
+        String prefix = cityId + ":";
+        proximityGroupStreakByKey.keySet().removeIf(key -> key.startsWith(prefix) && !currentGroups.contains(key.substring(prefix.length())));
+
+        return new InteractionOutcome(drafts, busyHumanIds);
     }
 
     private List<EventDraft> buildHumanActionDrafts(
@@ -680,6 +858,9 @@ public class SimulationApplicationService {
 
         List<EventDraft> drafts = new ArrayList<>();
         for (Human human : humans) {
+            if (human.isBusy()) {
+                continue;
+            }
             Optional<SimulationPlaceRegistry.SimulationPlace> place = resolvePlaceForPosition(human.getX(), human.getY());
             Optional<HumanActionCatalogService.SelectedHumanAction> maybeAction = humanActionCatalogService.selectAction(
                     run.getSeed(),
@@ -728,14 +909,19 @@ public class SimulationApplicationService {
 
     private int pacingPriority(EventType type) {
         return switch (type) {
-            case GOAL_COMPLETED -> 100;
-            case HUMAN_ACTION_PERFORMED -> 90;
-            case DIALOGUE_EXCHANGED -> 80;
-            case HUMANS_COLLIDED -> 70;
-            case DISCOVERY_UNLOCKED -> 60;
-            case INVENTION_EMERGED -> 50;
-            case GOAL_ASSIGNED -> 40;
-            case SIMULATION_STARTED, SIMULATION_PAUSED, SIMULATION_RESUMED, SIMULATION_COMPLETED -> 30;
+            case TRIBE_PLACE_DISCOVERED -> 110;
+            case TRIBE_SCOUT_REPORT -> 109;
+            case TRIBE_DISCOVERY_REPORTED -> 108;
+            case TRIBE_PLAN_CHOSEN -> 107;
+            case TRIBE_GROUP_TRAVEL_COORDINATED -> 106;
+            case GOAL_ASSIGNED -> 105;
+            case HUMAN_ACTION_PERFORMED -> 100;
+            case DIALOGUE_EXCHANGED -> 90;
+            case DISCOVERY_UNLOCKED -> 80;
+            case INVENTION_EMERGED -> 70;
+            case HUMANS_COLLIDED -> 60;
+            case GOAL_COMPLETED -> 20;
+            case SIMULATION_STARTED, SIMULATION_PAUSED, SIMULATION_RESUMED, SIMULATION_COMPLETED -> 5;
         };
     }
 
@@ -1391,6 +1577,9 @@ public class SimulationApplicationService {
         private static GoalTickOutcome cancel(HumanGoal goal, String reason) {
             return new GoalTickOutcome(goal, GoalTickResult.CANCELLED, reason);
         }
+    }
+
+    private record InteractionOutcome(List<EventDraft> drafts, java.util.Set<Long> busyHumanIds) {
     }
 
     private enum GoalTickResult {

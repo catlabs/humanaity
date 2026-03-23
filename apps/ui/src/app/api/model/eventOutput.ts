@@ -22,6 +22,8 @@ export interface EventOutput {
     year: number;
     era: EventOutput.EraEnum;
     eventKey: string;
+    title?: string;
+    summary?: string;
     createdAt: string;
     enrichmentStatus: EventOutput.EnrichmentStatusEnum;
     enrichmentFallback: boolean;
@@ -50,7 +52,12 @@ export namespace EventOutput {
         HumanActionPerformed: 'HUMAN_ACTION_PERFORMED',
         DiscoveryUnlocked: 'DISCOVERY_UNLOCKED',
         DialogueExchanged: 'DIALOGUE_EXCHANGED',
-        InventionEmerged: 'INVENTION_EMERGED'
+        InventionEmerged: 'INVENTION_EMERGED',
+        TribePlaceDiscovered: 'TRIBE_PLACE_DISCOVERED',
+        TribeDiscoveryReported: 'TRIBE_DISCOVERY_REPORTED',
+        TribeScoutReport: 'TRIBE_SCOUT_REPORT',
+        TribePlanChosen: 'TRIBE_PLAN_CHOSEN',
+        TribeGroupTravelCoordinated: 'TRIBE_GROUP_TRAVEL_COORDINATED'
     } as const;
     export type EventTypeEnum = typeof EventTypeEnum[keyof typeof EventTypeEnum];
     export const EraEnum = {

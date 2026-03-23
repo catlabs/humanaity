@@ -1,3 +1,5 @@
+export * from './aI.service';
+import { AIService } from './aI.service';
 export * from './agentChat.service';
 import { AgentChatService } from './agentChat.service';
 export * from './authController.service';
@@ -8,4 +10,4 @@ export * from './humans.service';
 import { HumansService } from './humans.service';
 export * from './simulations.service';
 import { SimulationsService } from './simulations.service';
-export const APIS = [AgentChatService, AuthControllerService, CitiesService, HumansService, SimulationsService];
+export const APIS = [AIService, AgentChatService, AuthControllerService, CitiesService, HumansService, SimulationsService];

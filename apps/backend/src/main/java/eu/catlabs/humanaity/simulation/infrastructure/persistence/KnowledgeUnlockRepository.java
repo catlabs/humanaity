@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface KnowledgeUnlockRepository extends JpaRepository<KnowledgeUnlock, Long> {
     List<KnowledgeUnlock> findByCityIdOrderByUnlockedTickAscNodeIdAsc(Long cityId);
+    long deleteByCityId(Long cityId);
 }

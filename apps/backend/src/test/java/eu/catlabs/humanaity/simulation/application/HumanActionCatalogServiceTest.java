@@ -19,13 +19,11 @@ class HumanActionCatalogServiceTest {
     @Test
     void applicationsMapToDeterministicActionCatalog() {
         EnumSet<HumanActionType> catalog = service.actionsForApplications(Set.of(
-                "APP_COOK_FOOD",
                 "APP_TELL_STORIES",
                 "APP_CREATE_ART"
         ));
 
         assertThat(catalog).contains(
-                HumanActionType.COOK_FOOD,
                 HumanActionType.TELL_STORIES,
                 HumanActionType.CREATE_ART
         );
@@ -46,7 +44,7 @@ class HumanActionCatalogServiceTest {
                 10L,
                 actor,
                 humans,
-                SimulationPlaceRegistry.byId("campfire"),
+                SimulationPlaceRegistry.byId("forest"),
                 unlockedActions,
                 false
         );
@@ -55,7 +53,7 @@ class HumanActionCatalogServiceTest {
                 10L,
                 actor,
                 humans,
-                SimulationPlaceRegistry.byId("campfire"),
+                SimulationPlaceRegistry.byId("forest"),
                 unlockedActions,
                 false
         );
@@ -73,8 +71,8 @@ class HumanActionCatalogServiceTest {
                 10L,
                 actor,
                 List.of(actor),
-                SimulationPlaceRegistry.byId("campfire"),
-                EnumSet.of(HumanActionType.COOK_FOOD),
+                SimulationPlaceRegistry.byId("forest"),
+                EnumSet.of(HumanActionType.CREATE_ART),
                 true
         );
 

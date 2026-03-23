@@ -8,6 +8,7 @@ import eu.catlabs.humanaity.ai.domain.AiPrompt;
 import eu.catlabs.humanaity.ai.domain.AiResponse;
 import eu.catlabs.humanaity.ai.infrastructure.port.AiProviderPort;
 import eu.catlabs.humanaity.ai.infrastructure.port.AiServiceException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
@@ -22,10 +23,16 @@ public class OpenAiAdapter implements AiProviderPort {
     
     private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
-    
-    public OpenAiAdapter(ChatClient.Builder chatClientBuilder, ObjectMapper objectMapper) {
+    private final String configuredModel;
+
+    public OpenAiAdapter(
+            ChatClient.Builder chatClientBuilder,
+            ObjectMapper objectMapper,
+            @Value("${spring.ai.openai.chat.options.model:}") String configuredModel
+    ) {
         this.chatClient = chatClientBuilder.build();
         this.objectMapper = objectMapper;
+        this.configuredModel = configuredModel;
     }
     
     @Override
@@ -62,6 +69,7 @@ public class OpenAiAdapter implements AiProviderPort {
                     .rawContent(response)
                     .jsonContent(jsonNode)
                     .provider(AiProvider.OPENAI)
+                    .model(configuredModel == null || configuredModel.isBlank() ? "OPENAI_CHAT" : configuredModel)
                     .responseTime(responseTime)
                     .build();
                     

@@ -62,12 +62,6 @@ export class CityService {
       .pipe(switchMap(parseApiResponse<CityOutput>));
   }
 
-  getMyCities(): Observable<CityOutput[]> {
-    return this.citiesService
-      .getMyCities()
-      .pipe(switchMap(parseApiResponse<CityOutput[]>));
-  }
-
   startSimulation(cityId: number): Observable<void> {
     return this.simulationsService.startSimulation(cityId).pipe(
       switchMap(parseApiResponse<Record<string, string>>),

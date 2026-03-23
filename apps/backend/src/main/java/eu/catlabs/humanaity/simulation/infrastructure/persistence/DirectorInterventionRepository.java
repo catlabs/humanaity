@@ -13,4 +13,6 @@ public interface DirectorInterventionRepository extends JpaRepository<DirectorIn
             String confirmationToken,
             DirectorInterventionStatus status
     );
+
+    long deleteByCityId(Long cityId);
 }

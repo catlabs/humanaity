@@ -1,5 +1,5 @@
 import {Routes} from '@angular/router';
-import {cityDetailsResolver, cityListResolver, myCitiesResolver} from './city.resolver';
+import {cityDetailsResolver, cityListResolver} from './city.resolver';
 
 export const cityRoutes: Routes = [
   {
@@ -10,11 +10,6 @@ export const cityRoutes: Routes = [
   {
     path: 'create',
     loadComponent: () => import('./pages/create/create-city.page').then(m => m.CreateCityPage)
-  },
-  {
-    path: 'mine',
-    loadComponent: () => import('./pages/my-cities/my-cities.page').then(m => m.MyCitiesPage),
-    resolve: {cities: myCitiesResolver}
   },
   {
     path: ':id',

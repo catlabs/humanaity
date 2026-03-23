@@ -18,7 +18,6 @@ import eu.catlabs.humanaity.simulation.domain.HumanGoalSource;
 import eu.catlabs.humanaity.simulation.domain.HumanGoalType;
 import eu.catlabs.humanaity.simulation.domain.SimulationRun;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -33,7 +32,7 @@ public class SimulationCommandService {
 
     private static final Pattern ADVANCE_PATTERN = Pattern.compile("^advance\\s+(\\d+)$", Pattern.CASE_INSENSITIVE);
     private static final Pattern FOCUS_PATTERN = Pattern.compile("^focus\\s+(.+)$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern MOVE_PATTERN = Pattern.compile("^move\\s+(.+)\\s+(forest|river|church|campfire|house)$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern MOVE_PATTERN = Pattern.compile("^move\\s+(.+)\\s+(forest|river|church)$", Pattern.CASE_INSENSITIVE);
     private static final Pattern MEET_PATTERN = Pattern.compile("^meet\\s+(.+)\\s+(.+)$", Pattern.CASE_INSENSITIVE);
     private static final int MAX_ADVANCE_COUNT = 20;
 
@@ -58,9 +57,8 @@ public class SimulationCommandService {
     }
 
     public SimulationCommandOutput execute(Long cityId, User currentUser, SimulationCommandInput input) {
-        City city = cityRepository.findById(cityId)
+        cityRepository.findById(cityId)
                 .orElseThrow(() -> new EntityNotFoundException("City not found with id: " + cityId));
-        ensureOwnership(city, currentUser);
 
         String commandText = input == null || input.getCommandText() == null
                 ? ""
@@ -89,7 +87,7 @@ public class SimulationCommandService {
             return executeMeet(cityId, meetMatcher.group(1).trim(), meetMatcher.group(2).trim());
         }
 
-        return reject("Unsupported command. Use `advance <count>`, `focus <human>`, `move <human> <place>`, or `meet <human> <human>`." );
+            return reject("Unsupported command. Use `advance <count>`, `focus <human>`, `move <human> <place>`, or `meet <human> <human>`.");
     }
 
     private SimulationCommandOutput executeAdvance(Long cityId, int count) {
@@ -135,7 +133,7 @@ public class SimulationCommandService {
 
         SimulationPlaceRegistry.SimulationPlace place = SimulationPlaceRegistry.byId(placeId).orElse(null);
         if (place == null) {
-            return reject("Unsupported place. Use one of: forest, river, church, campfire, house.");
+            return reject("Unsupported place. Use one of: forest, river, church.");
         }
 
         long assignedTick = currentTickForGoalAssignment(cityId);
@@ -147,7 +145,6 @@ public class SimulationCommandService {
                 assignedTick,
                 new HumanGoalApplicationService.GoalTarget(place.id(), null, place.x(), place.y(), "command:move")
         );
-        emitGoalAssignedEvent(cityId, goal, assignedTick);
         long fromTick = advanceOneStep(cityId);
 
         SimulationCommandOutput output = success(
@@ -202,7 +199,6 @@ public class SimulationCommandService {
                         "command:meet"
                 )
         );
-        emitGoalAssignedEvent(cityId, goal, assignedTick);
         long fromTick = advanceOneStep(cityId);
 
         SimulationCommandOutput output = success(
@@ -250,35 +246,6 @@ public class SimulationCommandService {
         }
     }
 
-    private void emitGoalAssignedEvent(Long cityId, HumanGoal goal, long assignedTick) {
-        Map<String, String> payload = new LinkedHashMap<>();
-        payload.put("goalId", String.valueOf(goal.getId()));
-        payload.put("goalType", goal.getGoalType().name());
-        payload.put("source", goal.getSource().name());
-        if (goal.getTargetPlaceId() != null) {
-            payload.put("targetPlaceId", goal.getTargetPlaceId());
-        }
-        if (goal.getTargetHumanId() != null) {
-            payload.put("targetHumanId", String.valueOf(goal.getTargetHumanId()));
-        }
-        if (goal.getMetadataKey() != null) {
-            payload.put("metadataKey", goal.getMetadataKey());
-        }
-
-        String eventKey = "GOAL_ASSIGNED:" + goal.getId() + ":" + assignedTick;
-        eventApplicationService.emitEventsAtTick(
-                cityId,
-                assignedTick,
-                List.of(new EventDraft(
-                        EventType.GOAL_ASSIGNED,
-                        List.of(goal.getHuman().getId()),
-                        payload,
-                        40,
-                        eventKey
-                ))
-        );
-    }
-
     private SimulationCommandOutput success(String commandType, String message, boolean mutated) {
         SimulationCommandOutput output = new SimulationCommandOutput();
         output.setOk(true);
@@ -297,11 +264,5 @@ public class SimulationCommandService {
         output.setMutated(false);
         output.setReferencedEntities(new SimulationCommandReferencedEntitiesOutput());
         return output;
-    }
-
-    private void ensureOwnership(City city, User currentUser) {
-        if (city.getOwner() == null || currentUser == null || !city.getOwner().getId().equals(currentUser.getId())) {
-            throw new AccessDeniedException("City does not belong to current user");
-        }
     }
 }

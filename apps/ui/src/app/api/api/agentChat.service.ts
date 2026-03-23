@@ -20,6 +20,8 @@ import { Observable }                                        from 'rxjs';
 import { AgentChatRequestInput } from '../model/agentChatRequestInput';
 // @ts-ignore
 import { AgentChatResponseOutput } from '../model/agentChatResponseOutput';
+// @ts-ignore
+import { ApiErrorResponse } from '../model/apiErrorResponse';
 
 // @ts-ignore
 import { BASE_PATH, COLLECTION_FORMATS }                     from '../variables';

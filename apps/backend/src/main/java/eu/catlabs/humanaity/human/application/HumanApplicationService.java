@@ -3,6 +3,7 @@ package eu.catlabs.humanaity.human.application;
 import eu.catlabs.humanaity.human.api.dto.HumanInput;
 import eu.catlabs.humanaity.human.api.dto.HumanOutput;
 import eu.catlabs.humanaity.human.domain.Human;
+import eu.catlabs.humanaity.human.domain.HumanTribeRole;
 import eu.catlabs.humanaity.human.domain.Personality;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.city.domain.City;
@@ -56,6 +57,7 @@ public class HumanApplicationService {
         output.setBusy(human.isBusy());
         output.setName(human.getName());
         output.setTribeId(human.getTribeId());
+        output.setTribeRole(human.getTribeRole());
         output.setCreativity(human.getCreativity());
         output.setIntellect(human.getIntellect());
         output.setSociability(human.getSociability());
@@ -95,6 +97,11 @@ public class HumanApplicationService {
     private void updateHumanFields(Human human, HumanInput input) {
         human.setName(input.getName());
         human.setTribeId(input.getTribeId());
+        if (input.getTribeRole() != null) {
+            human.setTribeRole(input.getTribeRole());
+        } else if (human.getTribeRole() == null) {
+            human.setTribeRole(HumanTribeRole.MEMBER);
+        }
         human.setBusy(input.isBusy());
         human.setCreativity(input.getCreativity());
         human.setIntellect(input.getIntellect());

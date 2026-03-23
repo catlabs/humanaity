@@ -1,6 +1,7 @@
 package eu.catlabs.humanaity.human.api.dto;
 
 import eu.catlabs.humanaity.human.domain.Personality;
+import eu.catlabs.humanaity.human.domain.HumanTribeRole;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
@@ -20,6 +21,7 @@ public class HumanInput {
 
     @Size(max = 64, message = "Tribe ID must not exceed 64 characters")
     private String tribeId;
+    private HumanTribeRole tribeRole;
     
     @DecimalMin(value = "0.0", message = "X must be >= 0")
     @DecimalMax(value = "1.0", message = "X must be <= 1")

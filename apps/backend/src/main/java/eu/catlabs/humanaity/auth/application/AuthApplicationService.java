@@ -1,19 +1,21 @@
 package eu.catlabs.humanaity.auth.application;
 
-import eu.catlabs.humanaity.auth.api.dto.AuthRequest;
-import eu.catlabs.humanaity.auth.api.dto.AuthResponse;
-import eu.catlabs.humanaity.auth.api.dto.SignupRequest;
-import eu.catlabs.humanaity.auth.domain.User;
-import eu.catlabs.humanaity.auth.domain.RefreshToken;
-import eu.catlabs.humanaity.auth.infrastructure.persistence.UserRepository;
-import eu.catlabs.humanaity.auth.infrastructure.persistence.RefreshTokenRepository;
-import eu.catlabs.humanaity.auth.infrastructure.security.JwtService;
+import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import eu.catlabs.humanaity.auth.api.dto.AuthRequest;
+import eu.catlabs.humanaity.auth.api.dto.AuthResponse;
+import eu.catlabs.humanaity.auth.domain.RefreshToken;
+import eu.catlabs.humanaity.auth.domain.User;
+import eu.catlabs.humanaity.auth.infrastructure.persistence.RefreshTokenRepository;
+import eu.catlabs.humanaity.auth.infrastructure.persistence.UserRepository;
+import eu.catlabs.humanaity.auth.infrastructure.security.JwtService;
 
 @Service
 public class AuthApplicationService {
@@ -37,28 +39,24 @@ public class AuthApplicationService {
     }
 
     @Transactional
-    public AuthResponse signup(SignupRequest request) {
-        // Validate passwords match
-        if (!request.getPassword().equals(request.getConfirmPassword())) {
-            throw new IllegalArgumentException("Passwords do not match");
+    public User createUser(String email, String rawPassword, Set<String> roles) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Email is required");
         }
-
-        // Check if email already exists
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (rawPassword == null || rawPassword.isBlank()) {
+            throw new IllegalArgumentException("Password is required");
+        }
+        if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email already exists");
         }
 
-        // Create new user
         User user = new User();
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user = userRepository.save(user);
-
-        // Generate tokens
-        String accessToken = jwtService.generateAccessToken(user.getEmail());
-        String refreshToken = generateAndSaveRefreshToken(user);
-
-        return new AuthResponse(accessToken, refreshToken);
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        if (roles != null && !roles.isEmpty()) {
+            user.setRoles(new LinkedHashSet<>(roles));
+        }
+        return userRepository.save(user);
     }
 
     @Transactional

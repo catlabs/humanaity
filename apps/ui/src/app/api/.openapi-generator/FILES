@@ -2,6 +2,7 @@
 README.md
 api.base.service.ts
 api.module.ts
+api/aI.service.ts
 api/agentChat.service.ts
 api/api.ts
 api/authController.service.ts
@@ -17,6 +18,10 @@ model/agentChatRequestInput.ts
 model/agentChatResponseOutput.ts
 model/agentReferencedEntitiesOutput.ts
 model/agentUiEffectOutput.ts
+model/aiCallLogContextSummaryOutput.ts
+model/aiCallLogOutput.ts
+model/aiCallLogSummaryOutput.ts
+model/apiErrorResponse.ts
 model/authRequest.ts
 model/cityInput.ts
 model/cityOutput.ts
@@ -27,7 +32,6 @@ model/humanOutput.ts
 model/inventionOutput.ts
 model/models.ts
 model/refreshTokenRequest.ts
-model/signupRequest.ts
 model/simulationAssistantBlockOutput.ts
 model/simulationAssistantCommandDescriptorOutput.ts
 model/simulationAssistantItemOutput.ts
@@ -52,6 +56,9 @@ model/simulationSnapshotOutput.ts
 model/simulationSnapshotRunOutput.ts
 model/simulationTimelineSummaryOutput.ts
 model/timelineOutput.ts
+model/tribeHouseOutput.ts
+model/tribeKnownPlaceOutput.ts
+model/tribeSnapshotOutput.ts
 param.ts
 provide-api.ts
 variables.ts

@@ -54,31 +54,18 @@ async function run() {
     const healthPayload = health?.structuredContent ?? {};
     assert(healthPayload.status === "ok", "health_check did not report status=ok", healthPayload);
 
-    const signup = await callTool(client, "auth_signup", {
-      email,
-      password,
-      confirmPassword: password,
-    });
-
-    let accessToken =
-      typeof signup.accessToken === "string" ? signup.accessToken : undefined;
-    if (!accessToken) {
-      // Signup can return only a status message depending on backend/tool versions.
-      // Wait a bit before login to avoid issuing two identical refresh tokens in the same second.
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      const login = await callTool(client, "auth_login", { email, password });
-      accessToken = login.accessToken;
-    }
+    const login = await callTool(client, "auth_login", { email, password });
+    const accessToken = login.accessToken;
     assert(
       typeof accessToken === "string" && accessToken.length > 0,
       "Authentication returned no accessToken",
-      { signup },
+      { login },
     );
 
-    const mine = await callTool(client, "cities_mine", { accessToken });
-    const mineCities = Array.isArray(mine.cities) ? mine.cities : [];
+    const listedCities = await callTool(client, "cities_list", { accessToken });
+    const sharedCities = Array.isArray(listedCities.cities) ? listedCities.cities : [];
 
-    let cityId = mineCities.length > 0 ? String(mineCities[0].id) : undefined;
+    let cityId = sharedCities.length > 0 ? String(sharedCities[0].id) : undefined;
     if (!cityId) {
       const created = await callTool(client, "city_create", {
         name: "CI Smoke City",
@@ -87,7 +74,7 @@ async function run() {
       cityId = String(created.city?.id ?? "");
     }
 
-    assert(cityId && cityId.length > 0, "Could not resolve cityId from cities_mine/city_create");
+    assert(cityId && cityId.length > 0, "Could not resolve cityId from cities_list/city_create");
 
     await callTool(client, "simulation_create", {
       cityId,

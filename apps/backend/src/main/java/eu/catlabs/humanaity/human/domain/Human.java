@@ -21,6 +21,9 @@ public class Human {
     private boolean busy;
     private String name;
     private String tribeId;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tribe_role", length = 32)
+    private HumanTribeRole tribeRole = HumanTribeRole.MEMBER;
     private Long nextGoalAssignTick;
     private Double x;
     private Double y;

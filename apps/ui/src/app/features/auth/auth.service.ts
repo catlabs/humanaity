@@ -1,7 +1,7 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Observable, tap, map, switchMap } from 'rxjs';
-import { AuthControllerService, AuthRequest, SignupRequest, RefreshTokenRequest } from '@api';
+import { AuthControllerService, AuthRequest, RefreshTokenRequest } from '@api';
 import { parseApiResponse } from '@core';
 
 const ACCESS_TOKEN_KEY = 'accessToken';
@@ -41,27 +41,6 @@ export class AuthService {
       tap(response => {
         this.setTokens(response);
       })
-    );
-  }
-
-  signup(request: SignupRequest): Observable<AuthResponse> {
-    return this.authControllerService.signup(request).pipe(
-      switchMap(parseApiResponse<Record<string, unknown>>),
-      map((response) => {
-        const accessToken =
-          (typeof response['accessToken'] === 'string' ? response['accessToken'] : undefined) ??
-          (typeof response['access_token'] === 'string' ? response['access_token'] : undefined);
-        const refreshToken =
-          (typeof response['refreshToken'] === 'string' ? response['refreshToken'] : undefined) ??
-          (typeof response['refresh_token'] === 'string' ? response['refresh_token'] : undefined);
-
-        if (!accessToken || !refreshToken) {
-          throw new Error('Invalid response structure: tokens not found');
-        }
-
-        return { accessToken, refreshToken };
-      }),
-      tap(response => this.setTokens(response))
     );
   }
 

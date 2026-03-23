@@ -13,6 +13,7 @@ export interface HumanInput {
     busy?: boolean;
     name?: string;
     tribeId?: string;
+    tribeRole?: HumanInput.TribeRoleEnum;
     x?: number;
     y?: number;
     creativity?: number;
@@ -23,6 +24,12 @@ export interface HumanInput {
     cityId: number;
 }
 export namespace HumanInput {
+    export const TribeRoleEnum = {
+        Chief: 'CHIEF',
+        Scout: 'SCOUT',
+        Member: 'MEMBER'
+    } as const;
+    export type TribeRoleEnum = typeof TribeRoleEnum[keyof typeof TribeRoleEnum];
     export const PersonalityEnum = {
         Visionary: 'VISIONARY',
         Engineer: 'ENGINEER',

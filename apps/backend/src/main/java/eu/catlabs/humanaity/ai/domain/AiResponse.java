@@ -14,8 +14,10 @@ public class AiResponse {
     private String rawContent;
     private JsonNode jsonContent;
     private AiProvider provider;
+    private String model;
     private Duration responseTime;
     private Long tokensUsed;
+    private Long logId;
     
     private AiResponse() {
     }
@@ -53,6 +55,10 @@ public class AiResponse {
     public AiProvider getProvider() {
         return provider;
     }
+
+    public String getModel() {
+        return model;
+    }
     
     public Duration getResponseTime() {
         return responseTime;
@@ -60,6 +66,18 @@ public class AiResponse {
     
     public Long getTokensUsed() {
         return tokensUsed;
+    }
+
+    public Long getLogId() {
+        return logId;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
+    }
+
+    public void setLogId(Long logId) {
+        this.logId = logId;
     }
     
     /**
@@ -82,6 +100,11 @@ public class AiResponse {
             response.provider = provider;
             return this;
         }
+
+        public AiResponseBuilder model(String model) {
+            response.model = model;
+            return this;
+        }
         
         public AiResponseBuilder responseTime(Duration duration) {
             response.responseTime = duration;
@@ -90,6 +113,11 @@ public class AiResponse {
         
         public AiResponseBuilder tokensUsed(Long tokens) {
             response.tokensUsed = tokens;
+            return this;
+        }
+
+        public AiResponseBuilder logId(Long logId) {
+            response.logId = logId;
             return this;
         }
         

@@ -21,32 +21,62 @@ public class SimulationAssistantCommandsCatalog {
     }
 
     private SimulationAssistantCommandDescriptorOutput toDescriptor(SimulationAssistantCommandType type) {
-        return switch (type) {
-            case INVENTIONS -> new SimulationAssistantCommandDescriptorOutput(
+        if (type == SimulationAssistantCommandType.CHIEF_PLAN) {
+            return new SimulationAssistantCommandDescriptorOutput(
+                    type.name(),
+                    "si chef",
+                    "Chief plan",
+                    "Current persisted chief plan per tribe."
+            );
+        }
+        if (type == SimulationAssistantCommandType.INVENTIONS) {
+            return new SimulationAssistantCommandDescriptorOutput(
                     type.name(),
                     "inventions",
                     "Inventions",
                     "Latest unlocked inventions in deterministic order."
             );
-            case WORLD_STATUS -> new SimulationAssistantCommandDescriptorOutput(
+        }
+        if (type == SimulationAssistantCommandType.WORLD_STATUS) {
+            return new SimulationAssistantCommandDescriptorOutput(
                     type.name(),
                     "world status",
                     "World status",
                     "High-level simulation run and population snapshot."
             );
-            case RECENT_EVENTS -> new SimulationAssistantCommandDescriptorOutput(
+        }
+        if (type == SimulationAssistantCommandType.RECENT_EVENTS) {
+            return new SimulationAssistantCommandDescriptorOutput(
                     type.name(),
                     "recent events",
                     "Recent events",
                     "Latest events from the simulation history window."
             );
-            case RELATIONSHIPS -> new SimulationAssistantCommandDescriptorOutput(
+        }
+        if (type == SimulationAssistantCommandType.RELATIONSHIPS) {
+            return new SimulationAssistantCommandDescriptorOutput(
                     type.name(),
                     "relationships",
                     "Relationships",
                     "Interaction pairs derived from recent dialogue and collision events."
             );
-            case UNSUPPORTED -> throw new IllegalStateException("Unsupported is not a listable command");
-        };
+        }
+        if (type == SimulationAssistantCommandType.AI_LOGS) {
+            return new SimulationAssistantCommandDescriptorOutput(
+                    type.name(),
+                    "ai logs",
+                    "AI logs",
+                    "Recent persisted AI and LLM call entries."
+            );
+        }
+        if (type == SimulationAssistantCommandType.AI_STATS) {
+            return new SimulationAssistantCommandDescriptorOutput(
+                    type.name(),
+                    "ai stats",
+                    "AI stats",
+                    "App-wide summary of AI and LLM usage."
+            );
+        }
+        throw new IllegalStateException("Unsupported is not a listable command");
     }
 }

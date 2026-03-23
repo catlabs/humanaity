@@ -13,6 +13,7 @@ export interface SimulationSnapshotHumanOutput {
     id: number;
     name: string;
     tribeId?: string;
+    tribeRole?: string;
     x?: number;
     y?: number;
     busy: boolean;

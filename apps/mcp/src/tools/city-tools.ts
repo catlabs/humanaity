@@ -46,7 +46,7 @@ export function registerCityTools(
 
   server.tool(
     "cities_mine",
-    "List cities owned by the authenticated user.",
+    "List shared cities for the authenticated user. Legacy alias of cities_list.",
     {
       accessToken: z.string().min(1).optional(),
     },
@@ -83,7 +83,7 @@ export function registerCityTools(
 
   server.tool(
     "city_create",
-    "Create a city for the authenticated user.",
+    "Create a shared city.",
     {
       name: z.string().min(1).max(100),
       accessToken: z.string().min(1).optional(),

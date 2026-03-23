@@ -41,6 +41,10 @@ public class EventOutput {
     private HistoryEra era;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String eventKey;
+    @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String title;
+    @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String summary;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant createdAt;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)

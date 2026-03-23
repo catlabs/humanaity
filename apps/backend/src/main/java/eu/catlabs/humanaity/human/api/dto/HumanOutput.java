@@ -1,6 +1,7 @@
 package eu.catlabs.humanaity.human.api.dto;
 
 import eu.catlabs.humanaity.human.domain.Personality;
+import eu.catlabs.humanaity.human.domain.HumanTribeRole;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,6 +16,7 @@ public class HumanOutput {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String name;
     private String tribeId;
+    private HumanTribeRole tribeRole;
 
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Double x;

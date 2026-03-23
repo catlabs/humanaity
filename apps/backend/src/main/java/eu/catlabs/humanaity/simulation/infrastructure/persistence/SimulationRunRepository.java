@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface SimulationRunRepository extends JpaRepository<SimulationRun, Long> {
     Optional<SimulationRun> findByCityId(Long cityId);
+    long deleteByCityId(Long cityId);
 }

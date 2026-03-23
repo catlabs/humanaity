@@ -22,8 +22,6 @@ export type AuthRequest = BackendSchemas["AuthRequest"];
 
 export type RefreshTokenRequest = BackendSchemas["RefreshTokenRequest"];
 
-export type SignupRequest = BackendSchemas["SignupRequest"];
-
 export type CityInput = BackendSchemas["CityInput"];
 
 export type CityOutput = BackendSchemas["CityOutput"];

@@ -9,6 +9,8 @@ import eu.catlabs.humanaity.simulation.domain.HumanGoalSource;
 import eu.catlabs.humanaity.simulation.domain.HumanGoalStatus;
 import eu.catlabs.humanaity.simulation.domain.HumanGoalType;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeHouseRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeKnownPlaceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +35,15 @@ class HumanGoalApplicationServiceTest {
     private HumanRepository humanRepository;
     @Autowired
     private CityRepository cityRepository;
+    @Autowired
+    private TribeHouseRepository tribeHouseRepository;
+    @Autowired
+    private TribeKnownPlaceRepository tribeKnownPlaceRepository;
 
     @BeforeEach
     void cleanDatabase() {
+        tribeKnownPlaceRepository.deleteAll();
+        tribeHouseRepository.deleteAll();
         humanGoalRepository.deleteAll();
         humanRepository.deleteAll();
         cityRepository.deleteAll();

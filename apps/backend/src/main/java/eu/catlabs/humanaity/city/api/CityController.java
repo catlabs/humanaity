@@ -6,6 +6,9 @@ import eu.catlabs.humanaity.city.application.CityApplicationService;
 import eu.catlabs.humanaity.city.domain.City;
 import eu.catlabs.humanaity.auth.domain.User;
 import eu.catlabs.humanaity.auth.infrastructure.persistence.UserRepository;
+import eu.catlabs.humanaity.infrastructure.web.AbuseProtectionService;
+import eu.catlabs.humanaity.infrastructure.web.ApiErrorResponse;
+import eu.catlabs.humanaity.infrastructure.web.RateLimitExceededException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,7 +16,6 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,10 +29,16 @@ import java.util.stream.Collectors;
 public class CityController {
     private final CityApplicationService cityApplicationService;
     private final UserRepository userRepository;
+    private final AbuseProtectionService abuseProtectionService;
 
-    public CityController(CityApplicationService cityApplicationService, UserRepository userRepository) {
+    public CityController(
+            CityApplicationService cityApplicationService,
+            UserRepository userRepository,
+            AbuseProtectionService abuseProtectionService
+    ) {
         this.cityApplicationService = cityApplicationService;
         this.userRepository = userRepository;
+        this.abuseProtectionService = abuseProtectionService;
     }
 
     @GetMapping
@@ -44,17 +52,12 @@ public class CityController {
     }
 
     @GetMapping("/mine")
-    @Operation(summary = "Get all cities owned by the current user")
+    @Operation(summary = "Get all cities available to the current authenticated user (legacy alias)")
     public ResponseEntity<List<CityOutput>> getMyCities(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-
-        String email = authentication.getName();
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("User not found: " + email));
-
-        List<City> cities = cityApplicationService.getCitiesForUser(currentUser);
+        List<City> cities = cityApplicationService.getCitiesForUser(resolveCurrentUser(authentication));
         List<CityOutput> outputs = cities.stream()
                 .map(this::toCityOutput)
                 .collect(Collectors.toList());
@@ -82,17 +85,20 @@ public class CityController {
 
     @PostMapping
     @Operation(summary = "Create a new city with generated humans")
-    public ResponseEntity<CityOutput> createCity(@Valid @RequestBody CityInput input, Authentication authentication) {
+    public ResponseEntity<?> createCity(@Valid @RequestBody CityInput input, Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        String email = authentication.getName();
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("User not found: " + email));
-
-        City city = cityApplicationService.createCityForUser(input, currentUser);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toCityOutput(city));
+        try {
+            abuseProtectionService.checkCityCreate(authentication.getName());
+            User currentUser = resolveCurrentUser(authentication);
+            City city = cityApplicationService.createCityForUser(input, currentUser);
+            return ResponseEntity.status(HttpStatus.CREATED).body(toCityOutput(city));
+        } catch (RateLimitExceededException e) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(new ApiErrorResponse(e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
@@ -108,8 +114,6 @@ public class CityController {
             return ResponseEntity.ok(toCityOutput(city));
         } catch (UnauthorizedException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
@@ -124,8 +128,6 @@ public class CityController {
             return ResponseEntity.noContent().build();
         } catch (UnauthorizedException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }

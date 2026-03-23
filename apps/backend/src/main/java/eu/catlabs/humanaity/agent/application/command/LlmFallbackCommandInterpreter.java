@@ -3,6 +3,8 @@ package eu.catlabs.humanaity.agent.application.command;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.catlabs.humanaity.ai.application.AiGenerationService;
+import eu.catlabs.humanaity.ai.application.AiGenerationContext;
+import eu.catlabs.humanaity.ai.domain.AiCallContextType;
 import eu.catlabs.humanaity.ai.domain.AiPrompt;
 import eu.catlabs.humanaity.ai.domain.AiResponse;
 import eu.catlabs.humanaity.ai.infrastructure.port.AiServiceException;
@@ -44,12 +46,24 @@ public class LlmFallbackCommandInterpreter {
                     .responseFormat(AiPrompt.ResponseFormat.JSON_OBJECT)
                     .build();
 
-            AiResponse response = aiGenerationService.generate(prompt);
+            AiResponse response = aiGenerationService.generate(prompt, new AiGenerationContext(
+                    AiCallContextType.CHAT_FALLBACK,
+                    humans.stream().findFirst().map(human -> human.getCity() == null ? null : human.getCity().getId()).orElse(null),
+                    "AGENT_CHAT",
+                    normalizedMessage,
+                    "Interpret an ambiguous agent chat command into a deterministic command.",
+                    true
+            ));
             JsonNode json = response.getJsonContent(objectMapper);
             if (json == null || !json.isObject()) {
+                aiGenerationService.markFallbackUsed(response.getLogId());
                 return FallbackCommandMatch.invalid("Fallback response was not valid JSON");
             }
-            return validate(json, humans);
+            FallbackCommandMatch match = validate(json, humans);
+            if (match.status() != FallbackCommandMatchStatus.MATCHED) {
+                aiGenerationService.markFallbackUsed(response.getLogId());
+            }
+            return match;
         } catch (AiServiceException ex) {
             return FallbackCommandMatch.invalid("LLM fallback failed");
         }

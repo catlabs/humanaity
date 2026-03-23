@@ -17,4 +17,6 @@ public interface InventionRepository extends JpaRepository<Invention, Long> {
             Long fromTick,
             Long toTick
     );
+
+    long deleteByCityId(Long cityId);
 }

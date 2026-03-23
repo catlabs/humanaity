@@ -17,7 +17,6 @@ import type {
   SimulationRunInput,
   SimulationRunOutput,
   RefreshTokenRequest,
-  SignupRequest,
   SimulationSnapshotOutput,
   SimulationStatus,
 } from "./contracts.js";
@@ -128,37 +127,6 @@ export class BackendClient {
     };
 
     return loginPromise;
-  }
-
-  async authSignup(
-    email: string,
-    password: string,
-    confirmPassword?: string,
-  ): Promise<{
-    ok: true;
-    message: string;
-    accessToken?: string;
-    refreshToken?: string;
-  }> {
-    const body: SignupRequest = {
-      email,
-      password,
-      confirmPassword: confirmPassword ?? password,
-    };
-    const response = await this.request<Record<string, unknown>>("POST", "/auth/signup", { body });
-    const accessToken =
-      typeof response.accessToken === "string" ? response.accessToken : undefined;
-    const refreshToken =
-      typeof response.refreshToken === "string" ? response.refreshToken : undefined;
-    if (accessToken || refreshToken) {
-      this.tokenStore.set({ accessToken, refreshToken });
-    }
-    return {
-      ok: true,
-      message: (response as { message?: string }).message ?? "User created successfully.",
-      ...(accessToken ? { accessToken } : {}),
-      ...(refreshToken ? { refreshToken } : {}),
-    };
   }
 
   async authRefresh(refreshToken?: string): Promise<AuthTokens> {

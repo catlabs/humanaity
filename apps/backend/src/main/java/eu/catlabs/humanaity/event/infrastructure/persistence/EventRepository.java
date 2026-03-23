@@ -25,6 +25,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     List<Event> findByCityIdAndTickBetweenOrderByTickAscSequenceInTickAscIdAsc(Long cityId, Long fromTick, Long toTick);
 
+    long deleteByCityId(Long cityId);
+
     @Query("""
             select e from Event e
             where e.city.id = :cityId

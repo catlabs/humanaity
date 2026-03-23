@@ -9,6 +9,8 @@ import eu.catlabs.humanaity.human.application.HumanApplicationService;
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.simulation.application.query.SimulationReadModelQueryService;
+import eu.catlabs.humanaity.simulation.application.tribe.TribeExplorationService;
+import eu.catlabs.humanaity.simulation.application.tribe.TribePlanApplicationService;
 import eu.catlabs.humanaity.simulation.domain.HumanGoal;
 import eu.catlabs.humanaity.simulation.domain.HumanGoalSource;
 import eu.catlabs.humanaity.simulation.domain.HumanGoalStatus;
@@ -19,7 +21,6 @@ import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunR
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.quality.Strictness;
@@ -37,35 +38,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class SimulationApplicationServiceDeterminismTest {
-
-    @Mock
-    private HumanRepository humanRepository;
-    @Mock
-    private HumanApplicationService humanApplicationService;
-    @Mock
-    private CityRepository cityRepository;
-    @Mock
-    private SimulationRunRepository simulationRunRepository;
-    @Mock
-    private EventApplicationService eventApplicationService;
-    @Mock
-    private InventionApplicationService inventionApplicationService;
-    @Mock
-    private SimulationReadModelQueryService simulationReadModelQueryService;
-    @Mock
-    private HumanGoalApplicationService humanGoalApplicationService;
-    @Mock
-    private KnowledgeProgressionService knowledgeProgressionService;
-    @Mock
-    private KnowledgeUnlockRepository knowledgeUnlockRepository;
-    @Mock
-    private HumanActionCatalogService humanActionCatalogService;
 
     @Test
     void sameSeedAndSameInitialStateYieldSameFinalStateAfterSameStepCount() {
@@ -149,6 +128,20 @@ class SimulationApplicationServiceDeterminismTest {
     }
 
     private ScenarioContext createScenario(long seed, long cityId, long runId) {
+        HumanRepository humanRepository = mock(HumanRepository.class);
+        HumanApplicationService humanApplicationService = mock(HumanApplicationService.class);
+        CityRepository cityRepository = mock(CityRepository.class);
+        SimulationRunRepository simulationRunRepository = mock(SimulationRunRepository.class);
+        EventApplicationService eventApplicationService = mock(EventApplicationService.class);
+        InventionApplicationService inventionApplicationService = mock(InventionApplicationService.class);
+        SimulationReadModelQueryService simulationReadModelQueryService = mock(SimulationReadModelQueryService.class);
+        HumanGoalApplicationService humanGoalApplicationService = mock(HumanGoalApplicationService.class);
+        KnowledgeProgressionService knowledgeProgressionService = mock(KnowledgeProgressionService.class);
+        KnowledgeUnlockRepository knowledgeUnlockRepository = mock(KnowledgeUnlockRepository.class);
+        HumanActionCatalogService humanActionCatalogService = mock(HumanActionCatalogService.class);
+        TribeExplorationService tribeExplorationService = mock(TribeExplorationService.class);
+        TribePlanApplicationService tribePlanApplicationService = mock(TribePlanApplicationService.class);
+
         SimulationApplicationService service = new SimulationApplicationService(
                 humanRepository,
                 humanApplicationService,
@@ -161,6 +154,8 @@ class SimulationApplicationServiceDeterminismTest {
                 knowledgeProgressionService,
                 knowledgeUnlockRepository,
                 humanActionCatalogService,
+                tribeExplorationService,
+                tribePlanApplicationService,
                 1_000L // scheduler period (ms) for wrapper wiring in these tests
         );
 
@@ -266,6 +261,10 @@ class SimulationApplicationServiceDeterminismTest {
         when(knowledgeProgressionService.evaluateUnlocks(anyLong(), anyLong())).thenReturn(List.of());
         when(knowledgeUnlockRepository.findByCityIdOrderByUnlockedTickAscNodeIdAsc(anyLong())).thenReturn(List.of());
         when(humanActionCatalogService.actionsForApplications(any())).thenReturn(java.util.EnumSet.noneOf(eu.catlabs.humanaity.simulation.domain.HumanActionType.class));
+        when(tribeExplorationService.processCompletedGoal(anyLong(), anyLong(), any(HumanGoal.class), any(), any()))
+                .thenReturn(List.of());
+        when(tribeExplorationService.planTribeActions(anyLong(), anyLong(), anyLong(), any(), any()))
+                .thenReturn(List.of());
 
         return new ScenarioContext(service, run, humans, cityId);
     }

@@ -3,8 +3,10 @@ package eu.catlabs.humanaity.ai.application.enrichment;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.catlabs.humanaity.ai.application.AiGenerationService;
+import eu.catlabs.humanaity.ai.application.AiGenerationContext;
 import eu.catlabs.humanaity.ai.application.prompt.EventDialogueEnrichmentPrompt;
 import eu.catlabs.humanaity.ai.application.prompt.InventionEnrichmentPrompt;
+import eu.catlabs.humanaity.ai.domain.AiCallContextType;
 import eu.catlabs.humanaity.ai.domain.AiEnrichmentStatus;
 import eu.catlabs.humanaity.ai.domain.AiResponse;
 import eu.catlabs.humanaity.event.domain.Event;
@@ -36,13 +38,24 @@ public class AiHistoryEnrichmentService {
 
     public void enrichInvention(Invention invention) {
         try {
-            AiResponse response = aiGenerationService.generate(inventionEnrichmentPrompt.createPrompt(invention));
+            AiResponse response = aiGenerationService.generate(
+                    inventionEnrichmentPrompt.createPrompt(invention),
+                    new AiGenerationContext(
+                            AiCallContextType.INVENTION_ENRICHMENT,
+                            invention.getCity() == null ? null : invention.getCity().getId(),
+                            "INVENTION",
+                            invention.getId() == null ? invention.getInventionKey() : String.valueOf(invention.getId()),
+                            "Enrich a persisted invention summary and title.",
+                            true
+                    )
+            );
             JsonNode json = response.getJsonContent(objectMapper);
 
             String enrichedTitle = trimToNull(json == null ? null : json.path("title").asText(null));
             String enrichedSummary = trimToNull(json == null ? null : json.path("summary").asText(null));
 
             if (enrichedTitle == null || enrichedSummary == null) {
+                aiGenerationService.markFallbackUsed(response.getLogId());
                 applyInventionFallback(invention);
                 return;
             }
@@ -52,7 +65,7 @@ public class AiHistoryEnrichmentService {
             invention.setEnrichmentStatus(AiEnrichmentStatus.READY);
             invention.setEnrichmentFallback(false);
             invention.setEnrichmentProvider(response.getProvider() == null ? null : response.getProvider().name());
-            invention.setEnrichmentModel("OPENAI_CHAT");
+            invention.setEnrichmentModel(response.getModel() == null ? "OPENAI_CHAT" : response.getModel());
             invention.setEnrichmentUpdatedAt(Instant.now());
         } catch (Exception ex) {
             applyInventionFallback(invention);
@@ -71,11 +84,22 @@ public class AiHistoryEnrichmentService {
         }
 
         try {
-            AiResponse response = aiGenerationService.generate(eventDialogueEnrichmentPrompt.createPrompt(event));
+            AiResponse response = aiGenerationService.generate(
+                    eventDialogueEnrichmentPrompt.createPrompt(event),
+                    new AiGenerationContext(
+                            AiCallContextType.EVENT_ENRICHMENT,
+                            event.getCity() == null ? null : event.getCity().getId(),
+                            "EVENT",
+                            event.getId() == null ? event.getEventKey() : String.valueOf(event.getId()),
+                            "Enrich a dialogue event snippet for history presentation.",
+                            true
+                    )
+            );
             JsonNode json = response.getJsonContent(objectMapper);
             String snippet = trimToNull(json == null ? null : json.path("snippet").asText(null));
 
             if (snippet == null) {
+                aiGenerationService.markFallbackUsed(response.getLogId());
                 applyEventFallback(event);
                 return;
             }
@@ -84,7 +108,7 @@ public class AiHistoryEnrichmentService {
             event.setEnrichmentStatus(AiEnrichmentStatus.READY);
             event.setEnrichmentFallback(false);
             event.setEnrichmentProvider(response.getProvider() == null ? null : response.getProvider().name());
-            event.setEnrichmentModel("OPENAI_CHAT");
+            event.setEnrichmentModel(response.getModel() == null ? "OPENAI_CHAT" : response.getModel());
             event.setEnrichmentUpdatedAt(Instant.now());
         } catch (Exception ex) {
             applyEventFallback(event);

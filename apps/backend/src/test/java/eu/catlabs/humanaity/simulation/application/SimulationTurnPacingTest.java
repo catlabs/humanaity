@@ -11,6 +11,8 @@ import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionReposi
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeHouseRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeKnownPlaceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,12 +45,18 @@ class SimulationTurnPacingTest {
     @Autowired
     private KnowledgeUnlockRepository knowledgeUnlockRepository;
     @Autowired
+    private TribeHouseRepository tribeHouseRepository;
+    @Autowired
+    private TribeKnownPlaceRepository tribeKnownPlaceRepository;
+    @Autowired
     private HumanRepository humanRepository;
     @Autowired
     private CityRepository cityRepository;
 
     @BeforeEach
     void cleanDatabase() {
+        tribeKnownPlaceRepository.deleteAll();
+        tribeHouseRepository.deleteAll();
         knowledgeUnlockRepository.deleteAll();
         humanGoalRepository.deleteAll();
         inventionRepository.deleteAll();
@@ -69,17 +77,21 @@ class SimulationTurnPacingTest {
                 .filter(event -> event.getEventType() == EventType.HUMAN_ACTION_PERFORMED)
                 .collect(Collectors.groupingBy(Event::getTick, Collectors.counting()));
         Set<EventType> boundedEventTypes = Set.of(
-                EventType.HUMANS_COLLIDED,
                 EventType.DIALOGUE_EXCHANGED,
                 EventType.DISCOVERY_UNLOCKED
         );
         Map<Long, Long> boundedOutcomesPerTick = events.stream()
                 .filter(event -> boundedEventTypes.contains(event.getEventType()))
                 .collect(Collectors.groupingBy(Event::getTick, Collectors.counting()));
+        Map<Long, Long> goalEventsPerTick = events.stream()
+                .filter(event -> event.getEventType() == EventType.GOAL_ASSIGNED
+                        || event.getEventType() == EventType.GOAL_COMPLETED)
+                .collect(Collectors.groupingBy(Event::getTick, Collectors.counting()));
 
         assertThat(events).isNotEmpty();
         assertThat(actionEventsPerTick.values()).allMatch(count -> count <= 1L);
-        assertThat(boundedOutcomesPerTick.values()).allMatch(count -> count <= 4L);
+        assertThat(boundedOutcomesPerTick.values()).allMatch(count -> count <= 3L);
+        assertThat(goalEventsPerTick.values()).allMatch(count -> count == 0L);
     }
 
     private City createCityWithClusteredHumans() {

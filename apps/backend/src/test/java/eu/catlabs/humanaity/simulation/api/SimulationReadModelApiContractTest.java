@@ -11,6 +11,8 @@ import eu.catlabs.humanaity.invention.infrastructure.persistence.InventionReposi
 import eu.catlabs.humanaity.simulation.application.SimulationApplicationService;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeHouseRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeKnownPlaceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,9 +55,15 @@ class SimulationReadModelApiContractTest {
     private CityRepository cityRepository;
     @Autowired
     private KnowledgeUnlockRepository knowledgeUnlockRepository;
+    @Autowired
+    private TribeHouseRepository tribeHouseRepository;
+    @Autowired
+    private TribeKnownPlaceRepository tribeKnownPlaceRepository;
 
     @BeforeEach
     void cleanDatabase() {
+        tribeKnownPlaceRepository.deleteAll();
+        tribeHouseRepository.deleteAll();
         knowledgeUnlockRepository.deleteAll();
         inventionRepository.deleteAll();
         eventRepository.deleteAll();
@@ -161,6 +169,8 @@ class SimulationReadModelApiContractTest {
         assertThat(snapshot.get("knowledge").get("unlockedDiscoveries").isArray()).isTrue();
         assertThat(snapshot.get("knowledge").get("unlockedInventions").isArray()).isTrue();
         assertThat(snapshot.get("knowledge").get("unlockedApplications").isArray()).isTrue();
+        assertThat(snapshot.get("tribes").isArray()).isTrue();
+        assertThat(snapshot.get("tribes").size()).isEqualTo(0);
 
         assertThat(snapshot.get("recentEvents").isArray()).isTrue();
         assertThat(snapshot.get("recentEvents").size()).isEqualTo(0);

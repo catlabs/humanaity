@@ -18,6 +18,8 @@ import eu.catlabs.humanaity.simulation.domain.HumanGoalStatus;
 import eu.catlabs.humanaity.simulation.domain.HumanGoalType;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.KnowledgeUnlockRepository;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeHouseRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.TribeKnownPlaceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,10 +62,16 @@ class SimulationCommandsApiContractTest {
     @Autowired
     private InventionRepository inventionRepository;
     @Autowired
+    private TribeHouseRepository tribeHouseRepository;
+    @Autowired
+    private TribeKnownPlaceRepository tribeKnownPlaceRepository;
+    @Autowired
     private JwtService jwtService;
 
     @BeforeEach
     void cleanDatabase() {
+        tribeKnownPlaceRepository.deleteAll();
+        tribeHouseRepository.deleteAll();
         knowledgeUnlockRepository.deleteAll();
         humanGoalRepository.deleteAll();
         inventionRepository.deleteAll();
@@ -86,7 +94,7 @@ class SimulationCommandsApiContractTest {
     }
 
     @Test
-    void commandsRejectNonOwner() throws Exception {
+    void commandsAllowOtherAuthenticatedUsersOnSharedCities() throws Exception {
         User owner = persistUser("owner-command-forbidden@example.com");
         User other = persistUser("other-command-forbidden@example.com");
         City city = persistCity("Owned", owner);
@@ -95,7 +103,7 @@ class SimulationCommandsApiContractTest {
                         .header("Authorization", bearerFor(other))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(request("advance 2")))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     @Test
