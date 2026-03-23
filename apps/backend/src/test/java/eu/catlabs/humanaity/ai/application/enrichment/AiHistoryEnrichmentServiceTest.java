@@ -1,6 +1,7 @@
 package eu.catlabs.humanaity.ai.application.enrichment;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.catlabs.humanaity.ai.application.AiGenerationContext;
 import eu.catlabs.humanaity.ai.application.AiGenerationService;
 import eu.catlabs.humanaity.ai.application.prompt.EventDialogueEnrichmentPrompt;
 import eu.catlabs.humanaity.ai.application.prompt.InventionEnrichmentPrompt;
@@ -55,7 +56,7 @@ class AiHistoryEnrichmentServiceTest {
         invention.setYearCreated(3);
         invention.setEraCreated(HistoryEra.FOUNDING);
 
-        when(aiGenerationService.generate(any())).thenThrow(new RuntimeException("AI unavailable"));
+        when(aiGenerationService.generate(any(), any(AiGenerationContext.class))).thenThrow(new RuntimeException("AI unavailable"));
 
         service.enrichInvention(invention);
 
@@ -76,7 +77,7 @@ class AiHistoryEnrichmentServiceTest {
         event.setActorIds(List.of(1L, 2L));
         event.setPayload(Map.of("dialogueKey", "1-2-12"));
 
-        when(aiGenerationService.generate(any())).thenReturn(
+        when(aiGenerationService.generate(any(), any(AiGenerationContext.class))).thenReturn(
                 AiResponse.builder()
                         .rawContent("{\"snippet\":\"Two neighbors exchanged methods for grain storage.\"}")
                         .provider(AiProvider.OPENAI)

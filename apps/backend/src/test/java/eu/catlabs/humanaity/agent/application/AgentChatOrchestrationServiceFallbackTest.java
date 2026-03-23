@@ -2,6 +2,7 @@ package eu.catlabs.humanaity.agent.application;
 
 import eu.catlabs.humanaity.agent.api.dto.AgentChatRequestInput;
 import eu.catlabs.humanaity.agent.api.dto.AgentChatResponseOutput;
+import eu.catlabs.humanaity.ai.application.AiGenerationContext;
 import eu.catlabs.humanaity.ai.application.AiGenerationService;
 import eu.catlabs.humanaity.ai.domain.AiResponse;
 import eu.catlabs.humanaity.auth.domain.User;
@@ -73,7 +74,7 @@ class AgentChatOrchestrationServiceFallbackTest {
 
         assertThat(response.getExecutedActions()).hasSize(1);
         assertThat(response.getExecutedActions().get(0).getType()).isEqualTo("STEP_SIMULATION");
-        verify(aiGenerationService, never()).generate(any());
+        verify(aiGenerationService, never()).generate(any(), any(AiGenerationContext.class));
     }
 
     @Test
@@ -82,7 +83,7 @@ class AgentChatOrchestrationServiceFallbackTest {
         City city = persistCity(owner);
         Human elsa = persistHuman(city, "Elsa");
 
-        when(aiGenerationService.generate(any())).thenReturn(AiResponse.builder()
+        when(aiGenerationService.generate(any(), any(AiGenerationContext.class))).thenReturn(AiResponse.builder()
                 .rawContent("""
                         {"type":"MOVE_TO_PLACE","primaryHumanName":"Elsa","secondaryHumanName":null,"placeId":"forest"}
                         """)
@@ -105,7 +106,7 @@ class AgentChatOrchestrationServiceFallbackTest {
         assertThat(goal.getTargetPlaceId()).isEqualTo("forest");
         assertThat(reloaded.getX()).isEqualTo(0.25);
         assertThat(reloaded.getY()).isEqualTo(0.35);
-        verify(aiGenerationService).generate(any());
+        verify(aiGenerationService).generate(any(), any(AiGenerationContext.class));
     }
 
     @Test
@@ -116,7 +117,7 @@ class AgentChatOrchestrationServiceFallbackTest {
         double startX = elsa.getX();
         double startY = elsa.getY();
 
-        when(aiGenerationService.generate(any())).thenReturn(AiResponse.builder()
+        when(aiGenerationService.generate(any(), any(AiGenerationContext.class))).thenReturn(AiResponse.builder()
                 .rawContent("""
                         {"type":"MOVE_TO_PLACE","primaryHumanName":"Nobody","secondaryHumanName":null,"placeId":"forest"}
                         """)

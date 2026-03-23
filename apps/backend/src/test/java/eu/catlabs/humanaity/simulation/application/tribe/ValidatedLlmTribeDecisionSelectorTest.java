@@ -1,6 +1,7 @@
 package eu.catlabs.humanaity.simulation.application.tribe;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.catlabs.humanaity.ai.application.AiGenerationContext;
 import eu.catlabs.humanaity.ai.application.AiGenerationService;
 import eu.catlabs.humanaity.ai.domain.AiResponse;
 import org.junit.jupiter.api.Test;
@@ -20,7 +21,7 @@ class ValidatedLlmTribeDecisionSelectorTest {
 
     @Test
     void returnsMatchingCandidateWhenFallbackJsonIsValid() {
-        when(aiGenerationService.generate(any())).thenReturn(AiResponse.builder()
+        when(aiGenerationService.generate(any(), any(AiGenerationContext.class))).thenReturn(AiResponse.builder()
                 .rawContent("""
                         {"candidateId":"coord-2"}
                         """)
@@ -36,7 +37,7 @@ class ValidatedLlmTribeDecisionSelectorTest {
 
     @Test
     void rejectsInvalidOutputAndFallsBackDeterministically() {
-        when(aiGenerationService.generate(any())).thenReturn(AiResponse.builder()
+        when(aiGenerationService.generate(any(), any(AiGenerationContext.class))).thenReturn(AiResponse.builder()
                 .rawContent("""
                         {"candidateId":"does-not-exist"}
                         """)

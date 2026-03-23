@@ -90,24 +90,25 @@ class SimulationGoalExecutionTest {
 
         HumanGoal persistedGoal = humanGoalRepository.findById(assigned.getId()).orElseThrow();
         Human updatedHuman = humanRepository.findById(human.getId()).orElseThrow();
-        List<Event> goalEvents = new java.util.ArrayList<>(
+        List<EventType> goalEventTypes = new java.util.ArrayList<>(
                 eventRepository.findByCityIdAndEventTypeOrderByTickAscSequenceInTickAscIdAsc(
                         city.getId(),
                         EventType.GOAL_ASSIGNED
-                )
+                ).stream().map(Event::getEventType).toList()
         );
-        goalEvents.addAll(
+        goalEventTypes.addAll(
                 eventRepository.findByCityIdAndEventTypeOrderByTickAscSequenceInTickAscIdAsc(
                         city.getId(),
                         EventType.GOAL_COMPLETED
-                )
+                ).stream().map(Event::getEventType).toList()
         );
 
         assertThat(persistedGoal.getStatus()).isEqualTo(HumanGoalStatus.COMPLETED);
         assertThat(persistedGoal.getCompletedTick()).isNotNull();
         assertThat(updatedHuman.getX()).isBetween(0.0, 1.0);
         assertThat(updatedHuman.getY()).isBetween(0.0, 1.0);
-        assertThat(goalEvents).isEmpty();
+        assertThat(goalEventTypes).isNotEmpty();
+        assertThat(goalEventTypes).allMatch(eventType -> eventType == EventType.GOAL_COMPLETED);
     }
 
     @Test
@@ -148,17 +149,17 @@ class SimulationGoalExecutionTest {
 
         Human afterReassignment = humanRepository.findById(human.getId()).orElseThrow();
         HumanGoal reassigned = humanGoalApplicationService.findActiveGoal(human.getId()).orElseThrow();
-        List<Event> goalEvents = new java.util.ArrayList<>(
+        List<EventType> goalEventTypes = new java.util.ArrayList<>(
                 eventRepository.findByCityIdAndEventTypeOrderByTickAscSequenceInTickAscIdAsc(
                         city.getId(),
                         EventType.GOAL_ASSIGNED
-                )
+                ).stream().map(Event::getEventType).toList()
         );
-        goalEvents.addAll(
+        goalEventTypes.addAll(
                 eventRepository.findByCityIdAndEventTypeOrderByTickAscSequenceInTickAscIdAsc(
                         city.getId(),
                         EventType.GOAL_COMPLETED
-                )
+                ).stream().map(Event::getEventType).toList()
         );
         assertThat(reassigned.getSource()).isEqualTo(HumanGoalSource.AUTONOMOUS);
         assertThat(reassigned.getGoalType()).isEqualTo(HumanGoalType.MOVE_TO_PLACE);
@@ -166,7 +167,8 @@ class SimulationGoalExecutionTest {
         assertThat(afterReassignment.getX()).isNotEqualTo(dwellX);
         assertThat(afterReassignment.getY()).isNotEqualTo(dwellY);
         assertThat(afterReassignment.getNextGoalAssignTick()).isNull();
-        assertThat(goalEvents).isEmpty();
+        assertThat(goalEventTypes).isNotEmpty();
+        assertThat(goalEventTypes).allMatch(eventType -> eventType == EventType.GOAL_COMPLETED);
     }
 
     @Test

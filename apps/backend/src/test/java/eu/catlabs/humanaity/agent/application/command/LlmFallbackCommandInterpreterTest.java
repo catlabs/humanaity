@@ -1,6 +1,7 @@
 package eu.catlabs.humanaity.agent.application.command;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.catlabs.humanaity.ai.application.AiGenerationContext;
 import eu.catlabs.humanaity.ai.application.AiGenerationService;
 import eu.catlabs.humanaity.ai.domain.AiResponse;
 import eu.catlabs.humanaity.city.domain.City;
@@ -22,7 +23,7 @@ class LlmFallbackCommandInterpreterTest {
 
     @Test
     void returnsValidatedMoveCommandWhenFallbackJsonIsValid() {
-        when(aiGenerationService.generate(any())).thenReturn(AiResponse.builder()
+        when(aiGenerationService.generate(any(), any(AiGenerationContext.class))).thenReturn(AiResponse.builder()
                 .rawContent("""
                         {"type":"MOVE_TO_PLACE","primaryHumanName":"Elsa","secondaryHumanName":null,"placeId":"forest"}
                         """)
@@ -41,7 +42,7 @@ class LlmFallbackCommandInterpreterTest {
 
     @Test
     void refusesInvalidFallbackOutput() {
-        when(aiGenerationService.generate(any())).thenReturn(AiResponse.builder()
+        when(aiGenerationService.generate(any(), any(AiGenerationContext.class))).thenReturn(AiResponse.builder()
                 .rawContent("""
                         {"type":"MOVE_TO_PLACE","primaryHumanName":"Unknown","secondaryHumanName":null,"placeId":"forest"}
                         """)

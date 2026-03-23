@@ -21,12 +21,14 @@ import eu.catlabs.humanaity.city.infrastructure.persistence.CityRepository;
 import eu.catlabs.humanaity.event.domain.Event;
 import eu.catlabs.humanaity.event.domain.EventCategory;
 import eu.catlabs.humanaity.event.domain.EventType;
+import eu.catlabs.humanaity.event.infrastructure.persistence.EventRepository;
 import eu.catlabs.humanaity.human.domain.Human;
 import eu.catlabs.humanaity.human.infrastructure.persistence.HumanRepository;
 import eu.catlabs.humanaity.history.domain.HistoryEra;
 import eu.catlabs.humanaity.invention.domain.Invention;
 import eu.catlabs.humanaity.invention.domain.InventionCategory;
 import eu.catlabs.humanaity.simulation.infrastructure.persistence.HumanGoalRepository;
+import eu.catlabs.humanaity.simulation.infrastructure.persistence.SimulationRunRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +74,10 @@ class AiObservabilityApiContractTest {
     @Autowired
     private HumanGoalRepository humanGoalRepository;
     @Autowired
+    private SimulationRunRepository simulationRunRepository;
+    @Autowired
+    private EventRepository eventRepository;
+    @Autowired
     private JwtService jwtService;
     @Autowired
     private MockMvc mockMvc;
@@ -86,6 +92,9 @@ class AiObservabilityApiContractTest {
         aiCallLogRepository.deleteAll();
         humanGoalRepository.deleteAll();
         humanRepository.deleteAll();
+        simulationRunRepository.deleteAll();
+        eventRepository.deleteAll();
+        eventRepository.flush();
         cityRepository.deleteAll();
         userRepository.deleteAll();
         when(aiProviderPort.isAvailable()).thenReturn(true);

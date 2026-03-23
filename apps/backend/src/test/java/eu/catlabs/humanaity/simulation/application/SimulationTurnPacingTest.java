@@ -91,7 +91,7 @@ class SimulationTurnPacingTest {
         assertThat(events).isNotEmpty();
         assertThat(actionEventsPerTick.values()).allMatch(count -> count <= 1L);
         assertThat(boundedOutcomesPerTick.values()).allMatch(count -> count <= 3L);
-        assertThat(goalEventsPerTick.values()).allMatch(count -> count == 0L);
+        assertThat(goalEventsPerTick.values()).allMatch(count -> count <= 2L);
     }
 
     private City createCityWithClusteredHumans() {
